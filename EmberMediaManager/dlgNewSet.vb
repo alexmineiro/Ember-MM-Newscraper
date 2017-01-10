@@ -1,6 +1,4 @@
-﻿Imports EmberAPI
-
-' ################################################################################
+﻿' ################################################################################
 ' #                             EMBER MEDIA MANAGER                              #
 ' ################################################################################
 ' ################################################################################
@@ -19,6 +17,8 @@
 ' # You should have received a copy of the GNU General Public License            #
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
+
+Imports EmberAPI
 
 Public Class dlgNewSet
 
@@ -43,41 +43,47 @@ Public Class dlgNewSet
     Public Sub New()
         ' This call is required by the designer.
         InitializeComponent()
-        Me.Left = Master.AppPos.Left + (Master.AppPos.Width - Me.Width) \ 2
-        Me.Top = Master.AppPos.Top + (Master.AppPos.Height - Me.Height) \ 2
-        Me.StartPosition = FormStartPosition.Manual
+        Left = Master.AppPos.Left + (Master.AppPos.Width - Width) \ 2
+        Top = Master.AppPos.Top + (Master.AppPos.Height - Height) \ 2
+        StartPosition = FormStartPosition.Manual
     End Sub
 
     Public Overloads Function ShowDialog(ByVal DBMovieSet As Database.DBElement) As DialogResult
-        Me.tmpDBElement = DBMovieSet
-        Return MyBase.ShowDialog()
+        tmpDBElement = DBMovieSet
+        Return ShowDialog()
     End Function
 
     Private Sub Cancel_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnCancel.Click
-        Me.DialogResult = System.Windows.Forms.DialogResult.Cancel
-        Me.Close()
+        DialogResult = DialogResult.Cancel
     End Sub
 
     Private Sub dlgNewSet_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
-        Me.SetUp()
+        SetUp()
 
-        If Me.cbLanguage.Items.Count > 0 Then
-            Me.cbLanguage.Text = Master.eSettings.TVGeneralLanguages.Language.FirstOrDefault(Function(l) l.abbreviation = Master.eSettings.MovieGeneralLanguage).name
+        If cbLanguage.Items.Count > 0 Then
+            Dim tLang As languageProperty = APIXML.ScraperLanguagesXML.Languages.FirstOrDefault(Function(l) l.Abbreviation = Master.eSettings.MovieGeneralLanguage)
+            If tLang IsNot Nothing Then
+                cbLanguage.Text = tLang.Description
+            Else
+                tLang = APIXML.ScraperLanguagesXML.Languages.FirstOrDefault(Function(l) l.Abbreviation.StartsWith(Master.eSettings.MovieGeneralLanguage))
+                If tLang IsNot Nothing Then
+                    cbLanguage.Text = tLang.Description
+                End If
+            End If
         End If
     End Sub
 
     Private Sub dlgNewSet_Shown(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Shown
-        Me.Activate()
-        Me.txtTitle.Focus()
+        Activate()
+        txtTitle.Focus()
     End Sub
 
     Private Sub OK_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnOK.Click
         tmpDBElement.MovieSet.Title = txtTitle.Text.Trim
-        tmpDBElement.Language = Master.eSettings.TVGeneralLanguages.Language.FirstOrDefault(Function(l) l.name = cbLanguage.Text).abbreviation
+        tmpDBElement.Language = APIXML.ScraperLanguagesXML.Languages.FirstOrDefault(Function(l) l.Description = cbLanguage.Text).Abbreviation
         tmpDBElement.ListTitle = StringUtils.SortTokens_MovieSet(txtTitle.Text.Trim)
 
-        Me.DialogResult = System.Windows.Forms.DialogResult.OK
-        Me.Close()
+        DialogResult = DialogResult.OK
     End Sub
 
     Private Sub txtTitle_TextChanged(sender As Object, e As EventArgs) Handles txtTitle.TextChanged
@@ -92,7 +98,7 @@ Public Class dlgNewSet
         If Not String.IsNullOrEmpty(txtTitle.Text) AndAlso Not String.IsNullOrEmpty(cbLanguage.Text) Then
             'check if the MovieSet Name is already existing
             Using SQLcommand As SQLite.SQLiteCommand = Master.DB.MyVideosDBConn.CreateCommand()
-                SQLcommand.CommandText = String.Concat("SELECT idSet FROM sets WHERE SetName LIKE """, Me.txtTitle.Text.Trim, """;")
+                SQLcommand.CommandText = String.Concat("SELECT idSet FROM sets WHERE SetName LIKE """, txtTitle.Text.Trim, """;")
                 Using SQLreader As SQLite.SQLiteDataReader = SQLcommand.ExecuteReader()
                     If SQLreader.HasRows Then
                         btnOK.Enabled = False
@@ -109,13 +115,13 @@ Public Class dlgNewSet
     End Sub
 
     Private Sub SetUp()
-        Me.btnOK.Text = Master.eLang.GetString(179, "OK")
-        Me.btnCancel.Text = Master.eLang.GetString(167, "Cancel")
-        Me.lblLanguage.Text = String.Concat(Master.eLang.GetString(610, "Language"), ":")
-        Me.lblTitle.Text = String.Concat(Master.eLang.GetString(21, "Title"), ":")
+        btnOK.Text = Master.eLang.GetString(179, "OK")
+        btnCancel.Text = Master.eLang.GetString(167, "Cancel")
+        lblLanguage.Text = String.Concat(Master.eLang.GetString(610, "Language"), ":")
+        lblTitle.Text = String.Concat(Master.eLang.GetString(21, "Title"), ":")
 
-        Me.cbLanguage.Items.Clear()
-        Me.cbLanguage.Items.AddRange((From lLang In Master.eSettings.TVGeneralLanguages.Language Select lLang.name).ToArray)
+        cbLanguage.Items.Clear()
+        cbLanguage.Items.AddRange((From lLang In APIXML.ScraperLanguagesXML.Languages Select lLang.Description).ToArray)
     End Sub
 
 #End Region 'Methods

@@ -171,21 +171,21 @@ Public Class TelevisionTunes_Theme
     End Function
 
     Sub LoadSettings_Movie()
-        ConfigScrapeModifier_Movie.MainTheme = clsAdvancedSettings.GetBooleanSetting("DoTheme", True, , Enums.ContentType.Movie)
+        ConfigScrapeModifier_Movie.MainTheme = AdvancedSettings.GetBooleanSetting("DoTheme", True, , Enums.ContentType.Movie)
     End Sub
 
     Sub LoadSettings_TV()
-        ConfigScrapeModifier_TV.MainTheme = clsAdvancedSettings.GetBooleanSetting("DoTheme", True, , Enums.ContentType.TV)
+        ConfigScrapeModifier_TV.MainTheme = AdvancedSettings.GetBooleanSetting("DoTheme", True, , Enums.ContentType.TV)
     End Sub
 
     Sub SaveSettings_Movie()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoTheme", ConfigScrapeModifier_Movie.MainTheme, , , Enums.ContentType.Movie)
         End Using
     End Sub
 
     Sub SaveSettings_TV()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoTheme", ConfigScrapeModifier_TV.MainTheme, , , Enums.ContentType.TV)
         End Using
     End Sub
@@ -208,8 +208,8 @@ Public Class TelevisionTunes_Theme
         End If
     End Sub
 
-    Function Scraper_Movie(ByVal DBMovie As Database.DBElement, ByRef ThemeList As List(Of Themes)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Theme_Movie.Scraper
-        logger.Trace("Started scrape")
+    Function Scraper_Movie(ByRef DBMovie As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef ThemeList As List(Of MediaContainers.Theme)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Theme_Movie.Scraper
+        logger.Trace("[TelevisionTunes_Theme] [Scraper_Movie] [Start]")
 
         Dim tTelevisionTunes As New TelevisionTunes.Scraper(DBMovie.Movie.OriginalTitle)
 
@@ -217,12 +217,12 @@ Public Class TelevisionTunes_Theme
             ThemeList = tTelevisionTunes.ThemeList
         End If
 
-        logger.Trace("Finished scrape")
+        logger.Trace("[TelevisionTunes_Theme] [Scraper_Movie] [Done]")
         Return New Interfaces.ModuleResult With {.breakChain = False}
     End Function
 
-    Function Scraper_TV(ByVal DBTV As Database.DBElement, ByRef ThemeList As List(Of Themes)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Theme_TV.Scraper
-        logger.Trace("Started scrape")
+    Function Scraper_TV(ByRef DBTV As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef ThemeList As List(Of MediaContainers.Theme)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Theme_TV.Scraper
+        logger.Trace("[TelevisionTunes_Theme] [Scraper_TV] [Start]")
 
         Dim tTelevisionTunes As New TelevisionTunes.Scraper(DBTV.TVShow.Title)
 
@@ -230,7 +230,7 @@ Public Class TelevisionTunes_Theme
             ThemeList = tTelevisionTunes.ThemeList
         End If
 
-        logger.Trace("Finished scrape")
+        logger.Trace("[TelevisionTunes_Theme] [Scraper_TV] [Done]")
         Return New Interfaces.ModuleResult With {.breakChain = False}
     End Function
 

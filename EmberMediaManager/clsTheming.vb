@@ -26,7 +26,7 @@ Imports NLog
 Public Class Theming
 
 #Region "Fields"
-    Shared logger As Logger = NLog.LogManager.GetCurrentClassLogger()
+    Shared logger As Logger = LogManager.GetCurrentClassLogger()
 
     Private rProcs(3) As Regex
     Private _availablecontrols As New List(Of Controls)
@@ -221,12 +221,12 @@ Public Class Theming
     Public Sub BuildControlList()
         Try
             _availablecontrols.Clear()
-            Const PossibleControls As String = "pnlInfoPanel,lblInfoPanelHeader,btnUp,btnMid,btnDown,lblDirectorsHeader,lblDirectors,lblReleaseDateHeader,lblReleaseDate,pnlTop250,pbTop250,lblTop250,lblOutlineHeader,txtOutline,lblIMDBHeader,txtIMDBID,lblTMDBHeader,txtTMDBID,lblCertificationsHeader,txtCertifications,lblFilePathHeader,txtFilePath,btnPlay,pnlActors,lblActorsHeader,lstActors,pbActors,pbActLoad,lblPlotHeader,txtPlot,lblMetaDataHeader,btnMetaDataRefresh,txtMetaData,pbMILoading,pnlMoviesInSet,lblMoviesInSetHeader,lvMoviesInSet"
+            Const PossibleControls As String = "pnlInfoPanel,lblInfoPanelHeader,btnUp,btnMid,btnDown,lblDirectorsHeader,lblDirectors,lblReleaseDateHeader,lblReleaseDate,pnlTop250,pbTop250,lblTop250,lblOutlineHeader,txtOutline,lblIMDBHeader,txtIMDBID,lblTMDBHeader,txtTMDBID,lblCertificationsHeader,txtCertifications,lblFilePathHeader,txtFilePath,btnFilePlay,lblTrailerPathHeader,txtTrailerPath,btnTrailerPlay,pnlActors,lblActorsHeader,lstActors,pbActors,pbActLoad,lblPlotHeader,txtPlot,lblMetaDataHeader,btnMetaDataRefresh,txtMetaData,pbMILoading,pnlMoviesInSet,lblMoviesInSetHeader,lvMoviesInSet"
             For Each sCon As String In PossibleControls.Split(Convert.ToChar(","))
                 _availablecontrols.Add(New Controls With {.Control = sCon})
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -281,7 +281,7 @@ Public Class Theming
 
             Return Convert.ToInt32(sFormula)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & sFormula, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & sFormula)
         End Try
 
         Return 0
@@ -338,7 +338,7 @@ Public Class Theming
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
         'images
@@ -693,7 +693,7 @@ Public Class Theming
 
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
         Try
@@ -760,7 +760,7 @@ Public Class Theming
 
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -802,7 +802,7 @@ Public Class Theming
             Next
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 

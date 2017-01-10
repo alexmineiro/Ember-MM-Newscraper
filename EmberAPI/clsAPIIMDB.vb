@@ -19,12 +19,11 @@
 ' ################################################################################
 
 Imports System.Text.RegularExpressions
-Imports EmberAPI
 Imports System.Runtime.CompilerServices
 Imports NLog
 
 'The InternalsVisibleTo is required for unit testing the friend methods
-<Assembly: InternalsVisibleTo("EmberAPI_Test")> 
+<Assembly: InternalsVisibleTo("EmberAPI_Test")>
 
 Namespace IMDb
 
@@ -80,7 +79,7 @@ Namespace IMDb
                     Dim tPattern As String = "imdb\/(vi[0-9]+)"                                                                                 'Specific trailer website
                     Dim dPattern As String = "class=""vp-video-name"">(?<TITLE>.*?)<.*?class=""duration title-hover"">\((?<DURATION>.*?)\)"     'Trailer title and duration
 
-                    SearchURL = String.Concat(BaseURL, "/title/tt", strIMDBID, "/videogallery/content_type-trailer") 'IMDb trailer website of a specific movie, filtered by trailers only
+                    SearchURL = String.Concat(BaseURL, "/title/", strIMDBID, "/videogallery/content_type-trailer") 'IMDb trailer website of a specific movie, filtered by trailers only
 
                     'download trailer website
                     ImdbTrailerPage = sHTTP.DownloadData(SearchURL)
@@ -116,7 +115,7 @@ Namespace IMDb
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return TrailerList
@@ -134,7 +133,7 @@ Namespace IMDb
                 _VideoLinks = ParseIMDbFormats(url, False)
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
         End Sub
         ''' <summary>
@@ -240,7 +239,7 @@ Namespace IMDb
                 Return DownloadLinks
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return New VideoLinkItemCollection
             Finally
                 sHTTP = Nothing

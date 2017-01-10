@@ -49,12 +49,12 @@ Namespace TMDB
                 If _MySettings.FallBackEng Then
                     _TMDBApiE = New TMDbLib.Client.TMDbClient(_MySettings.APIKey)
                     _TMDBApiE.GetConfig()
-                    _TMDBApiE.DefaultLanguage = "en"
+                    _TMDBApiE.DefaultLanguage = "en-US"
                 Else
                     _TMDBApiE = _TMDBApi
                 End If
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
         End Sub
 
@@ -86,29 +86,31 @@ Namespace TMDB
             If String.IsNullOrEmpty(tmdbID) OrElse Not Integer.TryParse(tmdbID, 0) Then Return alTrailers
 
             Dim APIResult As Task(Of TMDbLib.Objects.Movies.Movie)
-            APIResult = Task.Run(Function() _TMDBApi.GetMovie(CInt(tmdbID), TMDbLib.Objects.Movies.MovieMethods.Videos))
+            APIResult = Task.Run(Function() _TMDBApi.GetMovieAsync(CInt(tmdbID), TMDbLib.Objects.Movies.MovieMethods.Videos))
 
             trailers = APIResult.Result.Videos
-            If trailers.Results Is Nothing OrElse trailers.Results.Count = 0 AndAlso _MySettings.FallBackEng Then
-                APIResult = Task.Run(Function() _TMDBApiE.GetMovie(CInt(tmdbID), TMDbLib.Objects.Movies.MovieMethods.Videos))
+            If trailers Is Nothing OrElse trailers.Results Is Nothing OrElse trailers.Results.Count = 0 AndAlso _MySettings.FallBackEng Then
+                APIResult = Task.Run(Function() _TMDBApiE.GetMovieAsync(CInt(tmdbID), TMDbLib.Objects.Movies.MovieMethods.Videos))
                 trailers = APIResult.Result.Videos
-                If trailers.Results Is Nothing OrElse trailers.Results.Count = 0 Then
+                If trailers Is Nothing OrElse trailers.Results Is Nothing OrElse trailers.Results.Count = 0 Then
                     Return alTrailers
                 End If
             End If
             If trailers IsNot Nothing AndAlso trailers.Results IsNot Nothing Then
                 For Each Video As TMDbLib.Objects.General.Video In trailers.Results.Where(Function(f) f.Site = "YouTube")
                     Dim tLink As String = String.Format("http://www.youtube.com/watch?v={0}", Video.Key)
-                    Dim tName As String = YouTube.Scraper.GetVideoTitle(tLink)
-                    alTrailers.Add(New MediaContainers.Trailer With { _
-                                   .LongLang = If(String.IsNullOrEmpty(Video.Iso_639_1), String.Empty, Localization.ISOGetLangByCode2(Video.Iso_639_1)), _
-                                   .Quality = GetVideoQuality(Video.Size), _
-                                   .Scraper = "TMDB", _
-                                   .ShortLang = If(String.IsNullOrEmpty(Video.Iso_639_1), String.Empty, Video.Iso_639_1), _
-                                   .Source = Video.Site, _
-                                   .Title = tName, _
-                                   .Type = GetVideoType(Video.Type), _
-                                   .URLWebsite = tLink})
+                    If YouTube.Scraper.IsAvailable(tLink) Then
+                        Dim tName As String = YouTube.Scraper.GetVideoTitle(tLink)
+                        alTrailers.Add(New MediaContainers.Trailer With {
+                                           .LongLang = If(String.IsNullOrEmpty(Video.Iso_639_1), String.Empty, Localization.ISOGetLangByCode2(Video.Iso_639_1)),
+                                           .Quality = GetVideoQuality(Video.Size),
+                                           .Scraper = "TMDB",
+                                           .ShortLang = If(String.IsNullOrEmpty(Video.Iso_639_1), String.Empty, Video.Iso_639_1),
+                                           .Source = Video.Site,
+                                           .Title = tName,
+                                           .Type = GetVideoType(Video.Type),
+                                           .URLWebsite = tLink})
+                    End If
                 Next
             End If
 

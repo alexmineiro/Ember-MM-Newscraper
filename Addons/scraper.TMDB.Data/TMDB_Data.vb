@@ -192,6 +192,7 @@ Public Class TMDB_Data
         _setup_Movie.chkRating.Checked = ConfigScrapeOptions_Movie.bMainRating
         _setup_Movie.chkRelease.Checked = ConfigScrapeOptions_Movie.bMainRelease
         _setup_Movie.chkRuntime.Checked = ConfigScrapeOptions_Movie.bMainRuntime
+        _setup_Movie.chkSearchDeviant.Checked = _SpecialSettings_Movie.SearchDeviant
         _setup_Movie.chkStudios.Checked = ConfigScrapeOptions_Movie.bMainStudios
         _setup_Movie.chkTagline.Checked = ConfigScrapeOptions_Movie.bMainTagline
         _setup_Movie.chkTitle.Checked = ConfigScrapeOptions_Movie.bMainTitle
@@ -314,78 +315,79 @@ Public Class TMDB_Data
     End Function
 
     Sub LoadSettings_Movie()
-        ConfigScrapeOptions_Movie.bMainActors = clsAdvancedSettings.GetBooleanSetting("DoCast", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainCertifications = clsAdvancedSettings.GetBooleanSetting("DoCert", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainCollectionID = clsAdvancedSettings.GetBooleanSetting("DoCollectionID", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainCountries = clsAdvancedSettings.GetBooleanSetting("DoCountry", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainDirectors = clsAdvancedSettings.GetBooleanSetting("DoDirector", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainGenres = clsAdvancedSettings.GetBooleanSetting("DoGenres", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainMPAA = clsAdvancedSettings.GetBooleanSetting("DoMPAA", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainOriginalTitle = clsAdvancedSettings.GetBooleanSetting("DoOriginalTitle", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainOutline = clsAdvancedSettings.GetBooleanSetting("DoOutline", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainPlot = clsAdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainRating = clsAdvancedSettings.GetBooleanSetting("DoRating", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainRelease = clsAdvancedSettings.GetBooleanSetting("DoRelease", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainRuntime = clsAdvancedSettings.GetBooleanSetting("DoRuntime", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainStudios = clsAdvancedSettings.GetBooleanSetting("DoStudio", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainTagline = clsAdvancedSettings.GetBooleanSetting("DoTagline", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainTitle = clsAdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainTop250 = clsAdvancedSettings.GetBooleanSetting("DoTop250", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainTrailer = clsAdvancedSettings.GetBooleanSetting("DoTrailer", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainWriters = clsAdvancedSettings.GetBooleanSetting("DoWriters", True, , Enums.ContentType.Movie)
-        ConfigScrapeOptions_Movie.bMainYear = clsAdvancedSettings.GetBooleanSetting("DoYear", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainActors = AdvancedSettings.GetBooleanSetting("DoCast", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainCertifications = AdvancedSettings.GetBooleanSetting("DoCert", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainCollectionID = AdvancedSettings.GetBooleanSetting("DoCollectionID", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainCountries = AdvancedSettings.GetBooleanSetting("DoCountry", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainDirectors = AdvancedSettings.GetBooleanSetting("DoDirector", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainGenres = AdvancedSettings.GetBooleanSetting("DoGenres", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainMPAA = AdvancedSettings.GetBooleanSetting("DoMPAA", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainOriginalTitle = AdvancedSettings.GetBooleanSetting("DoOriginalTitle", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainOutline = AdvancedSettings.GetBooleanSetting("DoOutline", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainPlot = AdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainRating = AdvancedSettings.GetBooleanSetting("DoRating", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainRelease = AdvancedSettings.GetBooleanSetting("DoRelease", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainRuntime = AdvancedSettings.GetBooleanSetting("DoRuntime", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainStudios = AdvancedSettings.GetBooleanSetting("DoStudio", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainTagline = AdvancedSettings.GetBooleanSetting("DoTagline", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainTitle = AdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainTop250 = AdvancedSettings.GetBooleanSetting("DoTop250", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainTrailer = AdvancedSettings.GetBooleanSetting("DoTrailer", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainWriters = AdvancedSettings.GetBooleanSetting("DoWriters", True, , Enums.ContentType.Movie)
+        ConfigScrapeOptions_Movie.bMainYear = AdvancedSettings.GetBooleanSetting("DoYear", True, , Enums.ContentType.Movie)
 
-        strPrivateAPIKey = clsAdvancedSettings.GetSetting("APIKey", String.Empty, , Enums.ContentType.Movie)
-        _SpecialSettings_Movie.FallBackEng = clsAdvancedSettings.GetBooleanSetting("FallBackEn", False, , Enums.ContentType.Movie)
-        _SpecialSettings_Movie.GetAdultItems = clsAdvancedSettings.GetBooleanSetting("GetAdultItems", False, , Enums.ContentType.Movie)
+        strPrivateAPIKey = AdvancedSettings.GetSetting("APIKey", String.Empty, , Enums.ContentType.Movie)
         _SpecialSettings_Movie.APIKey = If(String.IsNullOrEmpty(strPrivateAPIKey), "44810eefccd9cb1fa1d57e7b0d67b08d", strPrivateAPIKey)
+        _SpecialSettings_Movie.FallBackEng = AdvancedSettings.GetBooleanSetting("FallBackEn", False, , Enums.ContentType.Movie)
+        _SpecialSettings_Movie.GetAdultItems = AdvancedSettings.GetBooleanSetting("GetAdultItems", False, , Enums.ContentType.Movie)
+        _SpecialSettings_Movie.SearchDeviant = AdvancedSettings.GetBooleanSetting("SearchDeviant", False, , Enums.ContentType.Movie)
     End Sub
 
     Sub LoadSettings_MovieSet()
-        ConfigScrapeOptions_MovieSet.bMainPlot = clsAdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.MovieSet)
-        ConfigScrapeOptions_MovieSet.bMainTitle = clsAdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.MovieSet)
+        ConfigScrapeOptions_MovieSet.bMainPlot = AdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.MovieSet)
+        ConfigScrapeOptions_MovieSet.bMainTitle = AdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.MovieSet)
 
-        strPrivateAPIKey = clsAdvancedSettings.GetSetting("APIKey", String.Empty, , Enums.ContentType.MovieSet)
-        _SpecialSettings_MovieSet.FallBackEng = clsAdvancedSettings.GetBooleanSetting("FallBackEn", False, , Enums.ContentType.MovieSet)
-        _SpecialSettings_MovieSet.GetAdultItems = clsAdvancedSettings.GetBooleanSetting("GetAdultItems", False, , Enums.ContentType.MovieSet)
+        strPrivateAPIKey = AdvancedSettings.GetSetting("APIKey", String.Empty, , Enums.ContentType.MovieSet)
+        _SpecialSettings_MovieSet.FallBackEng = AdvancedSettings.GetBooleanSetting("FallBackEn", False, , Enums.ContentType.MovieSet)
+        _SpecialSettings_MovieSet.GetAdultItems = AdvancedSettings.GetBooleanSetting("GetAdultItems", False, , Enums.ContentType.MovieSet)
         _SpecialSettings_MovieSet.APIKey = If(String.IsNullOrEmpty(strPrivateAPIKey), "44810eefccd9cb1fa1d57e7b0d67b08d", strPrivateAPIKey)
     End Sub
 
     Sub LoadSettings_TV()
-        ConfigScrapeOptions_TV.bEpisodeActors = clsAdvancedSettings.GetBooleanSetting("DoActors", True, , Enums.ContentType.TVEpisode)
-        ConfigScrapeOptions_TV.bEpisodeAired = clsAdvancedSettings.GetBooleanSetting("DoAired", True, , Enums.ContentType.TVEpisode)
-        ConfigScrapeOptions_TV.bEpisodeCredits = clsAdvancedSettings.GetBooleanSetting("DoCredits", True, , Enums.ContentType.TVEpisode)
-        ConfigScrapeOptions_TV.bEpisodeDirectors = clsAdvancedSettings.GetBooleanSetting("DoDirector", True, , Enums.ContentType.TVEpisode)
-        ConfigScrapeOptions_TV.bEpisodeGuestStars = clsAdvancedSettings.GetBooleanSetting("DoGuestStars", True, , Enums.ContentType.TVEpisode)
-        ConfigScrapeOptions_TV.bEpisodePlot = clsAdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.TVEpisode)
-        ConfigScrapeOptions_TV.bEpisodeRating = clsAdvancedSettings.GetBooleanSetting("DoRating", True, , Enums.ContentType.TVEpisode)
-        ConfigScrapeOptions_TV.bEpisodeTitle = clsAdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.TVEpisode)
-        ConfigScrapeOptions_TV.bSeasonAired = clsAdvancedSettings.GetBooleanSetting("DoAired", True, , Enums.ContentType.TVSeason)
-        ConfigScrapeOptions_TV.bSeasonPlot = clsAdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.TVSeason)
-        ConfigScrapeOptions_TV.bSeasonTitle = clsAdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.TVSeason)
-        ConfigScrapeOptions_TV.bMainActors = clsAdvancedSettings.GetBooleanSetting("DoActors", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainCertifications = clsAdvancedSettings.GetBooleanSetting("DoCert", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainCountries = clsAdvancedSettings.GetBooleanSetting("DoCountry", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainCreators = clsAdvancedSettings.GetBooleanSetting("DoCreator", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainEpisodeGuide = clsAdvancedSettings.GetBooleanSetting("DoEpisodeGuide", False, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainGenres = clsAdvancedSettings.GetBooleanSetting("DoGenre", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainOriginalTitle = clsAdvancedSettings.GetBooleanSetting("DoOriginalTitle", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainPlot = clsAdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainPremiered = clsAdvancedSettings.GetBooleanSetting("DoPremiered", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainRating = clsAdvancedSettings.GetBooleanSetting("DoRating", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainRuntime = clsAdvancedSettings.GetBooleanSetting("DoRuntime", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainStatus = clsAdvancedSettings.GetBooleanSetting("DoStatus", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainStudios = clsAdvancedSettings.GetBooleanSetting("DoStudio", True, , Enums.ContentType.TVShow)
-        ConfigScrapeOptions_TV.bMainTitle = clsAdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bEpisodeActors = AdvancedSettings.GetBooleanSetting("DoActors", True, , Enums.ContentType.TVEpisode)
+        ConfigScrapeOptions_TV.bEpisodeAired = AdvancedSettings.GetBooleanSetting("DoAired", True, , Enums.ContentType.TVEpisode)
+        ConfigScrapeOptions_TV.bEpisodeCredits = AdvancedSettings.GetBooleanSetting("DoCredits", True, , Enums.ContentType.TVEpisode)
+        ConfigScrapeOptions_TV.bEpisodeDirectors = AdvancedSettings.GetBooleanSetting("DoDirector", True, , Enums.ContentType.TVEpisode)
+        ConfigScrapeOptions_TV.bEpisodeGuestStars = AdvancedSettings.GetBooleanSetting("DoGuestStars", True, , Enums.ContentType.TVEpisode)
+        ConfigScrapeOptions_TV.bEpisodePlot = AdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.TVEpisode)
+        ConfigScrapeOptions_TV.bEpisodeRating = AdvancedSettings.GetBooleanSetting("DoRating", True, , Enums.ContentType.TVEpisode)
+        ConfigScrapeOptions_TV.bEpisodeTitle = AdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.TVEpisode)
+        ConfigScrapeOptions_TV.bSeasonAired = AdvancedSettings.GetBooleanSetting("DoAired", True, , Enums.ContentType.TVSeason)
+        ConfigScrapeOptions_TV.bSeasonPlot = AdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.TVSeason)
+        ConfigScrapeOptions_TV.bSeasonTitle = AdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.TVSeason)
+        ConfigScrapeOptions_TV.bMainActors = AdvancedSettings.GetBooleanSetting("DoActors", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainCertifications = AdvancedSettings.GetBooleanSetting("DoCert", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainCountries = AdvancedSettings.GetBooleanSetting("DoCountry", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainCreators = AdvancedSettings.GetBooleanSetting("DoCreator", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainEpisodeGuide = AdvancedSettings.GetBooleanSetting("DoEpisodeGuide", False, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainGenres = AdvancedSettings.GetBooleanSetting("DoGenre", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainOriginalTitle = AdvancedSettings.GetBooleanSetting("DoOriginalTitle", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainPlot = AdvancedSettings.GetBooleanSetting("DoPlot", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainPremiered = AdvancedSettings.GetBooleanSetting("DoPremiered", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainRating = AdvancedSettings.GetBooleanSetting("DoRating", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainRuntime = AdvancedSettings.GetBooleanSetting("DoRuntime", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainStatus = AdvancedSettings.GetBooleanSetting("DoStatus", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainStudios = AdvancedSettings.GetBooleanSetting("DoStudio", True, , Enums.ContentType.TVShow)
+        ConfigScrapeOptions_TV.bMainTitle = AdvancedSettings.GetBooleanSetting("DoTitle", True, , Enums.ContentType.TVShow)
 
-        strPrivateAPIKey = clsAdvancedSettings.GetSetting("APIKey", String.Empty, , Enums.ContentType.TV)
-        _SpecialSettings_TV.FallBackEng = clsAdvancedSettings.GetBooleanSetting("FallBackEn", False, , Enums.ContentType.TV)
-        _SpecialSettings_TV.GetAdultItems = clsAdvancedSettings.GetBooleanSetting("GetAdultItems", False, , Enums.ContentType.TV)
+        strPrivateAPIKey = AdvancedSettings.GetSetting("APIKey", String.Empty, , Enums.ContentType.TV)
+        _SpecialSettings_TV.FallBackEng = AdvancedSettings.GetBooleanSetting("FallBackEn", False, , Enums.ContentType.TV)
+        _SpecialSettings_TV.GetAdultItems = AdvancedSettings.GetBooleanSetting("GetAdultItems", False, , Enums.ContentType.TV)
         _SpecialSettings_TV.APIKey = If(String.IsNullOrEmpty(strPrivateAPIKey), "44810eefccd9cb1fa1d57e7b0d67b08d", strPrivateAPIKey)
     End Sub
 
     Sub SaveSettings_Movie()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoCast", ConfigScrapeOptions_Movie.bMainActors, , , Enums.ContentType.Movie)
             settings.SetBooleanSetting("DoCert", ConfigScrapeOptions_Movie.bMainCertifications, , , Enums.ContentType.Movie)
             settings.SetBooleanSetting("DoCollectionID", ConfigScrapeOptions_Movie.bMainCollectionID, , , Enums.ContentType.Movie)
@@ -410,12 +412,13 @@ Public Class TMDB_Data
             settings.SetBooleanSetting("DoYear", ConfigScrapeOptions_Movie.bMainYear, , , Enums.ContentType.Movie)
             settings.SetBooleanSetting("FallBackEn", _SpecialSettings_Movie.FallBackEng, , , Enums.ContentType.Movie)
             settings.SetBooleanSetting("GetAdultItems", _SpecialSettings_Movie.GetAdultItems, , , Enums.ContentType.Movie)
+            settings.SetBooleanSetting("SearchDeviant", _SpecialSettings_Movie.SearchDeviant, , , Enums.ContentType.Movie)
             settings.SetSetting("APIKey", _setup_Movie.txtApiKey.Text, , , Enums.ContentType.Movie)
         End Using
     End Sub
 
     Sub SaveSettings_MovieSet()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoPlot", ConfigScrapeOptions_MovieSet.bMainPlot, , , Enums.ContentType.MovieSet)
             settings.SetBooleanSetting("DoTitle", ConfigScrapeOptions_MovieSet.bMainTitle, , , Enums.ContentType.MovieSet)
             settings.SetBooleanSetting("GetAdultItems", _SpecialSettings_MovieSet.GetAdultItems, , , Enums.ContentType.MovieSet)
@@ -424,7 +427,7 @@ Public Class TMDB_Data
     End Sub
 
     Sub SaveSettings_TV()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoActors", ConfigScrapeOptions_TV.bEpisodeActors, , , Enums.ContentType.TVEpisode)
             settings.SetBooleanSetting("DoAired", ConfigScrapeOptions_TV.bEpisodeAired, , , Enums.ContentType.TVEpisode)
             settings.SetBooleanSetting("DoCredits", ConfigScrapeOptions_TV.bEpisodeCredits, , , Enums.ContentType.TVEpisode)
@@ -478,6 +481,7 @@ Public Class TMDB_Data
         ConfigScrapeOptions_Movie.bMainYear = _setup_Movie.chkYear.Checked
         _SpecialSettings_Movie.FallBackEng = _setup_Movie.chkFallBackEng.Checked
         _SpecialSettings_Movie.GetAdultItems = _setup_Movie.chkGetAdultItems.Checked
+        _SpecialSettings_Movie.SearchDeviant = _setup_Movie.chkSearchDeviant.Checked
         SaveSettings_Movie()
         If DoDispose Then
             RemoveHandler _setup_Movie.SetupScraperChanged, AddressOf Handle_SetupScraperChanged_Movie
@@ -533,12 +537,8 @@ Public Class TMDB_Data
         End If
     End Sub
 
-    Public Function GetLangs(ByRef Langs As clsXMLTVDBLanguages) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Data_TV.GetLanguages
-        Return New Interfaces.ModuleResult With {.breakChain = False}
-    End Function
-
     Function GetMovieStudio(ByRef DBMovie As Database.DBElement, ByRef sStudio As List(Of String)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Data_Movie.GetMovieStudio
-        If (DBMovie.Movie Is Nothing OrElse (String.IsNullOrEmpty(DBMovie.Movie.IMDBID) AndAlso String.IsNullOrEmpty(DBMovie.Movie.TMDBID))) Then
+        If (DBMovie.Movie Is Nothing OrElse (String.IsNullOrEmpty(DBMovie.Movie.IMDB) AndAlso String.IsNullOrEmpty(DBMovie.Movie.TMDB))) Then
             logger.Error("Attempting to get studio for undefined movie")
             Return New Interfaces.ModuleResult
         End If
@@ -547,12 +547,12 @@ Public Class TMDB_Data
 
         Dim _scraper As New TMDB.Scraper(_SpecialSettings_Movie)
 
-        If DBMovie.Movie.IDSpecified Then
+        If DBMovie.Movie.IMDBSpecified Then
             'IMDB-ID is available
-            sStudio.AddRange(_scraper.GetMovieStudios(DBMovie.Movie.ID))
-        ElseIf DBMovie.Movie.TMDBIDSpecified Then
+            sStudio.AddRange(_scraper.GetMovieStudios(DBMovie.Movie.IMDB))
+        ElseIf DBMovie.Movie.TMDBSpecified Then
             'TMDB-ID is available
-            sStudio.AddRange(_scraper.GetMovieStudios(DBMovie.Movie.TMDBID))
+            sStudio.AddRange(_scraper.GetMovieStudios(DBMovie.Movie.TMDB))
         End If
 
         logger.Trace("Finished TMDB Scraper")
@@ -592,87 +592,72 @@ Public Class TMDB_Data
     ''' <returns>Database.DBElement Object (nMovie) which contains the scraped data</returns>
     ''' <remarks></remarks>
     Function Scraper_Movie(ByRef oDBElement As Database.DBElement, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef ScrapeType As Enums.ScrapeType, ByRef ScrapeOptions As Structures.ScrapeOptions) As Interfaces.ModuleResult_Data_Movie Implements Interfaces.ScraperModule_Data_Movie.Scraper_Movie
-        logger.Trace("Started TMDB Scraper")
+        logger.Trace("[TMDB_Data] [Scraper_Movie] [Start]")
 
         LoadSettings_Movie()
         _SpecialSettings_Movie.PrefLanguage = oDBElement.Language
 
-        Dim nMovie As New MediaContainers.Movie
+        Dim nMovie As MediaContainers.Movie = Nothing
         Dim _scraper As New TMDB.Scraper(_SpecialSettings_Movie)
 
         Dim FilteredOptions As Structures.ScrapeOptions = Functions.ScrapeOptionsAndAlso(ScrapeOptions, ConfigScrapeOptions_Movie)
 
         If ScrapeModifiers.MainNFO AndAlso Not ScrapeModifiers.DoSearch Then
-            If oDBElement.Movie.IDSpecified Then
-                'IMDB-ID already available -> scrape and save data into an empty movie container (nMovie)
-                nMovie = _scraper.GetMovieInfo(oDBElement.Movie.ID, False, FilteredOptions, False)
-            ElseIf oDBElement.Movie.TMDBIDSpecified Then
+            If oDBElement.Movie.TMDBSpecified Then
                 'TMDB-ID already available -> scrape and save data into an empty movie container (nMovie)
-                nMovie = _scraper.GetMovieInfo(oDBElement.Movie.TMDBID, False, FilteredOptions, False)
+                nMovie = _scraper.GetInfo_Movie(oDBElement.Movie.TMDB, FilteredOptions, False)
+            ElseIf oDBElement.Movie.IMDBSpecified Then
+                'IMDB-ID already available -> scrape and save data into an empty movie container (nMovie)
+                nMovie = _scraper.GetInfo_Movie(oDBElement.Movie.IMDB, FilteredOptions, False)
             ElseIf Not ScrapeType = Enums.ScrapeType.SingleScrape Then
                 'no IMDB-ID or TMDB-ID for movie --> search first and try to get ID!
                 If oDBElement.Movie.TitleSpecified Then
                     nMovie = _scraper.GetSearchMovieInfo(oDBElement.Movie.Title, oDBElement, ScrapeType, FilteredOptions)
                 End If
                 'if still no search result -> exit
-                If nMovie Is Nothing Then Return New Interfaces.ModuleResult_Data_Movie With {.Result = Nothing}
+                If nMovie Is Nothing Then
+                    logger.Trace("[TMDB_Data] [Scraper_Movie] [Abort] No search result found")
+                    Return New Interfaces.ModuleResult_Data_Movie With {.Result = Nothing}
+                End If
             End If
         End If
 
         If nMovie Is Nothing Then
             Select Case ScrapeType
                 Case Enums.ScrapeType.AllAuto, Enums.ScrapeType.FilterAuto, Enums.ScrapeType.MarkedAuto, Enums.ScrapeType.MissingAuto, Enums.ScrapeType.NewAuto, Enums.ScrapeType.SelectedAuto
+                    logger.Trace("[TMDB_Data] [Scraper_Movie] [Abort] No search result found")
                     Return New Interfaces.ModuleResult_Data_Movie With {.Result = Nothing}
             End Select
+        Else
+            Return New Interfaces.ModuleResult_Data_Movie With {.Result = nMovie}
         End If
 
         If ScrapeType = Enums.ScrapeType.SingleScrape OrElse ScrapeType = Enums.ScrapeType.SingleAuto Then
-            If Not oDBElement.Movie.IDSpecified AndAlso Not oDBElement.Movie.TMDBIDSpecified Then
+            If Not oDBElement.Movie.TMDBSpecified Then
                 Using dlgSearch As New dlgTMDBSearchResults_Movie(_SpecialSettings_Movie, _scraper)
                     If dlgSearch.ShowDialog(oDBElement.Movie.Title, oDBElement.Filename, FilteredOptions, oDBElement.Movie.Year) = DialogResult.OK Then
-                        nMovie = _scraper.GetMovieInfo(dlgSearch.Result.TMDBID, False, FilteredOptions, False)
+                        nMovie = _scraper.GetInfo_Movie(dlgSearch.Result.TMDB, FilteredOptions, False)
                         'if a movie is found, set DoSearch back to "false" for following scrapers
                         ScrapeModifiers.DoSearch = False
                     Else
+                        logger.Trace(String.Format("[TMDB_Data] [Scraper_Movie] [Cancelled] Cancelled by user"))
                         Return New Interfaces.ModuleResult_Data_Movie With {.Cancelled = True, .Result = Nothing}
                     End If
                 End Using
             End If
         End If
 
-        'set new informations for following scrapers
-        If nMovie IsNot Nothing Then
-            If nMovie.TitleSpecified Then
-                oDBElement.Movie.Title = nMovie.Title
-            End If
-            If nMovie.OriginalTitleSpecified Then
-                oDBElement.Movie.OriginalTitle = nMovie.OriginalTitle
-            End If
-            If nMovie.YearSpecified Then
-                oDBElement.Movie.Year = nMovie.Year
-            End If
-            If nMovie.IDSpecified Then
-                oDBElement.Movie.ID = nMovie.ID
-            End If
-            If nMovie.IMDBIDSpecified Then
-                oDBElement.Movie.IMDBID = nMovie.IMDBID
-            End If
-            If nMovie.TMDBIDSpecified Then
-                oDBElement.Movie.TMDBID = nMovie.TMDBID
-            End If
-        End If
-
-        logger.Trace("Finished TMDB Scraper")
+        logger.Trace("[TMDB_Data] [Scraper_Movie] [Done]")
         Return New Interfaces.ModuleResult_Data_Movie With {.Result = nMovie}
     End Function
 
     Function Scraper_MovieSet(ByRef oDBElement As Database.DBElement, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef ScrapeType As Enums.ScrapeType, ByRef ScrapeOptions As Structures.ScrapeOptions) As Interfaces.ModuleResult_Data_MovieSet Implements Interfaces.ScraperModule_Data_MovieSet.Scraper
-        logger.Trace(String.Format("[TMDB_Data] [Start]"))
+        logger.Trace("[TMDB_Data] [Scraper_MovieSet] [Start]")
 
         LoadSettings_MovieSet()
         _SpecialSettings_MovieSet.PrefLanguage = oDBElement.Language
 
-        Dim nMovieSet As New MediaContainers.MovieSet
+        Dim nMovieSet As MediaContainers.MovieSet = Nothing
         Dim _scraper As New TMDB.Scraper(_SpecialSettings_MovieSet)
 
         Dim FilteredOptions As Structures.ScrapeOptions = Functions.ScrapeOptionsAndAlso(ScrapeOptions, ConfigScrapeOptions_MovieSet)
@@ -680,7 +665,7 @@ Public Class TMDB_Data
         If ScrapeModifiers.MainNFO AndAlso Not ScrapeModifiers.DoSearch Then
             If oDBElement.MovieSet.TMDBSpecified Then
                 'TMDB-ID already available -> scrape and save data into an empty movieset container (nMovieSet)
-                nMovieSet = _scraper.GetMovieSetInfo(oDBElement.MovieSet.TMDB, False, FilteredOptions, False)
+                nMovieSet = _scraper.GetInfo_MovieSet(oDBElement.MovieSet.TMDB, FilteredOptions, False)
             ElseIf Not ScrapeType = Enums.ScrapeType.SingleScrape Then
                 'no ITMDB-ID for movieset --> search first and try to get ID!
                 If oDBElement.MovieSet.TitleSpecified Then
@@ -688,7 +673,7 @@ Public Class TMDB_Data
                 End If
                 'if still no search result -> exit
                 If nMovieSet Is Nothing Then
-                    logger.Trace(String.Format("[TMDB_Data] [Abort] No search result found"))
+                    logger.Trace(String.Format("[TMDB_Data] [Scraper_MovieSet] [Abort] No search result found"))
                     Return New Interfaces.ModuleResult_Data_MovieSet With {.Result = Nothing}
                 End If
             End If
@@ -697,38 +682,29 @@ Public Class TMDB_Data
         If nMovieSet Is Nothing Then
             Select Case ScrapeType
                 Case Enums.ScrapeType.AllAuto, Enums.ScrapeType.FilterAuto, Enums.ScrapeType.MarkedAuto, Enums.ScrapeType.MissingAuto, Enums.ScrapeType.NewAuto, Enums.ScrapeType.SelectedAuto
-                    logger.Trace(String.Format("[TMDB_Data] [Abort] No search result found"))
+                    logger.Trace(String.Format("[TMDB_Data] [Scraper_MovieSet] [Abort] No search result found"))
                     Return New Interfaces.ModuleResult_Data_MovieSet With {.Result = Nothing}
             End Select
+        Else
+            Return New Interfaces.ModuleResult_Data_MovieSet With {.Result = nMovieSet}
         End If
 
         If ScrapeType = Enums.ScrapeType.SingleScrape OrElse ScrapeType = Enums.ScrapeType.SingleAuto Then
             If Not oDBElement.MovieSet.TMDBSpecified Then
                 Using dlgSearch As New dlgTMDBSearchResults_MovieSet(_SpecialSettings_MovieSet, _scraper)
                     If dlgSearch.ShowDialog(oDBElement.MovieSet.Title, FilteredOptions) = DialogResult.OK Then
-                        nMovieSet = _scraper.GetMovieSetInfo(dlgSearch.Result.TMDB, False, FilteredOptions, False)
+                        nMovieSet = _scraper.GetInfo_MovieSet(dlgSearch.Result.TMDB, FilteredOptions, False)
                         'if a movieset is found, set DoSearch back to "false" for following scrapers
                         ScrapeModifiers.DoSearch = False
                     Else
-                        logger.Trace(String.Format("[TMDB_Data] [Cancelled] Cancelled by user"))
+                        logger.Trace(String.Format("[TMDB_Data] [Scraper_MovieSet] [Cancelled] Cancelled by user"))
                         Return New Interfaces.ModuleResult_Data_MovieSet With {.Cancelled = True, .Result = Nothing}
                     End If
                 End Using
             End If
         End If
 
-        'set new informations for following scrapers
-
-        If nMovieSet IsNot Nothing Then
-            If nMovieSet.TitleSpecified Then
-                oDBElement.MovieSet.Title = nMovieSet.Title
-            End If
-            If nMovieSet.TMDBSpecified Then
-                oDBElement.MovieSet.TMDB = nMovieSet.TMDB
-            End If
-        End If
-
-        logger.Trace(String.Format("[TMDB_Data] [Done] With result"))
+        logger.Trace("[TMDB_Data] [Scraper_MovieSet] [Done]")
         Return New Interfaces.ModuleResult_Data_MovieSet With {.Result = nMovieSet}
     End Function
     ''' <summary>
@@ -739,12 +715,12 @@ Public Class TMDB_Data
     ''' <returns>Database.DBElement Object (nMovie) which contains the scraped data</returns>
     ''' <remarks></remarks>
     Function Scraper_TV(ByRef oDBElement As Database.DBElement, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef ScrapeType As Enums.ScrapeType, ByRef ScrapeOptions As Structures.ScrapeOptions) As Interfaces.ModuleResult_Data_TVShow Implements Interfaces.ScraperModule_Data_TV.Scraper_TVShow
-        logger.Trace("Started TMDB Scraper")
+        logger.Trace("[TMDB_Data] [Scraper_TV] [Start]")
 
         LoadSettings_TV()
         _SpecialSettings_TV.PrefLanguage = oDBElement.Language
 
-        Dim nTVShow As New MediaContainers.TVShow
+        Dim nTVShow As MediaContainers.TVShow = Nothing
         Dim _scraper As New TMDB.Scraper(_SpecialSettings_TV)
 
         Dim FilteredOptions As Structures.ScrapeOptions = Functions.ScrapeOptionsAndAlso(ScrapeOptions, ConfigScrapeOptions_TV)
@@ -752,68 +728,59 @@ Public Class TMDB_Data
         If ScrapeModifiers.MainNFO AndAlso Not ScrapeModifiers.DoSearch Then
             If oDBElement.TVShow.TMDBSpecified Then
                 'TMDB-ID already available -> scrape and save data into an empty tv show container (nShow)
-                nTVShow = _scraper.GetTVShowInfo(oDBElement.TVShow.TMDB, ScrapeModifiers, FilteredOptions, False)
+                nTVShow = _scraper.GetInfo_TVShow(oDBElement.TVShow.TMDB, ScrapeModifiers, FilteredOptions, False)
             ElseIf oDBElement.TVShow.TVDBSpecified Then
                 oDBElement.TVShow.TMDB = _scraper.GetTMDBbyTVDB(oDBElement.TVShow.TVDB)
                 If Not oDBElement.TVShow.TMDBSpecified Then Return New Interfaces.ModuleResult_Data_TVShow With {.Result = Nothing}
-                nTVShow = _scraper.GetTVShowInfo(oDBElement.TVShow.TMDB, ScrapeModifiers, FilteredOptions, False)
+                nTVShow = _scraper.GetInfo_TVShow(oDBElement.TVShow.TMDB, ScrapeModifiers, FilteredOptions, False)
             ElseIf oDBElement.TVShow.IMDBSpecified Then
                 oDBElement.TVShow.TMDB = _scraper.GetTMDBbyIMDB(oDBElement.TVShow.IMDB)
                 If Not oDBElement.TVShow.TMDBSpecified Then Return New Interfaces.ModuleResult_Data_TVShow With {.Result = Nothing}
-                nTVShow = _scraper.GetTVShowInfo(oDBElement.TVShow.TMDB, ScrapeModifiers, FilteredOptions, False)
+                nTVShow = _scraper.GetInfo_TVShow(oDBElement.TVShow.TMDB, ScrapeModifiers, FilteredOptions, False)
             ElseIf Not ScrapeType = Enums.ScrapeType.SingleScrape Then
                 'no TVDB-ID for tv show --> search first and try to get ID!
                 If oDBElement.TVShow.TitleSpecified Then
                     nTVShow = _scraper.GetSearchTVShowInfo(oDBElement.TVShow.Title, oDBElement, ScrapeType, ScrapeModifiers, FilteredOptions)
                 End If
                 'if still no search result -> exit
-                If nTVShow Is Nothing Then Return New Interfaces.ModuleResult_Data_TVShow With {.Result = Nothing}
+                If nTVShow Is Nothing Then
+                    logger.Trace(String.Format("[TMDB_Data] [Scraper_TV] [Abort] No search result found"))
+                    Return New Interfaces.ModuleResult_Data_TVShow With {.Result = Nothing}
+                End If
             End If
         End If
 
         If nTVShow Is Nothing Then
             Select Case ScrapeType
                 Case Enums.ScrapeType.AllAuto, Enums.ScrapeType.FilterAuto, Enums.ScrapeType.MarkedAuto, Enums.ScrapeType.MissingAuto, Enums.ScrapeType.NewAuto, Enums.ScrapeType.SelectedAuto
+                    logger.Trace(String.Format("[TMDB_Data] [Scraper_TV] [Abort] No search result found"))
                     Return New Interfaces.ModuleResult_Data_TVShow With {.Result = Nothing}
             End Select
+        Else
+            Return New Interfaces.ModuleResult_Data_TVShow With {.Result = nTVShow}
         End If
 
         If ScrapeType = Enums.ScrapeType.SingleScrape OrElse ScrapeType = Enums.ScrapeType.SingleAuto Then
             If Not oDBElement.TVShow.TMDBSpecified Then
                 Using dlgSearch As New dlgTMDBSearchResults_TV(_SpecialSettings_TV, _scraper)
                     If dlgSearch.ShowDialog(oDBElement.TVShow.Title, oDBElement.ShowPath, FilteredOptions) = DialogResult.OK Then
-                        nTVShow = _scraper.GetTVShowInfo(dlgSearch.Result.TMDB, ScrapeModifiers, FilteredOptions, False)
+                        nTVShow = _scraper.GetInfo_TVShow(dlgSearch.Result.TMDB, ScrapeModifiers, FilteredOptions, False)
                         'if a tvshow is found, set DoSearch back to "false" for following scrapers
                         ScrapeModifiers.DoSearch = False
                     Else
+                        logger.Trace(String.Format("[TMDB_Data] [Scraper_TV] [Cancelled] Cancelled by user"))
                         Return New Interfaces.ModuleResult_Data_TVShow With {.Cancelled = True, .Result = Nothing}
                     End If
                 End Using
             End If
         End If
 
-        'set new informations for following scrapers
-        If nTVShow IsNot Nothing Then
-            If nTVShow.TitleSpecified Then
-                oDBElement.TVShow.Title = nTVShow.Title
-            End If
-            If nTVShow.TVDBSpecified Then
-                oDBElement.TVShow.TVDB = nTVShow.TVDB
-            End If
-            If nTVShow.IMDBSpecified Then
-                oDBElement.TVShow.IMDB = nTVShow.IMDB
-            End If
-            If nTVShow.TMDBSpecified Then
-                oDBElement.TVShow.TMDB = nTVShow.TMDB
-            End If
-        End If
-
-        logger.Trace("Finished TMDB Scraper")
+        logger.Trace("[TMDB_Data] [Scraper_TV] [Done]")
         Return New Interfaces.ModuleResult_Data_TVShow With {.Result = nTVShow}
     End Function
 
     Public Function Scraper_TVEpisode(ByRef oDBElement As Database.DBElement, ByVal ScrapeOptions As Structures.ScrapeOptions) As Interfaces.ModuleResult_Data_TVEpisode Implements Interfaces.ScraperModule_Data_TV.Scraper_TVEpisode
-        logger.Trace("Started TMDB Scraper")
+        logger.Trace("[TMDB_Data] [Scraper_TVEpisode] [Start]")
 
         LoadSettings_TV()
         _SpecialSettings_TV.PrefLanguage = oDBElement.Language
@@ -829,40 +796,29 @@ Public Class TMDB_Data
 
         If oDBElement.TVShow.TMDBSpecified Then
             If Not oDBElement.TVEpisode.Episode = -1 AndAlso Not oDBElement.TVEpisode.Season = -1 Then
-                nTVEpisode = _scraper.GetTVEpisodeInfo(CInt(oDBElement.TVShow.TMDB), oDBElement.TVEpisode.Season, oDBElement.TVEpisode.Episode, FilteredOptions)
+                nTVEpisode = _scraper.GetInfo_TVEpisode(CInt(oDBElement.TVShow.TMDB), oDBElement.TVEpisode.Season, oDBElement.TVEpisode.Episode, FilteredOptions)
             ElseIf oDBElement.TVEpisode.AiredSpecified Then
-                nTVEpisode = _scraper.GetTVEpisodeInfo(CInt(oDBElement.TVShow.TMDB), oDBElement.TVEpisode.Aired, FilteredOptions)
+                nTVEpisode = _scraper.GetInfo_TVEpisode(CInt(oDBElement.TVShow.TMDB), oDBElement.TVEpisode.Aired, FilteredOptions)
             Else
+                logger.Trace(String.Format("[TMDB_Data] [Scraper_TVEpisode] [Abort] No search result found"))
                 Return New Interfaces.ModuleResult_Data_TVEpisode With {.Result = Nothing}
             End If
             'if still no search result -> exit
-            If nTVEpisode Is Nothing Then Return New Interfaces.ModuleResult_Data_TVEpisode With {.Result = Nothing}
+            If nTVEpisode Is Nothing Then
+                logger.Trace(String.Format("[TMDB_Data] [Scraper_TVEpisode] [Abort] No search result found"))
+                Return New Interfaces.ModuleResult_Data_TVEpisode With {.Result = Nothing}
+            End If
         Else
+            logger.Trace(String.Format("[TMDB_Data] [Scraper_TVEpisode] [Abort] No TV Show TMDB ID available"))
             Return New Interfaces.ModuleResult_Data_TVEpisode With {.Result = Nothing}
         End If
 
-        'set new informations for following scrapers
-        If nTVEpisode IsNot Nothing Then
-            If nTVEpisode.TitleSpecified Then
-                oDBElement.TVEpisode.Title = nTVEpisode.Title
-            End If
-            If nTVEpisode.TVDBSpecified Then
-                oDBElement.TVEpisode.TVDB = nTVEpisode.TVDB
-            End If
-            If nTVEpisode.IMDBSpecified Then
-                oDBElement.TVEpisode.IMDB = nTVEpisode.IMDB
-            End If
-            If nTVEpisode.TMDBSpecified Then
-                oDBElement.TVEpisode.TMDB = nTVEpisode.TMDB
-            End If
-        End If
-
-        logger.Trace("Finished TMDB Scraper")
+        logger.Trace("[TMDB_Data] [Scraper_TVEpisode] [Done]")
         Return New Interfaces.ModuleResult_Data_TVEpisode With {.Result = nTVEpisode}
     End Function
 
     Public Function Scraper_TVSeason(ByRef oDBElement As Database.DBElement, ByVal ScrapeOptions As Structures.ScrapeOptions) As Interfaces.ModuleResult_Data_TVSeason Implements Interfaces.ScraperModule_Data_TV.Scraper_TVSeason
-        logger.Trace("Started TMDB Scraper")
+        logger.Trace("[TMDB_Data] [Scraper_TVSeason] [Start]")
 
         LoadSettings_TV()
         _SpecialSettings_TV.PrefLanguage = oDBElement.Language
@@ -877,28 +833,23 @@ Public Class TMDB_Data
         End If
 
         If oDBElement.TVShow.TMDBSpecified Then
-            If Not oDBElement.TVSeason.Season = -1 Then
-                nTVSeason = _scraper.GetTVSeasonInfo(CInt(oDBElement.TVShow.TMDB), oDBElement.TVSeason.Season, FilteredOptions)
+            If oDBElement.TVSeason.SeasonSpecified Then
+                nTVSeason = _scraper.GetInfo_TVSeason(CInt(oDBElement.TVShow.TMDB), oDBElement.TVSeason.Season, FilteredOptions)
             Else
+                logger.Trace(String.Format("[TMDB_Data] [Scraper_TVSeason] [Abort] Season is not specified"))
                 Return New Interfaces.ModuleResult_Data_TVSeason With {.Result = Nothing}
             End If
             'if still no search result -> exit
-            If nTVSeason Is Nothing Then Return New Interfaces.ModuleResult_Data_TVSeason With {.Result = Nothing}
+            If nTVSeason Is Nothing Then
+                logger.Trace(String.Format("[TMDB_Data] [Scraper_TVSeason] [Abort] No search result found"))
+                Return New Interfaces.ModuleResult_Data_TVSeason With {.Result = Nothing}
+            End If
         Else
+            logger.Trace(String.Format("[TMDB_Data] [Scraper_TVSeason] [Abort] No TV Show TMDB ID available"))
             Return New Interfaces.ModuleResult_Data_TVSeason With {.Result = Nothing}
         End If
 
-        'set new informations for following scrapers
-        If nTVSeason IsNot Nothing Then
-            If nTVSeason.TMDBSpecified Then
-                oDBElement.TVSeason.TMDB = nTVSeason.TMDB
-            End If
-            If nTVSeason.TVDBSpecified Then
-                oDBElement.TVSeason.TVDB = nTVSeason.TVDB
-            End If
-        End If
-
-        logger.Trace("Finished TMDB Scraper")
+        logger.Trace("[TMDB_Data] [Scraper_TVSeason] [Done]")
         Return New Interfaces.ModuleResult_Data_TVSeason With {.Result = nTVSeason}
     End Function
 
@@ -922,10 +873,11 @@ Public Class TMDB_Data
 
 #Region "Fields"
 
+        Dim APIKey As String
         Dim FallBackEng As Boolean
         Dim GetAdultItems As Boolean
-        Dim APIKey As String
         Dim PrefLanguage As String
+        Dim SearchDeviant As Boolean
 
 #End Region 'Fields
 

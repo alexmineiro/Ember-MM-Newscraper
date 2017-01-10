@@ -74,6 +74,12 @@ Public Class genericGenreManager
         End Set
     End Property
 
+    ReadOnly Property IsBusy() As Boolean Implements Interfaces.GenericModule.IsBusy
+        Get
+            Return False
+        End Get
+    End Property
+
     Public ReadOnly Property ModuleName() As String Implements Interfaces.GenericModule.ModuleName
         Get
             Return _Name
@@ -121,7 +127,7 @@ Public Class genericGenreManager
     End Sub
 
     Public Function RunGeneric(ByVal mType As Enums.ModuleEventType, ByRef _params As List(Of Object), ByRef _singleobjekt As Object, ByRef _dbelement As Database.DBElement) As Interfaces.ModuleResult Implements Interfaces.GenericModule.RunGeneric
-
+        Return New Interfaces.ModuleResult With {.breakChain = False}
     End Function
 
     Sub Disable()

@@ -129,35 +129,35 @@ Public Class TMDB_Trailer
 
     Sub LoadSettings()
 
-        ConfigScrapeModifiers.MainTrailer = clsAdvancedSettings.GetBooleanSetting("DoTrailer", True)
+        ConfigScrapeModifiers.MainTrailer = AdvancedSettings.GetBooleanSetting("DoTrailer", True)
         _SpecialSettings.APIKey = If(String.IsNullOrEmpty(strPrivateAPIKey), "44810eefccd9cb1fa1d57e7b0d67b08d", strPrivateAPIKey)
-        _SpecialSettings.FallBackEng = clsAdvancedSettings.GetBooleanSetting("FallBackEn", False)
-        strPrivateAPIKey = clsAdvancedSettings.GetSetting("TMDBAPIKey", "")
+        _SpecialSettings.FallBackEng = AdvancedSettings.GetBooleanSetting("FallBackEn", False)
+        strPrivateAPIKey = AdvancedSettings.GetSetting("TMDBAPIKey", "")
 
     End Sub
 
-    Function Scraper(ByRef DBMovie As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef TrailerList As List(Of MediaContainers.Trailer)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Trailer_Movie.Scraper
-        logger.Trace("Started scrape", New StackTrace().ToString())
+    Function Scraper_Movie(ByRef DBMovie As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef TrailerList As List(Of MediaContainers.Trailer)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Trailer_Movie.Scraper
+        logger.Trace("[TMDB_Trailer] [Scraper_Movie] [Start]")
 
         LoadSettings()
         _SpecialSettings.PrefLanguage = DBMovie.Language
 
-        If String.IsNullOrEmpty(DBMovie.Movie.TMDBID) Then
-            DBMovie.Movie.TMDBID = ModulesManager.Instance.GetMovieTMDBID(DBMovie.Movie.ID)
+        If String.IsNullOrEmpty(DBMovie.Movie.TMDB) Then
+            DBMovie.Movie.TMDB = ModulesManager.Instance.GetMovieTMDBID(DBMovie.Movie.IMDB)
         End If
 
-        If Not String.IsNullOrEmpty(DBMovie.Movie.TMDBID) Then
+        If Not String.IsNullOrEmpty(DBMovie.Movie.TMDB) Then
             Dim _scraper As New TMDB.Scraper(_SpecialSettings)
 
-            TrailerList = _scraper.GetTrailers(DBMovie.Movie.TMDBID)
+            TrailerList = _scraper.GetTrailers(DBMovie.Movie.TMDB)
         End If
 
-        logger.Trace("Finished scrape", New StackTrace().ToString())
+        logger.Trace("[TMDB_Trailer] [Scraper_Movie] [Done]")
         Return New Interfaces.ModuleResult With {.breakChain = False}
     End Function
 
     Sub SaveSettings()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetSetting("TMDBAPIKey", _setup.txtApiKey.Text)
             settings.SetBooleanSetting("FallBackEn", _SpecialSettings.FallBackEng)
             settings.SetBooleanSetting("DoTrailer", ConfigScrapeModifiers.MainTrailer)

@@ -18,16 +18,134 @@
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
 
+Imports NLog
 Imports System.Xml.Serialization
 Imports System.Text.RegularExpressions
 Imports System.IO
+Imports System.Xml
 
 Namespace MediaContainers
 
+    <Serializable()>
+    Public Class Audio
 
-    <Serializable()> _
-    <XmlRoot("episodedetails")> _
+#Region "Fields"
+
+        Private _bitrate As String = String.Empty
+        Private _channels As String = String.Empty
+        Private _codec As String = String.Empty
+        Private _haspreferred As Boolean = False
+        Private _language As String = String.Empty
+        Private _longlanguage As String = String.Empty
+
+#End Region 'Fields
+
+#Region "Properties"
+
+        <XmlElement("bitrate")>
+        Public Property Bitrate() As String
+            Get
+                Return _bitrate.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _bitrate = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property BitrateSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_bitrate)
+            End Get
+        End Property
+
+        <XmlElement("channels")>
+        Public Property Channels() As String
+            Get
+                Return _channels.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _channels = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property ChannelsSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_channels)
+            End Get
+        End Property
+
+        <XmlElement("codec")>
+        Public Property Codec() As String
+            Get
+                Return _codec.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _codec = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property CodecSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_codec)
+            End Get
+        End Property
+
+        <XmlIgnore>
+        Public Property HasPreferred() As Boolean
+            Get
+                Return _haspreferred
+            End Get
+            Set(ByVal value As Boolean)
+                _haspreferred = value
+            End Set
+        End Property
+
+        <XmlElement("language")>
+        Public Property Language() As String
+            Get
+                Return _language.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _language = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property LanguageSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_language)
+            End Get
+        End Property
+
+        <XmlElement("longlanguage")>
+        Public Property LongLanguage() As String
+            Get
+                Return _longlanguage.Trim()
+            End Get
+            Set(ByVal value As String)
+                _longlanguage = value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property LongLanguageSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_longlanguage)
+            End Get
+        End Property
+
+#End Region 'Properties
+
+    End Class
+
+
+    <Serializable()>
+    <XmlRoot("episodedetails")>
     Public Class EpisodeDetails
+        Implements ICloneable
 
 #Region "Fields"
 
@@ -42,10 +160,11 @@ Namespace MediaContainers
         Private _episodeabsolute As Integer
         Private _episodecombined As Double
         Private _episodedvd As Double
-        Private _fileInfo As New MediaInfo.Fileinfo
+        Private _fileInfo As New Fileinfo
         Private _gueststars As New List(Of Person)
         Private _imdb As String
         Private _lastplayed As String
+        Private _locked As Boolean
         Private _playcount As Integer
         Private _plot As String
         Private _rating As String
@@ -59,6 +178,7 @@ Namespace MediaContainers
         Private _title As String
         Private _tmdb As String
         Private _tvdb As String
+        Private _userrating As Integer
         Private _videosource As String
         Private _votes As String
 
@@ -142,23 +262,6 @@ Namespace MediaContainers
             End Get
         End Property
 
-        <XmlElement("videosource")>
-        Public Property VideoSource() As String
-            Get
-                Return _videosource
-            End Get
-            Set(ByVal value As String)
-                _videosource = value
-            End Set
-        End Property
-
-        <XmlIgnore()>
-        Public ReadOnly Property VideoSourceSpecified() As Boolean
-            Get
-                Return Not String.IsNullOrEmpty(_videosource)
-            End Get
-        End Property
-
         <XmlElement("votes")>
         Public Property Votes() As String
             Get
@@ -173,6 +276,40 @@ Namespace MediaContainers
         Public ReadOnly Property VotesSpecified() As Boolean
             Get
                 Return Not String.IsNullOrEmpty(_votes) AndAlso Not String.IsNullOrEmpty(_rating)
+            End Get
+        End Property
+
+        <XmlElement("userrating")>
+        Public Property UserRating() As Integer
+            Get
+                Return _userrating
+            End Get
+            Set(ByVal value As Integer)
+                _userrating = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property UserRatingSpecified() As Boolean
+            Get
+                Return Not _userrating = 0
+            End Get
+        End Property
+
+        <XmlElement("videosource")>
+        Public Property VideoSource() As String
+            Get
+                Return _videosource
+            End Get
+            Set(ByVal value As String)
+                _videosource = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property VideoSourceSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_videosource)
             End Get
         End Property
 
@@ -278,18 +415,6 @@ Namespace MediaContainers
             End Get
         End Property
 
-        <Obsolete("This property is depreciated. Use Episode.Credits [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property OldCredits() As String
-            Get
-                Return String.Join(" / ", _credits.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _credits.Clear()
-                AddCredit(value)
-            End Set
-        End Property
-
         <XmlElement("credits")>
         Public Property Credits() As List(Of String)
             Get
@@ -343,18 +468,6 @@ Namespace MediaContainers
             Get
                 Return Not String.IsNullOrEmpty(_lastplayed)
             End Get
-        End Property
-
-        <Obsolete("This property is depreciated. Use Episode.Directors [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Director() As String
-            Get
-                Return String.Join(" / ", _directors.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _directors.Clear()
-                AddDirector(value)
-            End Set
         End Property
 
         <XmlElement("director")>
@@ -413,11 +526,11 @@ Namespace MediaContainers
         End Property
 
         <XmlElement("fileinfo")>
-        Public Property FileInfo() As MediaInfo.Fileinfo
+        Public Property FileInfo() As Fileinfo
             Get
                 Return _fileInfo
             End Get
-            Set(ByVal value As MediaInfo.Fileinfo)
+            Set(ByVal value As Fileinfo)
                 _fileInfo = value
             End Set
         End Property
@@ -518,6 +631,16 @@ Namespace MediaContainers
             End Get
         End Property
 
+        <XmlElement("locked")>
+        Public Property Locked() As Boolean
+            Get
+                Return _locked
+            End Get
+            Set(ByVal value As Boolean)
+                _locked = value
+            End Set
+        End Property
+
         <XmlIgnore()>
         Public Property Scrapersource() As String
             Get
@@ -578,6 +701,13 @@ Namespace MediaContainers
             End Set
         End Property
 
+        <XmlIgnore()>
+        Public ReadOnly Property AnyUniqueIDSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_imdb) OrElse Not String.IsNullOrEmpty(_tmdb) OrElse Not String.IsNullOrEmpty(_tvdb)
+            End Get
+        End Property
+
 #End Region 'Properties
 
 #Region "Methods"
@@ -594,10 +724,11 @@ Namespace MediaContainers
             _episodeabsolute = -1
             _episodecombined = -1
             _episodedvd = -1
-            _fileInfo = New MediaInfo.Fileinfo
+            _fileInfo = New Fileinfo
             _gueststars.Clear()
             _imdb = String.Empty
             _lastplayed = String.Empty
+            _locked = False
             _playcount = 0
             _plot = String.Empty
             _rating = String.Empty
@@ -611,11 +742,13 @@ Namespace MediaContainers
             _tmdb = String.Empty
             _tvdb = String.Empty
             _title = String.Empty
+            _userrating = 0
             _videosource = String.Empty
             _votes = String.Empty
         End Sub
 
-        Public Sub AddCredit(ByVal value As String)
+        Public Sub AddCreditsFromString(ByVal value As String)
+            _credits.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains("/") Then
@@ -634,7 +767,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddDirector(ByVal value As String)
+        Public Sub AddDirectorsFromString(ByVal value As String)
+            _directors.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains("/") Then
@@ -653,6 +787,18 @@ Namespace MediaContainers
             End If
         End Sub
 
+        Public Function CloneDeep() As Object Implements ICloneable.Clone
+            Dim Stream As New MemoryStream(50000)
+            Dim Formatter As New Runtime.Serialization.Formatters.Binary.BinaryFormatter()
+            ' Serialisierung über alle Objekte hinweg in einen Stream 
+            Formatter.Serialize(Stream, Me)
+            ' Zurück zum Anfang des Streams und... 
+            Stream.Seek(0, SeekOrigin.Begin)
+            ' ...aus dem Stream in ein Objekt deserialisieren 
+            CloneDeep = Formatter.Deserialize(Stream)
+            Stream.Close()
+        End Function
+
         Public Sub CreateCachePaths_ActorsThumbs()
             Dim sPath As String = Path.Combine(Master.TempPath, "Global")
 
@@ -665,6 +811,8 @@ Namespace MediaContainers
         End Sub
 
         Public Sub SaveAllActorThumbs(ByRef DBElement As Database.DBElement)
+            If Not DBElement.FilenameSpecified Then Return
+
             If ActorsSpecified AndAlso Master.eSettings.TVEpisodeActorThumbsAnyEnabled Then
                 Images.SaveTVEpisodeActorThumbs(DBElement)
             Else
@@ -772,11 +920,49 @@ Namespace MediaContainers
     End Class
 
     <Serializable()>
+    <XmlRoot("fileinfo")>
+    Public Class Fileinfo
+
+#Region "Fields"
+
+        Private _streamdetails As New StreamData
+
+#End Region 'Fields
+
+#Region "Properties"
+
+        <XmlElement("streamdetails")>
+        Property StreamDetails() As StreamData
+            Get
+                Return _streamdetails
+            End Get
+            Set(ByVal value As StreamData)
+                _streamdetails = value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property StreamDetailsSpecified() As Boolean
+            Get
+                Return (_streamdetails.Video IsNot Nothing AndAlso _streamdetails.Video.Count > 0) OrElse
+                (_streamdetails.Audio IsNot Nothing AndAlso _streamdetails.Audio.Count > 0) OrElse
+                (_streamdetails.Subtitle IsNot Nothing AndAlso _streamdetails.Subtitle.Count > 0)
+            End Get
+        End Property
+
+#End Region 'Properties
+
+    End Class
+
+    <Serializable()>
     <XmlRoot("movie")>
     Public Class Movie
+        Implements ICloneable
         Implements IComparable(Of Movie)
 
 #Region "Fields"
+
+        Shared logger As Logger = LogManager.GetCurrentClassLogger()
 
         Private _actors As New List(Of Person)
         Private _certifications As New List(Of String)
@@ -786,11 +972,13 @@ Namespace MediaContainers
         Private _datemodified As String
         Private _directors As New List(Of String)
         Private _fanart As New Fanart
-        Private _fileInfo As New MediaInfo.Fileinfo
+        Private _fileInfo As New Fileinfo
         Private _genres As New List(Of String)
+        Private _imdb As String
         Private _language As String
         Private _lastplayed As String
         Private _lev As Integer
+        Private _locked As Boolean
         Private _mpaa As String
         Private _originaltitle As String
         Private _outline As String
@@ -800,6 +988,7 @@ Namespace MediaContainers
         Private _releaseDate As String
         Private _runtime As String
         Private _scrapersource As String
+        Private _sets As New List(Of SetDetails)
         Private _sorttitle As String
         Private _studios As New List(Of String)
         Private _tagline As String
@@ -807,36 +996,67 @@ Namespace MediaContainers
         Private _thumb As New List(Of String)
         Private _thumbposter As New Image
         Private _title As String
+        Private _tmdb As String
         Private _tmdbcolid As String
-        Private _top250 As String
+        Private _top250 As Integer
         Private _trailer As String
+        Private _userrating As Integer
         Private _videosource As String
         Private _votes As String
-        Private _xsets As New List(Of [Set])
         Private _year As String
-        Private _ysets As New SetContainer
 
 #End Region 'Fields
 
 #Region "Constructors"
 
-        Public Sub New(ByVal sID As String, ByVal sTitle As String, ByVal sYear As String, ByVal iLev As Integer)
+        Public Sub New()
             Clear()
-            MovieID.ID = sID
-            _title = sTitle
-            _year = sYear
-            _lev = iLev
         End Sub
 
-        Sub New()
+        Public Sub New(ByVal strIMDB As String, ByVal strTitle As String, ByVal strYear As String, ByVal iLev As Integer)
             Clear()
+            _imdb = strIMDB
+            _title = strTitle
+            _year = strYear
+            _lev = iLev
         End Sub
 
 #End Region 'Constructors
 
 #Region "Properties"
         <XmlElement("id")>
-        Public MovieID As New _MovieID
+        Public Property IMDB() As String
+            Get
+                Return _imdb
+            End Get
+            Set(ByVal value As String)
+                _imdb = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property IMDBSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_imdb)
+            End Get
+        End Property
+
+        <XmlElement("tmdb")>
+        Public Property TMDB() As String
+            Get
+                Return _tmdb
+            End Get
+            Set(ByVal value As String)
+                _tmdb = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property TMDBSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_tmdb)
+            End Get
+        End Property
 
         <XmlElement("title")>
         Public Property Title() As String
@@ -885,58 +1105,7 @@ Namespace MediaContainers
         <XmlIgnore()>
         Public ReadOnly Property SortTitleSpecified() As Boolean
             Get
-                Return Not String.IsNullOrEmpty(_sorttitle) AndAlso Not _sorttitle = StringUtils.SortTokens_Movie(_title)
-            End Get
-        End Property
-
-        <XmlIgnore()>
-        Public Property ID() As String
-            Get
-                Return MovieID.ID
-            End Get
-            Set(ByVal value As String)
-                MovieID.ID = value
-            End Set
-        End Property
-
-        <XmlIgnore()>
-        Public ReadOnly Property IDSpecified() As Boolean
-            Get
-                Return Not String.IsNullOrEmpty(MovieID.ID)
-            End Get
-        End Property
-
-        <XmlIgnore()>
-        Public Property TMDBID() As String
-            Get
-                Return MovieID.IDTMDB
-            End Get
-            Set(ByVal value As String)
-                MovieID.IDTMDB = value
-            End Set
-        End Property
-
-        <XmlIgnore()>
-        Public ReadOnly Property TMDBIDSpecified() As Boolean
-            Get
-                Return Not String.IsNullOrEmpty(MovieID.IDTMDB)
-            End Get
-        End Property
-
-        <XmlIgnore()>
-        Public Property IMDBID() As String
-            Get
-                Return MovieID.ID.Replace("tt", String.Empty).Trim
-            End Get
-            Set(ByVal value As String)
-                MovieID.ID = value
-            End Set
-        End Property
-
-        <XmlIgnore()>
-        Public ReadOnly Property IMDBIDSpecified() As Boolean
-            Get
-                Return Not String.IsNullOrEmpty(MovieID.ID)
+                Return Not String.IsNullOrEmpty(_sorttitle)
             End Get
         End Property
 
@@ -992,11 +1161,11 @@ Namespace MediaContainers
         End Property
 
         <XmlElement("top250")>
-        Public Property Top250() As String
+        Public Property Top250() As Integer
             Get
                 Return _top250
             End Get
-            Set(ByVal value As String)
+            Set(ByVal value As Integer)
                 _top250 = value
             End Set
         End Property
@@ -1004,20 +1173,8 @@ Namespace MediaContainers
         <XmlIgnore()>
         Public ReadOnly Property Top250Specified() As Boolean
             Get
-                Return Not String.IsNullOrEmpty(_top250)
+                Return _top250 > 0
             End Get
-        End Property
-
-        <Obsolete("This property is depreciated. Use Movie.Countries [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Country() As String
-            Get
-                Return String.Join(" / ", _countries.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _countries.Clear()
-                AddCountry(value)
-            End Set
         End Property
 
         <XmlElement("country")>
@@ -1075,6 +1232,23 @@ Namespace MediaContainers
             End Get
         End Property
 
+        <XmlElement("userrating")>
+        Public Property UserRating() As Integer
+            Get
+                Return _userrating
+            End Get
+            Set(ByVal value As Integer)
+                _userrating = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property UserRatingSpecified() As Boolean
+            Get
+                Return Not _userrating = 0
+            End Get
+        End Property
+
         <XmlElement("mpaa")>
         Public Property MPAA() As String
             Get
@@ -1090,18 +1264,6 @@ Namespace MediaContainers
             Get
                 Return Not String.IsNullOrEmpty(_mpaa)
             End Get
-        End Property
-
-        <Obsolete("This property is depreciated. Use Movie.Certifications [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Certification() As String
-            Get
-                Return String.Join(" / ", _certifications.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _certifications.Clear()
-                AddCertification(value)
-            End Set
         End Property
 
         <XmlElement("certification")>
@@ -1146,18 +1308,6 @@ Namespace MediaContainers
             End Get
         End Property
 
-        <Obsolete("This property is depreciated. Use Movie.Genres [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Genre() As String
-            Get
-                Return String.Join(" / ", _genres.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _genres.Clear()
-                AddGenre(value)
-            End Set
-        End Property
-
         <XmlElement("genre")>
         Public Property Genres() As List(Of String)
             Get
@@ -1177,18 +1327,6 @@ Namespace MediaContainers
             Get
                 Return _genres.Count > 0
             End Get
-        End Property
-
-        <Obsolete("This property is depreciated. Use Movie.Studios [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Studio() As String
-            Get
-                Return String.Join(" / ", _studios.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _studios.Clear()
-                AddStudio(value)
-            End Set
         End Property
 
         <XmlElement("studio")>
@@ -1212,18 +1350,6 @@ Namespace MediaContainers
             End Get
         End Property
 
-        <Obsolete("This property is depreciated. Use Movie.Directors [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Director() As String
-            Get
-                Return String.Join(" / ", _directors.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _directors.Clear()
-                AddDirector(value)
-            End Set
-        End Property
-
         <XmlElement("director")>
         Public Property Directors() As List(Of String)
             Get
@@ -1243,18 +1369,6 @@ Namespace MediaContainers
             Get
                 Return _directors.Count > 0
             End Get
-        End Property
-
-        <Obsolete("This property is depreciated. Use Movie.Credits [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property OldCredits() As String
-            Get
-                Return String.Join(" / ", _credits.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _credits.Clear()
-                AddCredit(value)
-            End Set
         End Property
 
         <XmlElement("credits")>
@@ -1508,59 +1622,48 @@ Namespace MediaContainers
         End Property
 
         <XmlIgnore()>
-        Public Property Sets() As List(Of [Set])
+        Public Property Sets() As List(Of SetDetails)
             Get
-                Return If(Master.eSettings.MovieYAMJCompatibleSets, _ysets.Sets, _xsets)
+                Return _sets
             End Get
-            Set(ByVal value As List(Of [Set]))
-                If Master.eSettings.MovieYAMJCompatibleSets Then
-                    _ysets.Sets = value
-                Else
-                    _xsets = value
-                End If
-            End Set
-        End Property
-
-        <XmlElement("set")>
-        Public Property XSets() As List(Of [Set])
-            Get
-                Return _xsets
-            End Get
-            Set(ByVal value As List(Of [Set]))
-                _xsets = value
+            Set(value As List(Of SetDetails))
+                AddSet(value)
             End Set
         End Property
 
         <XmlIgnore()>
-        Public ReadOnly Property XSetsSpecified() As Boolean
+        Public ReadOnly Property SetsSpecified() As Boolean
             Get
-                Return _xsets.Count > 0
+                Return Sets.Count > 0
             End Get
+        End Property
+
+        <XmlAnyElement("set")>
+        Public Property Set_Kodi() As Object
+            Get
+                Return CreateSetNode()
+            End Get
+            Set(ByVal value As Object)
+                AddSet(value)
+            End Set
         End Property
 
         <XmlElement("sets")>
-        Public Property YSets() As SetContainer
+        Public Property Sets_YAMJ() As SetContainer
             Get
-                Return _ysets
+                Return CreateSetYAMJ()
             End Get
             Set(ByVal value As SetContainer)
-                _ysets = value
+                AddSet(value)
             End Set
         End Property
 
-        <XmlIgnore()>
-        Public ReadOnly Property YSetsSpecified() As Boolean
-            Get
-                Return _ysets.Sets.Count > 0
-            End Get
-        End Property
-
         <XmlElement("fileinfo")>
-        Public Property FileInfo() As MediaInfo.Fileinfo
+        Public Property FileInfo() As Fileinfo
             Get
                 Return _fileInfo
             End Get
-            Set(ByVal value As MediaInfo.Fileinfo)
+            Set(ByVal value As Fileinfo)
                 _fileInfo = value
             End Set
         End Property
@@ -1623,73 +1726,89 @@ Namespace MediaContainers
             End Get
         End Property
 
-        <Serializable()>
-        Class _MovieID
-            Private _imdbid As String
-            Private _tmdbid As String
+        <XmlIgnore()>
+        Public ReadOnly Property AnyUniqueIDSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_imdb) OrElse Not String.IsNullOrEmpty(_tmdb)
+            End Get
+        End Property
 
-            Sub New()
-                Clear()
-            End Sub
-
-            Public Sub Clear()
-                _imdbid = String.Empty
-                _tmdbid = String.Empty
-            End Sub
-
-            <XmlText()>
-            Public Property ID() As String
-                Get
-                    Return If(Not String.IsNullOrEmpty(_imdbid), If(_imdbid.Substring(0, 2) = "tt", If(_imdbid.Trim = "tt-1", _imdbid.Replace("tt", String.Empty), _imdbid.Trim), If(Not _imdbid.Trim = "tt-1", If(Not String.IsNullOrEmpty(_imdbid), String.Concat("tt", _imdbid), String.Empty), _imdbid)), String.Empty)
-                End Get
-                Set(ByVal value As String)
-                    _imdbid = If(Not String.IsNullOrEmpty(value), If(value.Substring(0, 2) = "tt", value.Trim, String.Concat("tt", value.Trim)), String.Empty)
-                End Set
-            End Property
-
-            <XmlIgnore()>
-            Public ReadOnly Property IDSpecified() As Boolean
-                Get
-                    Return Not String.IsNullOrEmpty(_imdbid) AndAlso Not _imdbid = "tt"
-                End Get
-            End Property
-
-            <XmlAttribute("TMDB")>
-            Public Property IDTMDB() As String
-                Get
-                    Return _tmdbid.Trim
-                End Get
-                Set(ByVal value As String)
-                    _tmdbid = value.Trim
-                End Set
-            End Property
-
-            <XmlIgnore()>
-            Public ReadOnly Property IDTMDBSpecified() As Boolean
-                Get
-                    Return Not String.IsNullOrEmpty(_tmdbid)
-                End Get
-            End Property
-
-        End Class
+        <XmlElement("locked")>
+        Public Property Locked() As Boolean
+            Get
+                Return _locked
+            End Get
+            Set(ByVal value As Boolean)
+                _locked = value
+            End Set
+        End Property
 
 #End Region 'Properties
 
 #Region "Methods"
 
-        Public Sub AddSet(ByVal SetID As Long, ByVal SetName As String, ByVal Order As Integer, ByVal SetTMDBColID As String)
-            Dim tSet = From bSet As [Set] In Sets Where bSet.ID = SetID
-            Dim iSet = From bset As [Set] In Sets Where bset.TMDBColID = SetTMDBColID
+        Public Sub AddSet(ByVal tSetDetails As SetDetails)
+            If tSetDetails IsNot Nothing AndAlso tSetDetails.TitleSpecified Then
+                Dim tSet = From bSet As SetDetails In Sets Where bSet.ID = tSetDetails.ID
+                Dim iSet = From bset As SetDetails In Sets Where bset.TMDB = tSetDetails.TMDB
 
-            If tSet.Count > 0 Then
-                Sets.Remove(tSet(0))
+                If tSet.Count > 0 Then
+                    _sets.Remove(tSet(0))
+                End If
+
+                If iSet.Count > 0 Then
+                    _sets.Remove(iSet(0))
+                End If
+
+                _sets.Add(tSetDetails)
             End If
+        End Sub
+        ''' <summary>
+        ''' converts both versions of moviesets declaration in movie.nfo to a proper Sets object
+        ''' </summary>
+        ''' <remarks>      
+        ''' <set>setname</set>        
+        ''' 
+        ''' <set>
+        '''     <name>setname</name>
+        '''     <overview>plot</overview>
+        ''' </set>       
+        ''' </remarks>
+        ''' <param name="xmlObject"></param>
+        Public Sub AddSet(ByVal xmlObject As Object)
+            Try
+                If xmlObject IsNot Nothing AndAlso TryCast(xmlObject, XmlElement) IsNot Nothing Then
+                    Dim nSetInfo As New SetDetails
+                    Dim xElement As XmlElement = CType(xmlObject, XmlElement)
+                    For Each xChild In xElement.ChildNodes
+                        Dim xNode = CType(xChild, XmlNode)
+                        Select Case xNode.NodeType
+                            Case XmlNodeType.Element
+                                Select Case xNode.Name
+                                    Case "name"
+                                        nSetInfo.Title = xNode.InnerText
+                                    Case "overview"
+                                        nSetInfo.Plot = xNode.InnerText
+                                    Case "tmdb"
+                                        nSetInfo.TMDB = xNode.InnerText
+                                End Select
+                            Case XmlNodeType.Text
+                                nSetInfo.Title = xNode.InnerText
+                        End Select
+                    Next
+                    If nSetInfo.TitleSpecified Then AddSet(nSetInfo)
+                End If
+            Catch ex As Exception
+                logger.Error(ex, New StackFrame().GetMethod().Name)
+            End Try
+        End Sub
 
-            If iSet.Count > 0 Then
-                Sets.Remove(iSet(0))
+        Public Sub AddSet(ByVal tSetContainer As SetContainer)
+            If tSetContainer IsNot Nothing AndAlso tSetContainer.SetsSpecified Then
+                For Each xSetDetail As SetDetails In tSetContainer.Sets.Where(Function(f) f.TitleSpecified)
+                    AddSet(xSetDetail)
+                Next
             End If
-
-            Sets.Add(New [Set] With {.ID = SetID, .Title = SetName, .Order = If(Order > 0, Order.ToString, String.Empty), .TMDBColID = SetTMDBColID})
         End Sub
 
         Public Sub AddTag(ByVal value As String)
@@ -1699,7 +1818,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddCertification(ByVal value As String)
+        Public Sub AddCertificationsFromString(ByVal value As String)
+            _certifications.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains(" / ") Then
@@ -1717,7 +1837,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddGenre(ByVal value As String)
+        Public Sub AddGenresFromString(ByVal value As String)
+            _genres.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains(" / ") Then
@@ -1735,7 +1856,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddStudio(ByVal value As String)
+        Public Sub AddStudiosFromString(ByVal value As String)
+            _studios.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains(" / ") Then
@@ -1753,7 +1875,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddDirector(ByVal value As String)
+        Public Sub AddDirectorsFromString(ByVal value As String)
+            _directors.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains(" / ") Then
@@ -1772,7 +1895,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddCredit(ByVal value As String)
+        Public Sub AddCreditsFromString(ByVal value As String)
+            _credits.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains(" / ") Then
@@ -1791,7 +1915,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddCountry(ByVal value As String)
+        Public Sub AddCountriesFromString(ByVal value As String)
+            _countries.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains(" / ") Then
@@ -1811,7 +1936,6 @@ Namespace MediaContainers
         End Sub
 
         Public Sub Clear()
-            MovieID.Clear()
             _actors.Clear()
             _certifications.Clear()
             _countries.Clear()
@@ -1820,10 +1944,12 @@ Namespace MediaContainers
             _datemodified = String.Empty
             _directors.Clear()
             _fanart = New Fanart
-            _fileInfo = New MediaInfo.Fileinfo
+            _fileInfo = New Fileinfo
             _genres.Clear()
+            _imdb = String.Empty
             _language = String.Empty
             _lev = 0
+            _locked = False
             _mpaa = String.Empty
             _originaltitle = String.Empty
             _outline = String.Empty
@@ -1833,6 +1959,7 @@ Namespace MediaContainers
             _releaseDate = String.Empty
             _runtime = String.Empty
             _scrapersource = String.Empty
+            _sets.Clear()
             _sorttitle = String.Empty
             _studios.Clear()
             _tagline = String.Empty
@@ -1840,15 +1967,27 @@ Namespace MediaContainers
             _thumb.Clear()
             _thumbposter = New Image
             _title = String.Empty
+            _tmdb = String.Empty
             _tmdbcolid = String.Empty
-            _top250 = String.Empty
+            _top250 = 0
             _trailer = String.Empty
+            _userrating = 0
             _videosource = String.Empty
             _votes = String.Empty
-            _xsets.Clear()
             _year = String.Empty
-            _ysets = New SetContainer
         End Sub
+
+        Public Function CloneDeep() As Object Implements ICloneable.Clone
+            Dim Stream As New MemoryStream(50000)
+            Dim Formatter As New Runtime.Serialization.Formatters.Binary.BinaryFormatter()
+            ' Serialisierung über alle Objekte hinweg in einen Stream 
+            Formatter.Serialize(Stream, Me)
+            ' Zurück zum Anfang des Streams und... 
+            Stream.Seek(0, SeekOrigin.Begin)
+            ' ...aus dem Stream in ein Objekt deserialisieren 
+            CloneDeep = Formatter.Deserialize(Stream)
+            Stream.Close()
+        End Function
 
         Public Sub CreateCachePaths_ActorsThumbs()
             Dim sPath As String = Path.Combine(Master.TempPath, "Global")
@@ -1861,6 +2000,82 @@ Namespace MediaContainers
             Next
         End Sub
 
+        Public Function CreateSetNode() As XmlDocument
+            If _sets.Count > 0 AndAlso _sets.Item(0).TitleSpecified Then
+                Dim firstSet As SetDetails = _sets.Item(0)
+
+                If Master.eSettings.MovieScraperCollectionsExtendedInfo Then
+                    'creates a set node like:
+                    '<set> 
+                    '  <name>Die Hard Collection</name>
+                    '  <overview>Hardest cop ever!</overview>
+                    '  <tmdb>1570</tmdb>
+                    '</set>
+
+                    Dim XmlDoc As New XmlDocument
+
+                    'Write down the XML declaration
+                    Dim XmlDeclaration As XmlDeclaration = XmlDoc.CreateXmlDeclaration("1.0", "UTF-8", Nothing)
+
+                    'Create the root element
+                    Dim RootNode As XmlElement = XmlDoc.CreateElement("set")
+                    XmlDoc.InsertBefore(XmlDeclaration, XmlDoc.DocumentElement)
+                    XmlDoc.AppendChild(RootNode)
+
+                    'Create a new <name> element and add it to the root node
+                    Dim NodeName As XmlElement = XmlDoc.CreateElement("name")
+                    RootNode.AppendChild(NodeName)
+                    Dim NodeName_Text As XmlText = XmlDoc.CreateTextNode(firstSet.Title)
+                    NodeName.AppendChild(NodeName_Text)
+
+                    If firstSet.PlotSpecified Then
+                        'Create a new <overview> element and add it to the root node
+                        Dim NodeOverview As XmlElement = XmlDoc.CreateElement("overview")
+                        RootNode.AppendChild(NodeOverview)
+                        Dim NodeOverview_Text As XmlText = XmlDoc.CreateTextNode(firstSet.Plot)
+                        NodeOverview.AppendChild(NodeOverview_Text)
+                    End If
+
+                    If firstSet.TMDBSpecified Then
+                        'Create a new <tmdb> element and add it to the root node
+                        Dim NodeTMDB As XmlElement = XmlDoc.CreateElement("tmdb")
+                        RootNode.AppendChild(NodeTMDB)
+                        Dim NodeTMDB_Text As XmlText = XmlDoc.CreateTextNode(firstSet.TMDB)
+                        NodeTMDB.AppendChild(NodeTMDB_Text)
+                    End If
+
+                    Return XmlDoc
+                Else
+                    'creates a set node like:
+                    '<set>Die Hard Collection</set>
+
+                    Dim XmlDoc As New XmlDocument
+
+                    'Write down the XML declaration
+                    Dim XmlDeclaration As XmlDeclaration = XmlDoc.CreateXmlDeclaration("1.0", "UTF-8", Nothing)
+
+                    'Create the root element
+                    Dim RootNode As XmlElement = XmlDoc.CreateElement("set")
+                    XmlDoc.InsertBefore(XmlDeclaration, XmlDoc.DocumentElement)
+                    XmlDoc.AppendChild(RootNode)
+                    Dim RootNode_Text As XmlText = XmlDoc.CreateTextNode(firstSet.Title)
+                    RootNode.AppendChild(RootNode_Text)
+
+                    Return XmlDoc
+                End If
+            Else
+                Return Nothing
+            End If
+        End Function
+
+        Public Function CreateSetYAMJ() As SetContainer
+            If Master.eSettings.MovieScraperCollectionsYAMJCompatibleSets AndAlso Sets.Count > 0 Then
+                Return New SetContainer With {.Sets = Sets}
+            Else
+                Return Nothing
+            End If
+        End Function
+
         Public Function CompareTo(ByVal other As Movie) As Integer Implements IComparable(Of Movie).CompareTo
             Dim retVal As Integer = (Lev).CompareTo(other.Lev)
             If retVal = 0 Then
@@ -1870,14 +2085,14 @@ Namespace MediaContainers
         End Function
 
         Public Sub RemoveSet(ByVal SetName As String)
-            Dim tSet = From bSet As [Set] In Sets Where bSet.Title = SetName
+            Dim tSet = From bSet As SetDetails In Sets Where bSet.Title = SetName
             If tSet.Count > 0 Then
                 Sets.Remove(tSet(0))
             End If
         End Sub
 
         Public Sub RemoveSet(ByVal SetID As Long)
-            Dim tSet = From bSet As [Set] In Sets Where bSet.ID = SetID
+            Dim tSet = From bSet As SetDetails In Sets Where bSet.ID = SetID
             If tSet.Count > 0 Then
                 Sets.Remove(tSet(0))
             End If
@@ -1887,10 +2102,72 @@ Namespace MediaContainers
             If ActorsSpecified AndAlso Master.eSettings.MovieActorThumbsAnyEnabled Then
                 Images.SaveMovieActorThumbs(DBElement)
             Else
-                Images.Delete_Movie(DBElement, Enums.ModifierType.MainActorThumbs)
+                Images.Delete_Movie(DBElement, Enums.ModifierType.MainActorThumbs, False)
                 DBElement.ActorThumbs.Clear()
             End If
         End Sub
+
+#End Region 'Methods
+
+    End Class
+
+    <Serializable()>
+    Public Class MovieInSet
+        Implements IComparable(Of MovieInSet)
+
+#Region "Fields"
+
+        Private _dbmovie As Database.DBElement
+        Private _order As Integer
+
+#End Region 'Fields
+
+#Region "Constructors"
+
+        Public Sub New()
+            Clear()
+        End Sub
+
+#End Region 'Constructors
+
+#Region "Properties"
+
+        Public Property DBMovie() As Database.DBElement
+            Get
+                Return _dbmovie
+            End Get
+            Set(ByVal value As Database.DBElement)
+                _dbmovie = value
+            End Set
+        End Property
+
+        Public ReadOnly Property ListTitle() As String
+            Get
+                Return _dbmovie.ListTitle
+            End Get
+        End Property
+
+        Public Property Order() As Integer
+            Get
+                Return _order
+            End Get
+            Set(ByVal value As Integer)
+                _order = value
+            End Set
+        End Property
+
+#End Region 'Properties
+
+#Region "Methods"
+
+        Public Sub Clear()
+            _dbmovie = New Database.DBElement(Enums.ContentType.Movie)
+            _order = 0
+        End Sub
+
+        Public Function CompareTo(ByVal other As MovieInSet) As Integer Implements IComparable(Of MovieInSet).CompareTo
+            Return (Order).CompareTo(other.Order)
+        End Function
 
 #End Region 'Methods
 
@@ -1902,6 +2179,9 @@ Namespace MediaContainers
 
 #Region "Fields"
 
+        Private _language As String
+        Private _locked As Boolean
+        Private _oldtitle As String
         Private _plot As String
         Private _title As String
         Private _tmdb As String
@@ -1910,11 +2190,11 @@ Namespace MediaContainers
 
 #Region "Constructors"
 
-        Public Sub New(ByVal sID As String, ByVal sTitle As String, ByVal sPlot As String)
+        Public Sub New(ByVal strID As String, ByVal strTitle As String, ByVal strPlot As String)
             Clear()
-            _plot = sPlot
-            _title = sTitle
-            _tmdb = sID
+            _plot = strPlot
+            _title = strTitle
+            _tmdb = strID
         End Sub
 
         Public Sub New()
@@ -1976,11 +2256,67 @@ Namespace MediaContainers
             End Get
         End Property
 
+        <XmlElement("language")>
+        Public Property Language() As String
+            Get
+                Return _language
+            End Get
+            Set(ByVal value As String)
+                _language = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property LanguageSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_language)
+            End Get
+        End Property
+
+        <XmlElement("locked")>
+        Public Property Locked() As Boolean
+            Get
+                Return _locked
+            End Get
+            Set(ByVal value As Boolean)
+                _locked = value
+            End Set
+        End Property
+        ''' <summary>
+        ''' Old Title before edit or scraping. Needed to remove no longer valid images and NFO.
+        ''' </summary>
+        ''' <returns></returns>
+        <XmlIgnore()>
+        Public Property OldTitle() As String
+            Get
+                Return _oldtitle
+            End Get
+            Set(ByVal value As String)
+                _oldtitle = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property AnyUniqueIDSpecified() As Boolean
+            Get
+                Return TMDBSpecified
+            End Get
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property TitleHasChanged() As Boolean
+            Get
+                Return Not _oldtitle = _title
+            End Get
+        End Property
+
 #End Region 'Properties
 
 #Region "Methods"
 
         Public Sub Clear()
+            _locked = False
+            _oldtitle = String.Empty
             _plot = String.Empty
             _title = String.Empty
             _tmdb = String.Empty
@@ -2198,6 +2534,7 @@ Namespace MediaContainers
 #Region "Fields"
 
         Private _aired As String
+        Private _locked As Boolean
         Private _plot As String
         Private _scrapersource As String
         Private _season As Integer
@@ -2257,7 +2594,7 @@ Namespace MediaContainers
         <XmlIgnore()>
         Public ReadOnly Property SeasonSpecified() As Boolean
             Get
-                Return Not String.IsNullOrEmpty(_season.ToString)
+                Return Not String.IsNullOrEmpty(_season.ToString) AndAlso Not _season = -1
             End Get
         End Property
 
@@ -2329,12 +2666,30 @@ Namespace MediaContainers
             End Get
         End Property
 
+        <XmlElement("locked")>
+        Public Property Locked() As Boolean
+            Get
+                Return _locked
+            End Get
+            Set(ByVal value As Boolean)
+                _locked = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property AnyUniqueIDSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_tmdb) OrElse Not String.IsNullOrEmpty(_tvdb)
+            End Get
+        End Property
+
 #End Region 'Properties
 
 #Region "Methods"
 
         Public Sub Clear()
             _aired = String.Empty
+            _locked = False
             _plot = String.Empty
             _scrapersource = String.Empty
             _season = -1
@@ -2397,54 +2752,6 @@ Namespace MediaContainers
     End Class
 
     <Serializable()>
-    Public Class SetContainer
-
-#Region "Fields"
-
-        Private _set As New List(Of [Set])
-
-#End Region 'Fields
-
-#Region "Constructors"
-
-        Public Sub New()
-            Clear()
-        End Sub
-
-#End Region 'Constructors
-
-#Region "Properties"
-
-        <XmlElement("set")>
-        Public Property Sets() As List(Of [Set])
-            Get
-                Return _set
-            End Get
-            Set(ByVal value As List(Of [Set]))
-                _set = value
-            End Set
-        End Property
-
-        <XmlIgnore()>
-        Public ReadOnly Property SetsSpecified() As Boolean
-            Get
-                Return _set.Count > 0
-            End Get
-        End Property
-
-#End Region 'Properties
-
-#Region "Methods"
-
-        Public Sub Clear()
-            _set = New List(Of [Set])
-        End Sub
-
-#End Region 'Methods
-
-    End Class
-
-    <Serializable()>
     Public Class Thumb
 
 #Region "Fields"
@@ -2483,6 +2790,7 @@ Namespace MediaContainers
     <Serializable()>
     <XmlRoot("tvshow")>
     Public Class TVShow
+        Implements ICloneable
 
 #Region "Fields"
 
@@ -2498,6 +2806,7 @@ Namespace MediaContainers
         Private _knownepisodes As New List(Of EpisodeDetails)
         Private _knownseasons As New List(Of SeasonDetails)
         Private _language As String
+        Private _locked As Boolean
         Private _mpaa As String
         Private _originaltitle As String
         Private _plot As String
@@ -2508,12 +2817,12 @@ Namespace MediaContainers
         Private _seasons As New Seasons
         Private _sorttitle As String
         Private _status As String
-        Private _studio As String
         Private _studios As New List(Of String)
         Private _tags As New List(Of String)
         Private _title As String
         Private _tmdb As String
         Private _tvdb As String
+        Private _userrating As Integer
         Private _votes As String
 
 #End Region 'Fields
@@ -2582,7 +2891,7 @@ Namespace MediaContainers
         <XmlIgnore()>
         Public ReadOnly Property SortTitleSpecified() As Boolean
             Get
-                Return Not String.IsNullOrEmpty(_sorttitle) AndAlso Not _sorttitle = StringUtils.SortTokens_TV(_title)
+                Return Not String.IsNullOrEmpty(_sorttitle)
             End Get
         End Property
 
@@ -2722,16 +3031,21 @@ Namespace MediaContainers
             End Get
         End Property
 
-        <Obsolete("This property is depreciated. Use TVShow.Genres [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Genre() As String
+        <XmlElement("userrating")>
+        Public Property UserRating() As Integer
             Get
-                Return String.Join(" / ", _genres.ToArray)
+                Return _userrating
             End Get
-            Set(ByVal value As String)
-                _genres.Clear()
-                AddGenre(value)
+            Set(ByVal value As Integer)
+                _userrating = value
             End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property UserRatingSpecified() As Boolean
+            Get
+                Return Not _userrating = 0
+            End Get
         End Property
 
         <XmlElement("genre")>
@@ -2793,18 +3107,6 @@ Namespace MediaContainers
             End Get
         End Property
 
-        <Obsolete("This property is depreciated. Use Movie.Certifications [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Certification() As String
-            Get
-                Return String.Join(" / ", _certifications.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _certifications.Clear()
-                AddCertification(value)
-            End Set
-        End Property
-
         <XmlElement("certification")>
         Public Property Certifications() As List(Of String)
             Get
@@ -2824,18 +3126,6 @@ Namespace MediaContainers
             Get
                 Return _certifications.Count > 0
             End Get
-        End Property
-
-        <Obsolete("This property is depreciated. Use Movie.Countries [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Country() As String
-            Get
-                Return String.Join(" / ", _countries.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _countries.Clear()
-                AddCountry(value)
-            End Set
         End Property
 
         <XmlElement("country")>
@@ -2874,18 +3164,6 @@ Namespace MediaContainers
             Get
                 Return Not String.IsNullOrEmpty(_premiered)
             End Get
-        End Property
-
-        <Obsolete("This property is depreciated. Use TVShow.Studios [List(Of String)] instead.")>
-        <XmlIgnore()>
-        Public Property Studio() As String
-            Get
-                Return String.Join(" / ", _studios.ToArray)
-            End Get
-            Set(ByVal value As String)
-                _studios.Clear()
-                AddStudio(value)
-            End Set
         End Property
 
         <XmlElement("studio")>
@@ -3035,6 +3313,16 @@ Namespace MediaContainers
             End Set
         End Property
 
+        <XmlElement("locked")>
+        Public Property Locked() As Boolean
+            Get
+                Return _locked
+            End Get
+            Set(ByVal value As Boolean)
+                _locked = value
+            End Set
+        End Property
+
         <XmlIgnore()>
         Public ReadOnly Property SeasonsSpecified() As Boolean
             Get
@@ -3076,11 +3364,19 @@ Namespace MediaContainers
             End Get
         End Property
 
+        <XmlIgnore()>
+        Public ReadOnly Property AnyUniqueIDSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_imdb) OrElse Not String.IsNullOrEmpty(_tmdb) OrElse Not String.IsNullOrEmpty(_tvdb)
+            End Get
+        End Property
+
 #End Region 'Properties
 
 #Region "Methods"
 
-        Public Sub AddCertification(ByVal value As String)
+        Public Sub AddCertificationsFromString(ByVal value As String)
+            _certifications.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains(" / ") Then
@@ -3098,7 +3394,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddCountry(ByVal value As String)
+        Public Sub AddCountriesFromString(ByVal value As String)
+            _countries.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains(" / ") Then
@@ -3117,7 +3414,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddGenre(ByVal value As String)
+        Public Sub AddGenresFromString(ByVal value As String)
+            _genres.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains("/") Then
@@ -3135,7 +3433,8 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub AddStudio(ByVal value As String)
+        Public Sub AddStudiosFromString(ByVal value As String)
+            _studios.Clear()
             If String.IsNullOrEmpty(value) Then Return
 
             If value.Contains("/") Then
@@ -3167,6 +3466,7 @@ Namespace MediaContainers
             _knownepisodes.Clear()
             _knownseasons.Clear()
             _language = String.Empty
+            _locked = False
             _mpaa = String.Empty
             _originaltitle = String.Empty
             _plot = String.Empty
@@ -3177,13 +3477,25 @@ Namespace MediaContainers
             _seasons.Clear()
             _sorttitle = String.Empty
             _status = String.Empty
-            _studio = String.Empty
             _studios.Clear()
             _tags.Clear()
             _title = String.Empty
             _tmdb = String.Empty
+            _userrating = 0
             _votes = String.Empty
         End Sub
+
+        Public Function CloneDeep() As Object Implements ICloneable.Clone
+            Dim Stream As New MemoryStream(50000)
+            Dim Formatter As New Runtime.Serialization.Formatters.Binary.BinaryFormatter()
+            ' Serialisierung über alle Objekte hinweg in einen Stream 
+            Formatter.Serialize(Stream, Me)
+            ' Zurück zum Anfang des Streams und... 
+            Stream.Seek(0, SeekOrigin.Begin)
+            ' ...aus dem Stream in ein Objekt deserialisieren 
+            CloneDeep = Formatter.Deserialize(Stream)
+            Stream.Close()
+        End Function
 
         Public Sub CreateCachePaths_ActorsThumbs()
             Dim sPath As String = Path.Combine(Master.TempPath, "Global")
@@ -3197,11 +3509,11 @@ Namespace MediaContainers
         End Sub
 
         Public Sub BlankId()
-            _tvdb = Nothing
+            _tvdb = String.Empty
         End Sub
 
         Public Sub BlankBoxeeId()
-            _boxeeTvDb = Nothing
+            _boxeeTvDb = String.Empty
         End Sub
 
         Public Sub SaveAllActorThumbs(ByRef DBElement As Database.DBElement)
@@ -3559,6 +3871,9 @@ Namespace MediaContainers
 
         Private Sub DetectImageSize(ByRef strHeigth As String)
             Select Case strHeigth
+                Case "3000"
+                    _moviepostersize = Enums.MoviePosterSize.HD3000
+                    _tvpostersize = Enums.TVPosterSize.HD3000
                 Case "2160"
                     _moviefanartsize = Enums.MovieFanartSize.UHD2160
                     _tvepisodepostersize = Enums.TVEpisodePosterSize.UHD2160
@@ -3569,16 +3884,19 @@ Namespace MediaContainers
                     _moviepostersize = Enums.MoviePosterSize.HD1500
                     _tvpostersize = Enums.TVPosterSize.HD1500
                     _tvseasonpostersize = Enums.TVSeasonPosterSize.HD1500
+                Case "1440"
+                    _moviefanartsize = Enums.MovieFanartSize.QHD1440
+                    _tvfanartsize = Enums.TVFanartSize.QHD1440
                 Case "1426"
                     _moviepostersize = Enums.MoviePosterSize.HD1426
                     _tvpostersize = Enums.TVPosterSize.HD1426
                     _tvseasonpostersize = Enums.TVSeasonPosterSize.HD1426
-                Case "1000"
-                    _tvpostersize = Enums.TVPosterSize.HD1000
                 Case "1080"
                     _moviefanartsize = Enums.MovieFanartSize.HD1080
                     _tvepisodepostersize = Enums.TVEpisodePosterSize.HD1080
                     _tvfanartsize = Enums.TVFanartSize.HD1080
+                Case "1000"
+                    _tvpostersize = Enums.TVPosterSize.HD1000
                 Case "720"
                     _moviefanartsize = Enums.MovieFanartSize.HD720
                     _tvepisodepostersize = Enums.TVEpisodePosterSize.HD720
@@ -3604,7 +3922,7 @@ Namespace MediaContainers
             End Select
         End Sub
 
-        Public Function LoadAndCache(ByVal tContentType As Enums.ContentType, Optional ByVal needFullsize As Boolean = False, Optional ByVal LoadBitmap As Boolean = False) As Boolean
+        Public Function LoadAndCache(ByVal tContentType As Enums.ContentType, ByVal needFullsize As Boolean, Optional ByVal LoadBitmap As Boolean = False) As Boolean
             Dim doCache As Boolean = False
 
             Select Case tContentType
@@ -3619,27 +3937,27 @@ Namespace MediaContainers
             If Not ((ImageOriginal.HasMemoryStream OrElse (ImageThumb.HasMemoryStream AndAlso Not needFullsize)) AndAlso Not LoadBitmap) Then
                 If (ImageOriginal.Image Is Nothing AndAlso needFullsize) OrElse (ImageThumb.Image Is Nothing AndAlso Not needFullsize) Then
                     If File.Exists(LocalFilePath) AndAlso Not ImageOriginal.HasMemoryStream Then
-                        ImageOriginal.FromFile(LocalFilePath, LoadBitmap)
+                        ImageOriginal.LoadFromFile(LocalFilePath, LoadBitmap)
                     ElseIf ImageThumb.HasMemoryStream AndAlso Not needFullsize AndAlso LoadBitmap Then
-                        ImageThumb.FromMemoryStream()
+                        ImageThumb.LoadFromMemoryStream()
                     ElseIf ImageOriginal.HasMemoryStream AndAlso LoadBitmap Then
-                        ImageOriginal.FromMemoryStream()
+                        ImageOriginal.LoadFromMemoryStream()
                     ElseIf File.Exists(CacheThumbPath) AndAlso Not needFullsize Then
-                        ImageThumb.FromFile(CacheThumbPath, LoadBitmap)
+                        ImageThumb.LoadFromFile(CacheThumbPath, LoadBitmap)
                     ElseIf File.Exists(CacheOriginalPath) Then
-                        ImageOriginal.FromFile(CacheOriginalPath, LoadBitmap)
+                        ImageOriginal.LoadFromFile(CacheOriginalPath, LoadBitmap)
                     Else
                         If Not String.IsNullOrEmpty(URLThumb) AndAlso Not needFullsize Then
-                            ImageThumb.FromWeb(URLThumb, LoadBitmap)
+                            ImageThumb.LoadFromWeb(URLThumb, LoadBitmap)
                             If doCache AndAlso Not String.IsNullOrEmpty(CacheThumbPath) AndAlso ImageThumb.HasMemoryStream Then
                                 Directory.CreateDirectory(Directory.GetParent(CacheThumbPath).FullName)
-                                ImageThumb.Save(CacheThumbPath)
+                                ImageThumb.SaveToFile(CacheThumbPath)
                             End If
                         ElseIf Not String.IsNullOrEmpty(URLOriginal) Then
-                            ImageOriginal.FromWeb(URLOriginal, LoadBitmap)
+                            ImageOriginal.LoadFromWeb(URLOriginal, LoadBitmap)
                             If doCache AndAlso Not String.IsNullOrEmpty(CacheOriginalPath) AndAlso ImageOriginal.HasMemoryStream Then
                                 Directory.CreateDirectory(Directory.GetParent(CacheOriginalPath).FullName)
-                                ImageOriginal.Save(CacheOriginalPath)
+                                ImageOriginal.SaveToFile(CacheOriginalPath)
                             End If
                         End If
                     End If
@@ -3802,7 +4120,7 @@ Namespace MediaContainers
             _poster = New Image
         End Sub
 
-        Public Sub LoadAllImages(ByVal Type As Enums.ContentType, ByVal LoadBitmap As Boolean, ByVal exclExtraImages As Boolean)
+        Public Sub LoadAllImages(ByVal Type As Enums.ContentType, ByVal LoadBitmap As Boolean, ByVal withExtraImages As Boolean)
             Banner.LoadAndCache(Type, True, LoadBitmap)
             CharacterArt.LoadAndCache(Type, True, LoadBitmap)
             ClearArt.LoadAndCache(Type, True, LoadBitmap)
@@ -3812,7 +4130,7 @@ Namespace MediaContainers
             Landscape.LoadAndCache(Type, True, LoadBitmap)
             Poster.LoadAndCache(Type, True, LoadBitmap)
 
-            If Not exclExtraImages Then
+            If withExtraImages Then
                 For Each tImg As Image In Extrafanarts
                     tImg.LoadAndCache(Type, True, LoadBitmap)
                 Next
@@ -3822,7 +4140,9 @@ Namespace MediaContainers
             End If
         End Sub
 
-        Public Sub SaveAllImages(ByRef DBElement As Database.DBElement)
+        Public Sub SaveAllImages(ByRef DBElement As Database.DBElement, ByVal ForceFileCleanup As Boolean)
+            If Not DBElement.FilenameSpecified AndAlso (DBElement.ContentType = Enums.ContentType.Movie OrElse DBElement.ContentType = Enums.ContentType.TVEpisode) Then Return
+
             Dim tContentType As Enums.ContentType = DBElement.ContentType
 
             Select Case tContentType
@@ -3830,33 +4150,37 @@ Namespace MediaContainers
 
                     'Movie Banner
                     If Banner.LoadAndCache(tContentType, True) Then
-                        Banner.LocalFilePath = Banner.ImageOriginal.SaveAsMovieBanner(DBElement)
+                        If ForceFileCleanup Then Images.Delete_Movie(DBElement, Enums.ModifierType.MainBanner, ForceFileCleanup)
+                        Banner.LocalFilePath = Banner.ImageOriginal.Save_Movie(DBElement, Enums.ModifierType.MainBanner)
                     Else
-                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainBanner)
+                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainBanner, ForceFileCleanup)
                         Banner = New Image
                     End If
 
                     'Movie ClearArt
                     If ClearArt.LoadAndCache(tContentType, True) Then
-                        ClearArt.LocalFilePath = ClearArt.ImageOriginal.SaveAsMovieClearArt(DBElement)
+                        If ForceFileCleanup Then Images.Delete_Movie(DBElement, Enums.ModifierType.MainClearArt, ForceFileCleanup)
+                        ClearArt.LocalFilePath = ClearArt.ImageOriginal.Save_Movie(DBElement, Enums.ModifierType.MainClearArt)
                     Else
-                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainClearArt)
+                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainClearArt, ForceFileCleanup)
                         ClearArt = New Image
                     End If
 
                     'Movie ClearLogo
                     If ClearLogo.LoadAndCache(tContentType, True) Then
-                        ClearLogo.LocalFilePath = ClearLogo.ImageOriginal.SaveAsMovieClearLogo(DBElement)
+                        If ForceFileCleanup Then Images.Delete_Movie(DBElement, Enums.ModifierType.MainClearLogo, ForceFileCleanup)
+                        ClearLogo.LocalFilePath = ClearLogo.ImageOriginal.Save_Movie(DBElement, Enums.ModifierType.MainClearLogo)
                     Else
-                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainClearLogo)
+                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainClearLogo, ForceFileCleanup)
                         ClearLogo = New Image
                     End If
 
                     'Movie DiscArt
                     If DiscArt.LoadAndCache(tContentType, True) Then
-                        DiscArt.LocalFilePath = DiscArt.ImageOriginal.SaveAsMovieDiscArt(DBElement)
+                        If ForceFileCleanup Then Images.Delete_Movie(DBElement, Enums.ModifierType.MainDiscArt, ForceFileCleanup)
+                        DiscArt.LocalFilePath = DiscArt.ImageOriginal.Save_Movie(DBElement, Enums.ModifierType.MainDiscArt)
                     Else
-                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainDiscArt)
+                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainDiscArt, ForceFileCleanup)
                         DiscArt = New Image
                     End If
 
@@ -3864,7 +4188,7 @@ Namespace MediaContainers
                     If Extrafanarts.Count > 0 Then
                         DBElement.ExtrafanartsPath = Images.SaveMovieExtrafanarts(DBElement)
                     Else
-                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainExtrafanarts)
+                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainExtrafanarts, ForceFileCleanup)
                         Extrafanarts = New List(Of Image)
                         DBElement.ExtrafanartsPath = String.Empty
                     End If
@@ -3873,32 +4197,35 @@ Namespace MediaContainers
                     If Extrathumbs.Count > 0 Then
                         DBElement.ExtrathumbsPath = Images.SaveMovieExtrathumbs(DBElement)
                     Else
-                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainExtrathumbs)
+                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainExtrathumbs, ForceFileCleanup)
                         Extrathumbs = New List(Of Image)
                         DBElement.ExtrathumbsPath = String.Empty
                     End If
 
                     'Movie Fanart
                     If Fanart.LoadAndCache(tContentType, True) Then
-                        Fanart.LocalFilePath = Fanart.ImageOriginal.SaveAsMovieFanart(DBElement)
+                        If ForceFileCleanup Then Images.Delete_Movie(DBElement, Enums.ModifierType.MainFanart, ForceFileCleanup)
+                        Fanart.LocalFilePath = Fanart.ImageOriginal.Save_Movie(DBElement, Enums.ModifierType.MainFanart)
                     Else
-                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainFanart)
+                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainFanart, ForceFileCleanup)
                         Fanart = New Image
                     End If
 
                     'Movie Landscape
                     If Landscape.LoadAndCache(tContentType, True) Then
-                        Landscape.LocalFilePath = Landscape.ImageOriginal.SaveAsMovieLandscape(DBElement)
+                        If ForceFileCleanup Then Images.Delete_Movie(DBElement, Enums.ModifierType.MainLandscape, ForceFileCleanup)
+                        Landscape.LocalFilePath = Landscape.ImageOriginal.Save_Movie(DBElement, Enums.ModifierType.MainLandscape)
                     Else
-                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainLandscape)
+                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainLandscape, ForceFileCleanup)
                         Landscape = New Image
                     End If
 
                     'Movie Poster
                     If Poster.LoadAndCache(tContentType, True) Then
-                        Poster.LocalFilePath = Poster.ImageOriginal.SaveAsMoviePoster(DBElement)
+                        If ForceFileCleanup Then Images.Delete_Movie(DBElement, Enums.ModifierType.MainPoster, ForceFileCleanup)
+                        Poster.LocalFilePath = Poster.ImageOriginal.Save_Movie(DBElement, Enums.ModifierType.MainPoster)
                     Else
-                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainPoster)
+                        Images.Delete_Movie(DBElement, Enums.ModifierType.MainPoster, ForceFileCleanup)
                         Poster = New Image
                     End If
 
@@ -3906,57 +4233,64 @@ Namespace MediaContainers
 
                     'MovieSet Banner
                     If Banner.LoadAndCache(tContentType, True) Then
-                        Banner.LocalFilePath = Banner.ImageOriginal.SaveAsMovieSetBanner(DBElement)
+                        If DBElement.MovieSet.TitleHasChanged Then Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainBanner, True)
+                        Banner.LocalFilePath = Banner.ImageOriginal.Save_MovieSet(DBElement, Enums.ModifierType.MainBanner)
                     Else
-                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainBanner)
+                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainBanner, DBElement.MovieSet.TitleHasChanged)
                         Banner = New Image
                     End If
 
                     'MovieSet ClearArt
                     If ClearArt.LoadAndCache(tContentType, True) Then
-                        ClearArt.LocalFilePath = ClearArt.ImageOriginal.SaveAsMovieSetClearArt(DBElement)
+                        If DBElement.MovieSet.TitleHasChanged Then Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainClearArt, True)
+                        ClearArt.LocalFilePath = ClearArt.ImageOriginal.Save_MovieSet(DBElement, Enums.ModifierType.MainClearArt)
                     Else
-                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainClearArt)
+                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainClearArt, DBElement.MovieSet.TitleHasChanged)
                         ClearArt = New Image
                     End If
 
                     'MovieSet ClearLogo
                     If ClearLogo.LoadAndCache(tContentType, True) Then
-                        ClearLogo.LocalFilePath = ClearLogo.ImageOriginal.SaveAsMovieSetClearLogo(DBElement)
+                        If DBElement.MovieSet.TitleHasChanged Then Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainClearLogo, True)
+                        ClearLogo.LocalFilePath = ClearLogo.ImageOriginal.Save_MovieSet(DBElement, Enums.ModifierType.MainClearLogo)
                     Else
-                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainClearLogo)
+                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainClearLogo, DBElement.MovieSet.TitleHasChanged)
                         ClearLogo = New Image
                     End If
 
                     'MovieSet DiscArt
                     If DiscArt.LoadAndCache(tContentType, True) Then
-                        DiscArt.LocalFilePath = DiscArt.ImageOriginal.SaveAsMovieSetDiscArt(DBElement)
+                        If DBElement.MovieSet.TitleHasChanged Then Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainDiscArt, True)
+                        DiscArt.LocalFilePath = DiscArt.ImageOriginal.Save_MovieSet(DBElement, Enums.ModifierType.MainDiscArt)
                     Else
-                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainDiscArt)
+                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainDiscArt, DBElement.MovieSet.TitleHasChanged)
                         DiscArt = New Image
                     End If
 
                     'MovieSet Fanart
                     If Fanart.LoadAndCache(tContentType, True) Then
-                        Fanart.LocalFilePath = Fanart.ImageOriginal.SaveAsMovieSetFanart(DBElement)
+                        If DBElement.MovieSet.TitleHasChanged Then Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainFanart, True)
+                        Fanart.LocalFilePath = Fanart.ImageOriginal.Save_MovieSet(DBElement, Enums.ModifierType.MainFanart)
                     Else
-                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainFanart)
+                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainFanart, DBElement.MovieSet.TitleHasChanged)
                         Fanart = New Image
                     End If
 
                     'MovieSet Landscape
                     If Landscape.LoadAndCache(tContentType, True) Then
-                        Landscape.LocalFilePath = Landscape.ImageOriginal.SaveAsMovieSetLandscape(DBElement)
+                        If DBElement.MovieSet.TitleHasChanged Then Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainLandscape, True)
+                        Landscape.LocalFilePath = Landscape.ImageOriginal.Save_MovieSet(DBElement, Enums.ModifierType.MainLandscape)
                     Else
-                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainLandscape)
+                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainLandscape, DBElement.MovieSet.TitleHasChanged)
                         Landscape = New Image
                     End If
 
                     'MovieSet Poster
                     If Poster.LoadAndCache(tContentType, True) Then
-                        Poster.LocalFilePath = Poster.ImageOriginal.SaveAsMovieSetPoster(DBElement)
+                        If DBElement.MovieSet.TitleHasChanged Then Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainPoster, True)
+                        Poster.LocalFilePath = Poster.ImageOriginal.Save_MovieSet(DBElement, Enums.ModifierType.MainPoster)
                     Else
-                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainPoster)
+                        Images.Delete_MovieSet(DBElement, Enums.ModifierType.MainPoster, DBElement.MovieSet.TitleHasChanged)
                         Poster = New Image
                     End If
 
@@ -3964,7 +4298,7 @@ Namespace MediaContainers
 
                     'Episode Fanart
                     If Fanart.LoadAndCache(tContentType, True) Then
-                        Fanart.LocalFilePath = Fanart.ImageOriginal.SaveAsTVEpisodeFanart(DBElement)
+                        Fanart.LocalFilePath = Fanart.ImageOriginal.Save_TVEpisode(DBElement, Enums.ModifierType.EpisodeFanart)
                     Else
                         Images.Delete_TVEpisode(DBElement, Enums.ModifierType.EpisodeFanart)
                         Fanart = New Image
@@ -3972,7 +4306,7 @@ Namespace MediaContainers
 
                     'Episode Poster
                     If Poster.LoadAndCache(tContentType, True) Then
-                        Poster.LocalFilePath = Poster.ImageOriginal.SaveAsTVEpisodePoster(DBElement)
+                        Poster.LocalFilePath = Poster.ImageOriginal.Save_TVEpisode(DBElement, Enums.ModifierType.EpisodePoster)
                     Else
                         Images.Delete_TVEpisode(DBElement, Enums.ModifierType.EpisodePoster)
                         Poster = New Image
@@ -3983,9 +4317,9 @@ Namespace MediaContainers
                     'Season Banner
                     If Banner.LoadAndCache(tContentType, True) Then
                         If DBElement.TVSeason.Season = 999 Then
-                            Banner.LocalFilePath = Banner.ImageOriginal.SaveAsTVAllSeasonsBanner(DBElement)
+                            Banner.LocalFilePath = Banner.ImageOriginal.Save_TVAllSeasons(DBElement, Enums.ModifierType.AllSeasonsBanner)
                         Else
-                            Banner.LocalFilePath = Banner.ImageOriginal.SaveAsTVSeasonBanner(DBElement)
+                            Banner.LocalFilePath = Banner.ImageOriginal.Save_TVSeason(DBElement, Enums.ModifierType.SeasonBanner)
                         End If
                     Else
                         If DBElement.TVSeason.Season = 999 Then
@@ -4000,9 +4334,9 @@ Namespace MediaContainers
                     'Season Fanart
                     If Fanart.LoadAndCache(tContentType, True) Then
                         If DBElement.TVSeason.Season = 999 Then
-                            Fanart.LocalFilePath = Fanart.ImageOriginal.SaveAsTVAllSeasonsFanart(DBElement)
+                            Fanart.LocalFilePath = Fanart.ImageOriginal.Save_TVAllSeasons(DBElement, Enums.ModifierType.AllSeasonsFanart)
                         Else
-                            Fanart.LocalFilePath = Fanart.ImageOriginal.SaveAsTVSeasonFanart(DBElement)
+                            Fanart.LocalFilePath = Fanart.ImageOriginal.Save_TVSeason(DBElement, Enums.ModifierType.SeasonFanart)
                         End If
                     Else
                         If DBElement.TVSeason.Season = 999 Then
@@ -4017,9 +4351,9 @@ Namespace MediaContainers
                     'Season Landscape
                     If Landscape.LoadAndCache(tContentType, True) Then
                         If DBElement.TVSeason.Season = 999 Then
-                            Landscape.LocalFilePath = Landscape.ImageOriginal.SaveAsTVAllSeasonsLandscape(DBElement)
+                            Landscape.LocalFilePath = Landscape.ImageOriginal.Save_TVAllSeasons(DBElement, Enums.ModifierType.AllSeasonsLandscape)
                         Else
-                            Landscape.LocalFilePath = Landscape.ImageOriginal.SaveAsTVSeasonLandscape(DBElement)
+                            Landscape.LocalFilePath = Landscape.ImageOriginal.Save_TVSeason(DBElement, Enums.ModifierType.SeasonLandscape)
                         End If
                     Else
                         If DBElement.TVSeason.Season = 999 Then
@@ -4034,9 +4368,9 @@ Namespace MediaContainers
                     'Season Poster
                     If Poster.LoadAndCache(tContentType, True) Then
                         If DBElement.TVSeason.Season = 999 Then
-                            Poster.LocalFilePath = Poster.ImageOriginal.SaveAsTVAllSeasonsPoster(DBElement)
+                            Poster.LocalFilePath = Poster.ImageOriginal.Save_TVAllSeasons(DBElement, Enums.ModifierType.AllSeasonsPoster)
                         Else
-                            Poster.LocalFilePath = Poster.ImageOriginal.SaveAsTVSeasonPoster(DBElement)
+                            Poster.LocalFilePath = Poster.ImageOriginal.Save_TVSeason(DBElement, Enums.ModifierType.SeasonPoster)
                         End If
                     Else
                         If DBElement.TVSeason.Season = 999 Then
@@ -4052,7 +4386,7 @@ Namespace MediaContainers
 
                     'Show Banner
                     If Banner.LoadAndCache(tContentType, True) Then
-                        Banner.LocalFilePath = Banner.ImageOriginal.SaveAsTVShowBanner(DBElement)
+                        Banner.LocalFilePath = Banner.ImageOriginal.Save_TVShow(DBElement, Enums.ModifierType.MainBanner)
                     Else
                         Images.Delete_TVShow(DBElement, Enums.ModifierType.MainBanner)
                         Banner = New Image
@@ -4060,7 +4394,7 @@ Namespace MediaContainers
 
                     'Show CharacterArt
                     If CharacterArt.LoadAndCache(tContentType, True) Then
-                        CharacterArt.LocalFilePath = CharacterArt.ImageOriginal.SaveAsTVShowCharacterArt(DBElement)
+                        CharacterArt.LocalFilePath = CharacterArt.ImageOriginal.Save_TVShow(DBElement, Enums.ModifierType.MainCharacterArt)
                     Else
                         Images.Delete_TVShow(DBElement, Enums.ModifierType.MainCharacterArt)
                         CharacterArt = New Image
@@ -4068,7 +4402,7 @@ Namespace MediaContainers
 
                     'Show ClearArt
                     If ClearArt.LoadAndCache(tContentType, True) Then
-                        ClearArt.LocalFilePath = ClearArt.ImageOriginal.SaveAsTVShowClearArt(DBElement)
+                        ClearArt.LocalFilePath = ClearArt.ImageOriginal.Save_TVShow(DBElement, Enums.ModifierType.MainClearArt)
                     Else
                         Images.Delete_TVShow(DBElement, Enums.ModifierType.MainClearArt)
                         ClearArt = New Image
@@ -4076,7 +4410,7 @@ Namespace MediaContainers
 
                     'Show ClearLogo
                     If ClearLogo.LoadAndCache(tContentType, True) Then
-                        ClearLogo.LocalFilePath = ClearLogo.ImageOriginal.SaveAsTVShowClearLogo(DBElement)
+                        ClearLogo.LocalFilePath = ClearLogo.ImageOriginal.Save_TVShow(DBElement, Enums.ModifierType.MainClearLogo)
                     Else
                         Images.Delete_TVShow(DBElement, Enums.ModifierType.MainClearLogo)
                         ClearLogo = New Image
@@ -4093,7 +4427,7 @@ Namespace MediaContainers
 
                     'Show Fanart
                     If Fanart.LoadAndCache(tContentType, True) Then
-                        Fanart.LocalFilePath = Fanart.ImageOriginal.SaveAsTVShowFanart(DBElement)
+                        Fanart.LocalFilePath = Fanart.ImageOriginal.Save_TVShow(DBElement, Enums.ModifierType.MainFanart)
                     Else
                         Images.Delete_TVShow(DBElement, Enums.ModifierType.MainFanart)
                         Fanart = New Image
@@ -4101,7 +4435,7 @@ Namespace MediaContainers
 
                     'Show Landscape
                     If Landscape.LoadAndCache(tContentType, True) Then
-                        Landscape.LocalFilePath = Landscape.ImageOriginal.SaveAsTVShowLandscape(DBElement)
+                        Landscape.LocalFilePath = Landscape.ImageOriginal.Save_TVShow(DBElement, Enums.ModifierType.MainLandscape)
                     Else
                         Images.Delete_TVShow(DBElement, Enums.ModifierType.MainLandscape)
                         Landscape = New Image
@@ -4109,7 +4443,7 @@ Namespace MediaContainers
 
                     'Show Poster
                     If Poster.LoadAndCache(tContentType, True) Then
-                        Poster.LocalFilePath = Poster.ImageOriginal.SaveAsTVShowPoster(DBElement)
+                        Poster.LocalFilePath = Poster.ImageOriginal.Save_TVShow(DBElement, Enums.ModifierType.MainPoster)
                     Else
                         Images.Delete_TVShow(DBElement, Enums.ModifierType.MainPoster)
                         Poster = New Image
@@ -4493,9 +4827,9 @@ Namespace MediaContainers
 
             Select Case tDBElement.ContentType
                 Case Enums.ContentType.Movie
-                    sID = tDBElement.Movie.ID
+                    sID = tDBElement.Movie.IMDB
                     If String.IsNullOrEmpty(sID) Then
-                        sID = tDBElement.Movie.TMDBID
+                        sID = tDBElement.Movie.TMDB
                     End If
                     If String.IsNullOrEmpty(sID) Then
                         sID = "Unknown"
@@ -4617,24 +4951,30 @@ Namespace MediaContainers
             Next
         End Sub
 
-        Public Sub Sort(ByVal tDBElement As Database.DBElement)
-            Dim cSettings As New Settings
+        Public Sub SortAndFilter(ByVal tDBElement As Database.DBElement)
+            Dim cSettings As New FilterSettings
+
+            cSettings.ContentType = tDBElement.ContentType
+            cSettings.MediaLanguage = tDBElement.Language_Main
 
             Select Case tDBElement.ContentType
                 Case Enums.ContentType.Movie
+                    cSettings.ForcedLanguage = Master.eSettings.MovieImagesForcedLanguage
+                    cSettings.ForceLanguage = Master.eSettings.MovieImagesForceLanguage
                     cSettings.GetBlankImages = Master.eSettings.MovieImagesGetBlankImages
                     cSettings.GetEnglishImages = Master.eSettings.MovieImagesGetEnglishImages
-                    cSettings.MediaLanguage = tDBElement.Language
                     cSettings.MediaLanguageOnly = Master.eSettings.MovieImagesMediaLanguageOnly
                 Case Enums.ContentType.MovieSet
+                    cSettings.ForcedLanguage = Master.eSettings.MovieSetImagesForcedLanguage
+                    cSettings.ForceLanguage = Master.eSettings.MovieSetImagesForceLanguage
                     cSettings.GetBlankImages = Master.eSettings.MovieSetImagesGetBlankImages
                     cSettings.GetEnglishImages = Master.eSettings.MovieSetImagesGetEnglishImages
-                    cSettings.MediaLanguage = tDBElement.Language
                     cSettings.MediaLanguageOnly = Master.eSettings.MovieSetImagesMediaLanguageOnly
                 Case Enums.ContentType.TV, Enums.ContentType.TVEpisode, Enums.ContentType.TVSeason, Enums.ContentType.TVShow
+                    cSettings.ForcedLanguage = Master.eSettings.TVImagesForcedLanguage
+                    cSettings.ForceLanguage = Master.eSettings.TVImagesForceLanguage
                     cSettings.GetBlankImages = Master.eSettings.TVImagesGetBlankImages
                     cSettings.GetEnglishImages = Master.eSettings.TVImagesGetEnglishImages
-                    cSettings.MediaLanguage = tDBElement.Language
                     cSettings.MediaLanguageOnly = Master.eSettings.TVImagesMediaLanguageOnly
             End Select
 
@@ -4654,33 +4994,12 @@ Namespace MediaContainers
             _mainlandscapes.Sort()
             _mainposters.Sort()
 
-            'first order list by userrating (favorite images on top), then quality enumeration (0,1,2,3,4..) ascending, then put PrefSize images on top of list and later as workaround remove "Any" Quality(=0) to bottom of list because otherwise Any images would be shown before HD images (1,2,3)
-            Dim sortedqualityimages As New List(Of Image)
-            'quality sorting of moviefanarts
-            If Not Master.eSettings.MovieExtrafanartsPrefSize = Enums.MovieFanartSize.Any Then
-                sortedqualityimages = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieFanartSize).OrderByDescending(Function(y) y.MovieFanartSize = Master.eSettings.MovieExtrafanartsPrefSize).OrderBy(Function(u) u.MovieFanartSize = Enums.MovieFanartSize.Any).ToList()
-            Else
-                sortedqualityimages = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieFanartSize).OrderBy(Function(u) u.MovieFanartSize = Enums.MovieFanartSize.Any).ToList()
-            End If
-            If sortedqualityimages IsNot Nothing Then
-                _mainfanarts.Clear()
-                _mainfanarts.AddRange(sortedqualityimages)
-                sortedqualityimages.Clear()
-            End If
-            'quality sorting of movieposters
-            If Not Master.eSettings.MoviePosterPrefSize = Enums.MoviePosterSize.Any Then
-                sortedqualityimages = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MoviePosterSize).OrderByDescending(Function(y) y.MoviePosterSize = Master.eSettings.MoviePosterPrefSize).OrderBy(Function(u) u.MoviePosterSize = Enums.MoviePosterSize.Any).ToList()
-            Else
-                sortedqualityimages = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MoviePosterSize).OrderBy(Function(u) u.MoviePosterSize = Enums.MoviePosterSize.Any).ToList()
-            End If
-            If sortedqualityimages IsNot Nothing Then
-                _mainposters.Clear()
-                _mainposters.AddRange(sortedqualityimages)
-                sortedqualityimages.Clear()
-            End If
+            'sort all List(Of Image) by Votes/Size/Type
+            SortImages(cSettings)
 
-            'sort all List(Of Image) by preferred language/en/Blank/String.Empty/others
-            _episodeposters = FilterImages(_episodeposters, cSettings)
+            'filter all List(Of Image) by preferred language/en/Blank/String.Empty/others
+            'Language preference settings aren't needed for sorting episode posters since here we only care about size of image (unlike poster/banner)
+            '_episodeposters = FilterImages(_episodeposters, cSettings)
             _seasonbanners = FilterImages(_seasonbanners, cSettings)
             _seasonlandscapes = FilterImages(_seasonlandscapes, cSettings)
             _seasonposters = FilterImages(_seasonposters, cSettings)
@@ -4695,35 +5014,175 @@ Namespace MediaContainers
             _mainposters = FilterImages(_mainposters, cSettings)
         End Sub
 
-        Private Function FilterImages(ByRef ImagesList As List(Of Image), ByVal cSettings As Settings) As List(Of Image)
+        Private Sub SortImages(ByVal cSettings As FilterSettings)
+            Select Case cSettings.ContentType
+                Case Enums.ContentType.Movie
+                    'Movie Banner
+                    If Not Master.eSettings.MovieBannerPrefSize = Enums.MovieBannerSize.Any Then
+                        _mainbanners = _mainbanners.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieBannerSize).OrderByDescending(Function(y) y.MovieBannerSize = Master.eSettings.MovieBannerPrefSize).ToList()
+                    Else
+                        _mainbanners = _mainbanners.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieBannerSize).ToList()
+                    End If
+                    'Movie ClearArt
+                    _maincleararts = _maincleararts.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'Movie ClearLogo
+                    _mainclearlogos = _mainclearlogos.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'Movie DiscArt
+                    _maindiscarts = _maindiscarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.DiscType).ToList()
+                    'Movie Fanart
+                    If Not Master.eSettings.MovieFanartPrefSize = Enums.MovieFanartSize.Any Then
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieFanartSize).OrderByDescending(Function(y) y.MovieFanartSize = Master.eSettings.MovieFanartPrefSize).ToList()
+                    Else
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieFanartSize).ToList()
+                    End If
+                    'Movie Landscape
+                    _mainlandscapes = _mainlandscapes.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'Movie Poster
+                    If Not Master.eSettings.MoviePosterPrefSize = Enums.MoviePosterSize.Any Then
+                        _mainposters = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MoviePosterSize).OrderByDescending(Function(y) y.MoviePosterSize = Master.eSettings.MoviePosterPrefSize).ToList()
+                    Else
+                        _mainposters = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MoviePosterSize).ToList()
+                    End If
+                Case Enums.ContentType.MovieSet
+                    'MovieSet Banner
+                    If Not Master.eSettings.MovieSetBannerPrefSize = Enums.MovieBannerSize.Any Then
+                        _mainbanners = _mainbanners.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieBannerSize).OrderByDescending(Function(y) y.MovieBannerSize = Master.eSettings.MovieSetBannerPrefSize).ToList()
+                    Else
+                        _mainbanners = _mainbanners.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieBannerSize).ToList()
+                    End If
+                    'MovieSet ClearArt
+                    _maincleararts = _maincleararts.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'MovieSet ClearLogo
+                    _mainclearlogos = _mainclearlogos.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'MovieSet DiscArt
+                    _maindiscarts = _maindiscarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.DiscType).ToList()
+                    'MovieSet Fanart
+                    If Not Master.eSettings.MovieSetFanartPrefSize = Enums.MovieFanartSize.Any Then
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieFanartSize).OrderByDescending(Function(y) y.MovieFanartSize = Master.eSettings.MovieSetFanartPrefSize).ToList()
+                    Else
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MovieFanartSize).ToList()
+                    End If
+                    'MovieSet Landscape
+                    _mainlandscapes = _mainlandscapes.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'MovieSet Poster
+                    If Not Master.eSettings.MovieSetPosterPrefSize = Enums.MoviePosterSize.Any Then
+                        _mainposters = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MoviePosterSize).OrderByDescending(Function(y) y.MoviePosterSize = Master.eSettings.MovieSetPosterPrefSize).ToList()
+                    Else
+                        _mainposters = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.MoviePosterSize).ToList()
+                    End If
+                Case Enums.ContentType.TV, Enums.ContentType.TVShow
+                    'TVShow Banner
+                    If Not Master.eSettings.TVShowBannerPrefSize = Enums.TVBannerSize.Any Then
+                        _mainbanners = _mainbanners.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVBannerSize).OrderByDescending(Function(y) y.TVBannerSize = Master.eSettings.TVShowBannerPrefSize).ToList()
+                    Else
+                        _mainbanners = _mainbanners.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVBannerSize).ToList()
+                    End If
+                    'TVShow CharacterArt
+                    _maincharacterarts = _maincharacterarts.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'TVShow ClearArt
+                    _maincleararts = _maincleararts.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'TVShow ClearLogo
+                    _mainclearlogos = _mainclearlogos.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'TVShow Fanart
+                    If Not Master.eSettings.TVShowFanartPrefSize = Enums.TVFanartSize.Any Then
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).OrderByDescending(Function(y) y.TVFanartSize = Master.eSettings.TVShowFanartPrefSize).ToList()
+                    Else
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).ToList()
+                    End If
+                    'TVShow Landscape
+                    _mainlandscapes = _mainlandscapes.OrderByDescending(Function(z) z.VoteAverage).ToList()
+                    'TVShow Poster
+                    If Not Master.eSettings.TVShowPosterPrefSize = Enums.TVPosterSize.Any Then
+                        _mainposters = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVPosterSize).OrderByDescending(Function(y) y.TVPosterSize = Master.eSettings.TVShowPosterPrefSize).ToList()
+                    Else
+                        _mainposters = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVPosterSize).ToList()
+                    End If
+                Case Enums.ContentType.TVEpisode
+                    'TVShow Fanart (TVEpisode preferred sorting)
+                    If Not Master.eSettings.TVEpisodeFanartPrefSize = Enums.TVFanartSize.Any Then
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).OrderByDescending(Function(y) y.TVFanartSize = Master.eSettings.TVEpisodeFanartPrefSize).ToList()
+                    Else
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).ToList()
+                    End If
+                Case Enums.ContentType.TVSeason
+                    'TVShow Fanart (TVSeason preferred sorting)
+                    If Not Master.eSettings.TVSeasonFanartPrefSize = Enums.TVFanartSize.Any Then
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).OrderByDescending(Function(y) y.TVFanartSize = Master.eSettings.TVSeasonFanartPrefSize).ToList()
+                    Else
+                        _mainfanarts = _mainfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).ToList()
+                    End If
+                    'TVShow Poster (TVSeason preferred sorting)
+                    If Not Master.eSettings.TVSeasonPosterPrefSize = Enums.TVSeasonPosterSize.Any Then
+                        _mainposters = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVSeasonPosterSize).OrderByDescending(Function(y) y.TVSeasonPosterSize = Master.eSettings.TVSeasonPosterPrefSize).ToList()
+                    Else
+                        _mainposters = _mainposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVSeasonPosterSize).ToList()
+                    End If
+            End Select
+
+            'Unique image containers
+
+            'TVEpisode Fanart
+            If Not Master.eSettings.TVEpisodeFanartPrefSize = Enums.TVFanartSize.Any Then
+                _episodefanarts = _episodefanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).OrderByDescending(Function(y) y.TVFanartSize = Master.eSettings.TVEpisodeFanartPrefSize).ToList()
+            Else
+                _episodefanarts = _episodefanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).ToList()
+            End If
+            'TVEpisode Poster
+            If Not Master.eSettings.TVEpisodePosterPrefSize = Enums.TVEpisodePosterSize.Any Then
+                _episodeposters = _episodeposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVEpisodePosterSize).OrderByDescending(Function(y) y.TVEpisodePosterSize = Master.eSettings.TVEpisodePosterPrefSize).ToList()
+            Else
+                _episodeposters = _episodeposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVEpisodePosterSize).ToList()
+            End If
+            'TVSeason Banner
+            If Not Master.eSettings.TVSeasonBannerPrefSize = Enums.TVBannerSize.Any Then
+                _seasonbanners = _seasonbanners.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVBannerSize).OrderByDescending(Function(y) y.TVBannerSize = Master.eSettings.TVSeasonBannerPrefSize).ToList()
+            Else
+                _seasonbanners = _seasonbanners.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVBannerSize).ToList()
+            End If
+            'TVSeason Fanart
+            If Not Master.eSettings.TVSeasonFanartPrefSize = Enums.TVFanartSize.Any Then
+                _seasonfanarts = _seasonfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).OrderByDescending(Function(y) y.TVFanartSize = Master.eSettings.TVSeasonFanartPrefSize).ToList()
+            Else
+                _seasonfanarts = _seasonfanarts.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVFanartSize).ToList()
+            End If
+            'TVSeason Landscape
+            _seasonlandscapes = _seasonlandscapes.OrderByDescending(Function(z) z.VoteAverage).ToList()
+            'TVSeason Poster
+            If Not Master.eSettings.TVSeasonPosterPrefSize = Enums.TVSeasonPosterSize.Any Then
+                _seasonposters = _seasonposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVSeasonPosterSize).OrderByDescending(Function(y) y.TVSeasonPosterSize = Master.eSettings.TVSeasonPosterPrefSize).ToList()
+            Else
+                _seasonposters = _seasonposters.OrderByDescending(Function(z) z.VoteAverage).OrderBy(Function(x) x.TVSeasonPosterSize).ToList()
+            End If
+        End Sub
+
+        Private Function FilterImages(ByRef ImagesList As List(Of Image), ByVal cSettings As FilterSettings) As List(Of Image)
             Dim FilteredList As New List(Of Image)
 
-            For Each tmpImage As Image In ImagesList.Where(Function(f) f.ShortLang = cSettings.MediaLanguage)
-                FilteredList.Add(tmpImage)
-            Next
+            If cSettings.ForceLanguage AndAlso Not String.IsNullOrEmpty(cSettings.ForcedLanguage) Then
+                FilteredList.AddRange(ImagesList.Where(Function(f) f.ShortLang = cSettings.ForcedLanguage))
+            End If
 
-            If (cSettings.GetEnglishImages OrElse Not cSettings.MediaLanguageOnly) AndAlso Not cSettings.MediaLanguage = "en" Then
-                For Each tmpImage As Image In ImagesList.Where(Function(f) f.ShortLang = "en")
-                    FilteredList.Add(tmpImage)
-                Next
+            If Not (cSettings.ForceLanguage AndAlso cSettings.ForcedLanguage = cSettings.MediaLanguage) Then
+                FilteredList.AddRange(ImagesList.Where(Function(f) f.ShortLang = cSettings.MediaLanguage))
+            End If
+
+            If (cSettings.GetEnglishImages OrElse Not cSettings.MediaLanguageOnly) AndAlso
+                Not (cSettings.ForceLanguage AndAlso cSettings.ForcedLanguage = "en") AndAlso
+                Not cSettings.MediaLanguage = "en" Then
+                FilteredList.AddRange(ImagesList.Where(Function(f) f.ShortLang = "en"))
             End If
 
             If cSettings.GetBlankImages OrElse Not cSettings.MediaLanguageOnly Then
-                For Each tmpImage As Image In ImagesList.Where(Function(f) f.ShortLang = Master.eLang.GetString(1168, "Blank"))
-                    FilteredList.Add(tmpImage)
-                Next
-                For Each tmpImage As Image In ImagesList.Where(Function(f) f.ShortLang = String.Empty)
-                    FilteredList.Add(tmpImage)
-                Next
+                FilteredList.AddRange(ImagesList.Where(Function(f) f.LongLang = Master.eLang.GetString(1168, "Blank")))
+                FilteredList.AddRange(ImagesList.Where(Function(f) f.ShortLang = String.Empty))
             End If
 
             If Not cSettings.MediaLanguageOnly Then
-                For Each tmpImage As Image In ImagesList.Where(Function(f) Not f.ShortLang = cSettings.MediaLanguage AndAlso
-                                                                   Not f.ShortLang = "en" AndAlso
-                                                                   Not f.ShortLang = Master.eLang.GetString(1168, "Blank") AndAlso
-                                                                   Not f.ShortLang = String.Empty)
-                    FilteredList.Add(tmpImage)
-                Next
+                FilteredList.AddRange(ImagesList.Where(Function(f) Not f.ShortLang = If(cSettings.ForceLanguage, cSettings.ForcedLanguage, String.Empty) AndAlso
+                                                           Not f.ShortLang = cSettings.MediaLanguage AndAlso
+                                                           Not f.ShortLang = "en" AndAlso
+                                                           Not f.LongLang = Master.eLang.GetString(1168, "Blank") AndAlso
+                                                           Not f.ShortLang = String.Empty))
             End If
 
             Return FilteredList
@@ -4733,10 +5192,13 @@ Namespace MediaContainers
 
 #Region "Nested Types"
 
-        Private Structure Settings
+        Private Structure FilterSettings
 
 #Region "Fields"
 
+            Dim ContentType As Enums.ContentType
+            Dim ForceLanguage As Boolean
+            Dim ForcedLanguage As String
             Dim GetBlankImages As Boolean
             Dim GetEnglishImages As Boolean
             Dim MediaLanguage As String
@@ -4749,16 +5211,67 @@ Namespace MediaContainers
 #End Region 'Nested Types
 
     End Class
+    ''' <summary>
+    ''' Container for YAMJ sets
+    ''' </summary>
+    <Serializable()>
+    Public Class SetContainer
+
+#Region "Fields"
+
+        Private _set As New List(Of SetDetails)
+
+#End Region 'Fields
+
+#Region "Constructors"
+
+        Public Sub New()
+            Clear()
+        End Sub
+
+#End Region 'Constructors
+
+#Region "Properties"
+
+        <XmlElement("set")>
+        Public Property Sets() As List(Of SetDetails)
+            Get
+                Return _set
+            End Get
+            Set(ByVal value As List(Of SetDetails))
+                _set = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property SetsSpecified() As Boolean
+            Get
+                Return _set.Count > 0
+            End Get
+        End Property
+
+#End Region 'Properties
+
+#Region "Methods"
+
+        Public Sub Clear()
+            _set = New List(Of SetDetails)
+        End Sub
+
+#End Region 'Methods
+
+    End Class
 
     <Serializable()>
-    Public Class [Set]
+    Public Class SetDetails
 
 #Region "Fields"
 
         Private _id As Long
-        Private _order As String
+        Private _order As Integer
+        Private _plot As String
         Private _title As String
-        Private _tmdbcolid As String
+        Private _tmdb As String
 
 #End Region 'Fields
 
@@ -4782,12 +5295,19 @@ Namespace MediaContainers
             End Set
         End Property
 
+        <XmlIgnore()>
+        Public ReadOnly Property IDSpecified() As Boolean
+            Get
+                Return Not _id = -1
+            End Get
+        End Property
+
         <XmlAttribute("order")>
-        Public Property Order() As String
+        Public Property Order() As Integer
             Get
                 Return _order
             End Get
-            Set(ByVal value As String)
+            Set(ByVal value As Integer)
                 _order = value
             End Set
         End Property
@@ -4795,24 +5315,24 @@ Namespace MediaContainers
         <XmlIgnore()>
         Public ReadOnly Property OrderSpecified() As Boolean
             Get
-                Return Not String.IsNullOrEmpty(_order)
+                Return Not _order = -1
             End Get
         End Property
 
-        <XmlAttribute("tmdbcolid")>
-        Public Property TMDBColID() As String
+        <XmlIgnore()>
+        Public Property Plot() As String
             Get
-                Return _tmdbcolid
+                Return _plot
             End Get
             Set(ByVal value As String)
-                _tmdbcolid = value
+                _plot = value
             End Set
         End Property
 
         <XmlIgnore()>
-        Public ReadOnly Property TMDBColIDSpecified() As Boolean
+        Public ReadOnly Property PlotSpecified() As Boolean
             Get
-                Return Not String.IsNullOrEmpty(_tmdbcolid)
+                Return Not String.IsNullOrEmpty(_plot)
             End Get
         End Property
 
@@ -4833,15 +5353,33 @@ Namespace MediaContainers
             End Get
         End Property
 
+        <XmlIgnore()>
+        Public Property TMDB() As String
+            Get
+                Return _tmdb
+            End Get
+            Set(ByVal value As String)
+                _tmdb = value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property TMDBSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_tmdb)
+            End Get
+        End Property
+
 #End Region 'Properties
 
 #Region "Methods"
 
         Public Sub Clear()
             _id = -1
+            _order = -1
+            _plot = String.Empty
             _title = String.Empty
-            _order = String.Empty
-            _tmdbcolid = String.Empty
+            _tmdb = String.Empty
         End Sub
 
 #End Region 'Methods
@@ -4849,7 +5387,205 @@ Namespace MediaContainers
     End Class
 
     <Serializable()>
-    Public Class [Theme]
+    <XmlRoot("streamdata")>
+    Public Class StreamData
+
+#Region "Fields"
+
+        Private _audio As New List(Of Audio)
+        Private _subtitle As New List(Of Subtitle)
+        Private _video As New List(Of Video)
+
+#End Region 'Fields
+
+#Region "Properties"
+
+        <XmlElement("audio")>
+        Public Property Audio() As List(Of Audio)
+            Get
+                Return _audio
+            End Get
+            Set(ByVal Value As List(Of Audio))
+                _audio = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property AudioSpecified() As Boolean
+            Get
+                Return _audio.Count > 0
+            End Get
+        End Property
+
+        <XmlElement("subtitle")>
+        Public Property Subtitle() As List(Of Subtitle)
+            Get
+                Return _subtitle
+            End Get
+            Set(ByVal Value As List(Of Subtitle))
+                _subtitle = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property SubtitleSpecified() As Boolean
+            Get
+                Return _subtitle.Count > 0
+            End Get
+        End Property
+
+        <XmlElement("video")>
+        Public Property Video() As List(Of Video)
+            Get
+                Return _video
+            End Get
+            Set(ByVal Value As List(Of Video))
+                _video = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property VideoSpecified() As Boolean
+            Get
+                Return _video.Count > 0
+            End Get
+        End Property
+
+#End Region 'Properties
+
+    End Class
+
+    <Serializable()>
+    Public Class Subtitle
+
+#Region "Fields"
+
+        Private _language As String = String.Empty
+        Private _longlanguage As String = String.Empty
+        Private _subs_foced As Boolean = False
+        Private _subs_path As String = String.Empty
+        Private _subs_type As String = String.Empty
+        Private _toremove As Boolean = False            'trigger to delete local/external subtitle files
+
+#End Region 'Fields
+
+#Region "Properties"
+
+        <XmlElement("language")>
+        Public Property Language() As String
+            Get
+                Return _language
+            End Get
+            Set(ByVal Value As String)
+                _language = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property LanguageSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_language)
+            End Get
+        End Property
+
+        <XmlElement("longlanguage")>
+        Public Property LongLanguage() As String
+            Get
+                Return _longlanguage
+            End Get
+            Set(ByVal value As String)
+                _longlanguage = value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property LongLanguageSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_longlanguage)
+            End Get
+        End Property
+
+        <XmlElement("forced")>
+        Public Property SubsForced() As Boolean
+            Get
+                Return _subs_foced
+            End Get
+            Set(ByVal value As Boolean)
+                _subs_foced = value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property SubsForcedSpecified() As Boolean
+            Get
+                Return _subs_foced
+            End Get
+        End Property
+
+        <XmlElement("path")>
+        Public Property SubsPath() As String
+            Get
+                Return _subs_path
+            End Get
+            Set(ByVal value As String)
+                _subs_path = value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property SubsPathSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_subs_path)
+            End Get
+        End Property
+
+        <XmlElement("type")>
+        Public Property SubsType() As String
+            Get
+                Return _subs_type
+            End Get
+            Set(ByVal value As String)
+                _subs_type = value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property SubsTypeSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_subs_type)
+            End Get
+        End Property
+
+        <XmlIgnore>
+        Public Property toRemove() As Boolean
+            Get
+                Return _toremove
+            End Get
+            Set(ByVal value As Boolean)
+                _toremove = value
+            End Set
+        End Property
+
+#End Region 'Properties
+
+    End Class
+
+    <Serializable()>
+    Public Class Theme
+
+#Region "Fields"
+
+        Private _bitrate As String
+        Private _description As String
+        Private _duration As String
+        Private _localfilepath As String
+        Private _scraper As String
+        Private _source As String
+        Private _themeoriginal As New Themes
+        Private _urlaudiostream As String
+        Private _urlwebsite As String
+
+#End Region 'Fields
 
 #Region "Constructors"
 
@@ -4860,20 +5596,173 @@ Namespace MediaContainers
 #End Region 'Constructors
 
 #Region "Properties"
-        Public Property Quality As String
-        Public Property URL As String ' path to image (local or url)
-        Public Property WebTheme As Themes
-        Public Property ShortLang As String
-        Public Property LongLang As String
+
+        Public Property Bitrate() As String
+            Get
+                Return _bitrate
+            End Get
+            Set(ByVal value As String)
+                _bitrate = value
+            End Set
+        End Property
+
+        Public Property Description() As String
+            Get
+                Return _description
+            End Get
+            Set(ByVal value As String)
+                _description = value
+            End Set
+        End Property
+
+        Public Property Duration() As String
+            Get
+                Return _duration
+            End Get
+            Set(ByVal value As String)
+                _duration = value
+            End Set
+        End Property
+
+        Public Property LocalFilePath() As String
+            Get
+                Return _localfilepath
+            End Get
+            Set(ByVal value As String)
+                _localfilepath = value
+            End Set
+        End Property
+
+        Public ReadOnly Property LocalFilePathSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_localfilepath)
+            End Get
+        End Property
+
+        Public Property Scraper() As String
+            Get
+                Return _scraper
+            End Get
+            Set(ByVal value As String)
+                _scraper = value
+            End Set
+        End Property
+
+        Public Property Source() As String
+            Get
+                Return _source
+            End Get
+            Set(ByVal value As String)
+                _source = value
+            End Set
+        End Property
+        ''' <summary>
+        ''' Download audio URL of the theme
+        ''' </summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Property URLAudioStream() As String
+            Get
+                Return _urlaudiostream
+            End Get
+            Set(ByVal value As String)
+                _urlaudiostream = value
+            End Set
+        End Property
+
+        Public ReadOnly Property URLAudioStreamSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_urlaudiostream)
+            End Get
+        End Property
+        ''' <summary>
+        ''' Website URL of the theme for preview in browser
+        ''' </summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Property URLWebsite() As String
+            Get
+                Return _urlwebsite
+            End Get
+            Set(ByVal value As String)
+                _urlwebsite = value
+            End Set
+        End Property
+
+        Public ReadOnly Property URLWebsiteSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_urlwebsite)
+            End Get
+        End Property
+
+        Public Property ThemeOriginal() As Themes
+            Get
+                Return _themeoriginal
+            End Get
+            Set(ByVal value As Themes)
+                _themeoriginal = value
+            End Set
+        End Property
 
 #End Region 'Properties
 
 #Region "Methods"
 
         Public Sub Clear()
-            _URL = String.Empty
-            _Quality = String.Empty
-            _WebTheme = New Themes
+            _bitrate = String.Empty
+            _description = String.Empty
+            _duration = String.Empty
+            _localfilepath = String.Empty
+            _scraper = String.Empty
+            _source = String.Empty
+            _themeoriginal = New Themes
+            _urlaudiostream = String.Empty
+            _urlwebsite = String.Empty
+        End Sub
+
+        Public Function LoadAndCache() As Boolean
+
+            If Not ThemeOriginal.hasMemoryStream Then
+                If File.Exists(LocalFilePath) Then
+                    ThemeOriginal.LoadFromFile(LocalFilePath)
+                Else
+                    ThemeOriginal.LoadFromWeb(Me)
+                End If
+            End If
+
+            If ThemeOriginal.hasMemoryStream Then
+                Return True
+            Else
+                Return False
+            End If
+        End Function
+
+        Public Sub SaveAllThemes(ByRef tDBElement As Database.DBElement, ByVal ForceFileCleanup As Boolean)
+            Dim tContentType As Enums.ContentType = tDBElement.ContentType
+
+            With tDBElement
+                Select Case tContentType
+                    Case Enums.ContentType.Movie
+                        If .Theme.LoadAndCache() Then
+                            If ForceFileCleanup Then Trailers.Delete_Movie(tDBElement, ForceFileCleanup)
+                            .Theme.LocalFilePath = .Theme.ThemeOriginal.Save_Movie(tDBElement)
+                        Else
+                            Themes.Delete_Movie(tDBElement, ForceFileCleanup)
+                            .Theme = New Theme
+                        End If
+
+                    Case Enums.ContentType.TVShow
+                        If .Theme.LoadAndCache() Then
+                            If ForceFileCleanup Then Themes.Delete_TVShow(tDBElement) ', ForceFileCleanup)
+                            .Theme.LocalFilePath = .Theme.ThemeOriginal.Save_TVShow(tDBElement)
+                        Else
+                            Themes.Delete_TVShow(tDBElement) ', ForceFileCleanup)
+                            .Theme = New Theme
+                        End If
+                End Select
+            End With
         End Sub
 
 #End Region 'Methods
@@ -4881,7 +5770,7 @@ Namespace MediaContainers
     End Class
 
     <Serializable()>
-    Public Class [Trailer]
+    Public Class Trailer
 
 #Region "Fields"
 
@@ -4942,6 +5831,12 @@ Namespace MediaContainers
             Set(ByVal value As String)
                 _localfilepath = value
             End Set
+        End Property
+
+        Public ReadOnly Property LocalFilePathSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_localfilepath)
+            End Get
         End Property
 
         Public Property LongLang() As String
@@ -5034,6 +5929,12 @@ Namespace MediaContainers
                 _urlvideostream = value
             End Set
         End Property
+
+        Public ReadOnly Property URLVideoStreamSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_urlvideostream)
+            End Get
+        End Property
         ''' <summary>
         ''' Website URL of the trailer for preview in browser
         ''' </summary>
@@ -5047,6 +5948,12 @@ Namespace MediaContainers
             Set(ByVal value As String)
                 _urlwebsite = value
             End Set
+        End Property
+
+        Public ReadOnly Property URLWebsiteSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_urlwebsite)
+            End Get
         End Property
 
         Public Property TrailerOriginal() As Trailers
@@ -5079,29 +5986,325 @@ Namespace MediaContainers
             _urlwebsite = String.Empty
         End Sub
 
-        Public Sub SaveAllTrailers(ByRef DBElement As Database.DBElement)
-            Dim tContentType As Enums.ContentType = DBElement.ContentType
+        Public Function LoadAndCache() As Boolean
 
-            With DBElement
+            If Not TrailerOriginal.hasMemoryStream Then
+                If File.Exists(LocalFilePath) Then
+                    TrailerOriginal.LoadFromFile(LocalFilePath)
+                Else
+                    TrailerOriginal.LoadFromWeb(Me)
+                End If
+            End If
+
+            If TrailerOriginal.hasMemoryStream Then
+                Return True
+            Else
+                Return False
+            End If
+        End Function
+
+        Public Sub SaveAllTrailers(ByRef tDBElement As Database.DBElement, ByVal ForceFileCleanup As Boolean)
+            Dim tContentType As Enums.ContentType = tDBElement.ContentType
+
+            With tDBElement
                 Select Case tContentType
                     Case Enums.ContentType.Movie
 
                         'Movie Trailer
-                        If .Trailer.TrailerOriginal IsNot Nothing AndAlso .Trailer.TrailerOriginal.hasMemoryStream Then
-                            .Trailer.LocalFilePath = .Trailer.TrailerOriginal.SaveAsMovieTrailer(DBElement)
-                        ElseIf Not String.IsNullOrEmpty(.Trailer.URLVideoStream) Then
-                            .Trailer.TrailerOriginal.FromWeb(.Trailer)
-                            .Trailer.LocalFilePath = .Trailer.TrailerOriginal.SaveAsMovieTrailer(DBElement)
-                        ElseIf Not String.IsNullOrEmpty(.Trailer.LocalFilePath) Then
-                            .Trailer.TrailerOriginal.FromFile(.Trailer.LocalFilePath)
-                            .Trailer.LocalFilePath = .Trailer.TrailerOriginal.SaveAsMovieTrailer(DBElement)
+                        If .Trailer.LoadAndCache() Then
+                            If ForceFileCleanup Then Trailers.Delete_Movie(tDBElement, ForceFileCleanup)
+                            .Trailer.LocalFilePath = .Trailer.TrailerOriginal.Save_Movie(tDBElement)
                         Else
-                            Trailers.DeleteMovieTrailers(DBElement)
+                            Trailers.Delete_Movie(tDBElement, ForceFileCleanup)
                             .Trailer = New Trailer
                         End If
                 End Select
             End With
         End Sub
+
+#End Region 'Methods
+
+    End Class
+
+    <Serializable()>
+    Public Class Video
+
+#Region "Fields"
+
+        Private _aspect As String = String.Empty
+        Private _bitrate As String = String.Empty
+        Private _codec As String = String.Empty
+        Private _duration As String = String.Empty
+        Private _encoded_Settings As String = String.Empty
+        Private _height As String = String.Empty
+        Private _language As String = String.Empty
+        Private _longlanguage As String = String.Empty
+        Private _multiview_count As String = String.Empty
+        Private _multiview_layout As String = String.Empty
+        Private _scantype As String = String.Empty
+        'XBMC multiview layout type (http://wiki.xbmc.org/index.php?title=3D)
+        Private _stereomode As String = String.Empty
+        Private _width As String = String.Empty
+        Private _filesize As Double = 0
+
+#End Region 'Fields
+
+#Region "Properties"
+
+        <XmlElement("aspect")>
+        Public Property Aspect() As String
+            Get
+                Return _aspect.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _aspect = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property AspectSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_aspect)
+            End Get
+        End Property
+
+        <XmlElement("bitrate")>
+        Public Property Bitrate() As String
+            Get
+                Return _bitrate.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _bitrate = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property BitrateSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_bitrate)
+            End Get
+        End Property
+
+        <XmlElement("codec")>
+        Public Property Codec() As String
+            Get
+                Return _codec.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _codec = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property CodecSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_codec)
+            End Get
+        End Property
+
+        <XmlElement("durationinseconds")>
+        Public Property Duration() As String
+            Get
+                Return _duration.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _duration = Value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property DurationSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_duration)
+            End Get
+        End Property
+
+        <XmlElement("height")>
+        Public Property Height() As String
+            Get
+                Return _height.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _height = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property HeightSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_height)
+            End Get
+        End Property
+
+        <XmlElement("language")>
+        Public Property Language() As String
+            Get
+                Return _language.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _language = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property LanguageSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_language)
+            End Get
+        End Property
+
+        <XmlElement("longlanguage")>
+        Public Property LongLanguage() As String
+            Get
+                Return _longlanguage.Trim()
+            End Get
+            Set(ByVal value As String)
+                _longlanguage = value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property LongLanguageSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_longlanguage)
+            End Get
+        End Property
+
+        <XmlElement("multiview_count")>
+        Public Property MultiViewCount() As String
+            Get
+                Return _multiview_count.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _multiview_count = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property MultiViewCountSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_multiview_count)
+            End Get
+        End Property
+
+        <XmlElement("multiview_layout")>
+        Public Property MultiViewLayout() As String
+            Get
+                Return _multiview_layout.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _multiview_layout = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property MultiViewLayoutSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_multiview_layout)
+            End Get
+        End Property
+
+        <XmlElement("scantype")>
+        Public Property Scantype() As String
+            Get
+                Return _scantype.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _scantype = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property ScantypeSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_scantype)
+            End Get
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property ShortStereoMode() As String
+            Get
+                Return ConvertVStereoToShort(_stereomode).Trim()
+            End Get
+        End Property
+
+        <XmlElement("stereomode")>
+        Public Property StereoMode() As String
+            Get
+                Return _stereomode.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _stereomode = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property StereoModeSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_stereomode)
+            End Get
+        End Property
+
+        <XmlElement("width")>
+        Public Property Width() As String
+            Get
+                Return _width.Trim()
+            End Get
+            Set(ByVal Value As String)
+                _width = Value
+            End Set
+        End Property
+
+        <XmlIgnore>
+        Public ReadOnly Property WidthSpecified() As Boolean
+            Get
+                Return Not String.IsNullOrEmpty(_width)
+            End Get
+        End Property
+
+        <XmlElement("filesize")>
+        Public Property Filesize() As Double
+            Get
+                Return _filesize
+            End Get
+            Set(ByVal Value As Double)
+                'for now save filesize in bytes(default)
+                _filesize = Value
+            End Set
+        End Property
+
+        <XmlIgnore()>
+        Public ReadOnly Property FilesizeSpecified() As Boolean
+            Get
+                If _filesize = 0 Then
+                    Return False
+                Else
+                    Return True
+                End If
+            End Get
+        End Property
+
+#End Region 'Properties
+
+#Region "Methods"
+
+        Public Shared Function ConvertVStereoToShort(ByVal sFormat As String) As String
+            If Not String.IsNullOrEmpty(sFormat) Then
+                Dim tFormat As String = String.Empty
+                Select Case sFormat.ToLower
+                    Case "bottom_top"
+                        tFormat = "tab"
+                    Case "left_right", "right_left"
+                        tFormat = "sbs"
+                    Case Else
+                        tFormat = "unknown"
+                End Select
+
+                Return tFormat
+            Else
+                Return String.Empty
+            End If
+        End Function
 
 #End Region 'Methods
 

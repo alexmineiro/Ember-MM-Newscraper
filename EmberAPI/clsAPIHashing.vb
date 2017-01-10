@@ -18,12 +18,9 @@
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
 
-Imports System
 Imports System.IO
-Imports System.Runtime.InteropServices
 Imports System.Security.Cryptography
 Imports System.Text
-Imports System.Text.Encoding
 
 <Obsolete("This class has been deprecated in EMM v1.4, and may not appear in future versions of this application")>
 Public Class HashFile
@@ -68,15 +65,7 @@ Public Class HashFile
         Dim ETHashes As New List(Of String)
         Dim tPath As String = String.Empty
 
-        If FileUtils.Common.isVideoTS(sPath) Then 'TODO: check VIDEO_TS parent
-            tPath = Path.Combine(Directory.GetParent(Directory.GetParent(sPath).FullName).FullName, "extrathumbs")
-        ElseIf FileUtils.Common.isBDRip(sPath) Then
-            tPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(sPath).FullName).FullName).FullName, "extrathumbs")
-        ElseIf FileUtils.Common.isBDRip(sPath) Then
-            tPath = Path.Combine(Directory.GetParent(Directory.GetParent(sPath).FullName).FullName, "extrathumbs")
-        Else
-            tPath = Path.Combine(Directory.GetParent(sPath).FullName, "extrathumbs")
-        End If
+        tPath = Path.Combine(FileUtils.Common.GetMainPath(sPath).FullName, "extrathumbs")
 
         If Directory.Exists(tPath) Then
             Dim fThumbs As New List(Of String)

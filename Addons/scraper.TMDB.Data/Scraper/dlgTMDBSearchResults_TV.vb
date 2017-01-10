@@ -81,7 +81,7 @@ Public Class dlgTMDBSearchResults_TV
         txtFileName.Text = sShowPath
         chkManual.Enabled = False
 
-        _TMDB.SearchTVShowAsync(sShowTitle, _filterOptions)
+        _TMDB.SearchAsync_TVShow(sShowTitle, _filterOptions)
 
         Return ShowDialog()
     End Function
@@ -112,7 +112,7 @@ Public Class dlgTMDBSearchResults_TV
             chkManual.Enabled = False
             _TMDB.CancelAsync()
 
-            _TMDB.SearchTVShowAsync(txtSearch.Text, _filterOptions)
+            _TMDB.SearchAsync_TVShow(txtSearch.Text, _filterOptions)
         End If
     End Sub
 
@@ -173,7 +173,6 @@ Public Class dlgTMDBSearchResults_TV
         _tmpTVShow.Clear()
 
         DialogResult = DialogResult.Cancel
-        Close()
     End Sub
 
     Private Sub chkManual_CheckedChanged(ByVal sender As Object, ByVal e As EventArgs) Handles chkManual.CheckedChanged
@@ -245,7 +244,6 @@ Public Class dlgTMDBSearchResults_TV
 
     Private Sub OK_Button_Click(ByVal sender As Object, ByVal e As EventArgs) Handles OK_Button.Click
         DialogResult = DialogResult.OK
-        Close()
     End Sub
 
     Private Sub SearchInfoDownloaded(ByVal sPoster As String, ByVal sInfo As MediaContainers.TVShow)

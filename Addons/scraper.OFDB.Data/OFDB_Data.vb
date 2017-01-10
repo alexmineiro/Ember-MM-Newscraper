@@ -127,15 +127,15 @@ Public Class OFDB_Data
     End Function
 
     Sub LoadSettings()
-        ConfigScrapeOptions.bMainTitle = clsAdvancedSettings.GetBooleanSetting("DoTitle", True)
-        ConfigScrapeOptions.bMainOutline = clsAdvancedSettings.GetBooleanSetting("DoOutline", True)
-        ConfigScrapeOptions.bMainPlot = clsAdvancedSettings.GetBooleanSetting("DoPlot", True)
-        ConfigScrapeOptions.bMainGenres = clsAdvancedSettings.GetBooleanSetting("DoGenres", True)
-        ConfigScrapeOptions.bMainCertifications = clsAdvancedSettings.GetBooleanSetting("DoCert", False)
+        ConfigScrapeOptions.bMainTitle = AdvancedSettings.GetBooleanSetting("DoTitle", True)
+        ConfigScrapeOptions.bMainOutline = AdvancedSettings.GetBooleanSetting("DoOutline", True)
+        ConfigScrapeOptions.bMainPlot = AdvancedSettings.GetBooleanSetting("DoPlot", True)
+        ConfigScrapeOptions.bMainGenres = AdvancedSettings.GetBooleanSetting("DoGenres", True)
+        ConfigScrapeOptions.bMainCertifications = AdvancedSettings.GetBooleanSetting("DoCert", False)
     End Sub
 
     Sub SaveSettings()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoTitle", ConfigScrapeOptions.bMainTitle)
             settings.SetBooleanSetting("DoOutline", ConfigScrapeOptions.bMainOutline)
             settings.SetBooleanSetting("DoPlot", ConfigScrapeOptions.bMainPlot)
@@ -170,7 +170,7 @@ Public Class OFDB_Data
     ''' <returns>Database.DBElement Object (nMovie) which contains the scraped data</returns>
     ''' <remarks></remarks>
     Function Scraper_Movie(ByRef oDBMovie As Database.DBElement, ByRef Modifier As Structures.ScrapeModifiers, ByRef Type As Enums.ScrapeType, ByRef ScrapeOptions As Structures.ScrapeOptions) As Interfaces.ModuleResult_Data_Movie Implements Interfaces.ScraperModule_Data_Movie.Scraper_Movie
-        logger.Trace("Started OFDB Scraper")
+        logger.Trace("[OFDB_Data] [Scraper_Movie] [Start]")
 
         LoadSettings()
 
@@ -178,16 +178,16 @@ Public Class OFDB_Data
         Dim FilteredOptions As Structures.ScrapeOptions = Functions.ScrapeOptionsAndAlso(ScrapeOptions, ConfigScrapeOptions)
 
         'datascraper needs imdb of movie!
-        If String.IsNullOrEmpty(oDBMovie.Movie.ID) Then
-            logger.Trace("IMDB-ID of movie is needed, but not availaible! Leave OFDB scraper...")
+        If String.IsNullOrEmpty(oDBMovie.Movie.IMDB) Then
+            logger.Trace("[OFDB_Data] [Scraper_Movie] [Abort] IMDB-ID of movie is needed, but not availaible")
             Return New Interfaces.ModuleResult_Data_Movie With {.Result = Nothing}
         End If
 
         If Modifier.MainNFO Then
-            nMovie = _scraper.GetMovieInfo(oDBMovie.Movie.ID, FilteredOptions)
+            nMovie = _scraper.GetMovieInfo(oDBMovie.Movie.IMDB, FilteredOptions)
         End If
 
-        logger.Trace("Finished OFDB Scraper")
+        logger.Trace("[OFDB_Data] [Scraper_Movie] [Done]")
         Return New Interfaces.ModuleResult_Data_Movie With {.Result = nMovie}
     End Function
 

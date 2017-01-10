@@ -25,9 +25,9 @@ Public Class BulkRenamerModule
 
 #Region "Delegates"
 
-    Public Delegate Sub Delegate_SetToolsStripItem(value As System.Windows.Forms.ToolStripItem)
-    Public Delegate Sub Delegate_RemoveToolsStripItem(value As System.Windows.Forms.ToolStripItem)
-    Public Delegate Sub Delegate_AddToolsStripItem(tsi As System.Windows.Forms.ToolStripMenuItem, value As System.Windows.Forms.ToolStripMenuItem)
+    Public Delegate Sub Delegate_SetToolsStripItem(value As ToolStripItem)
+    Public Delegate Sub Delegate_RemoveToolsStripItem(value As ToolStripItem)
+    Public Delegate Sub Delegate_AddToolsStripItem(tsi As ToolStripMenuItem, value As ToolStripMenuItem)
 
 #End Region 'Delegates
 
@@ -38,20 +38,20 @@ Public Class BulkRenamerModule
     Private _enabled As Boolean = False
     Private _Name As String = "Renamer"
     Private _setup As frmSettingsHolder
-    Private cmnuRenamer_Movies As New System.Windows.Forms.ToolStripMenuItem
-    Private cmnuRenamer_Episodes As New System.Windows.Forms.ToolStripMenuItem
-    Private cmnuRenamer_Shows As New System.Windows.Forms.ToolStripMenuItem
+    Private cmnuRenamer_Movies As New ToolStripMenuItem
+    Private cmnuRenamer_Episodes As New ToolStripMenuItem
+    Private cmnuRenamer_Shows As New ToolStripMenuItem
     Private cmnuSep_Movies As New System.Windows.Forms.ToolStripSeparator
     Private cmnuSep_Episodes As New System.Windows.Forms.ToolStripSeparator
     Private cmnuSep_Shows As New System.Windows.Forms.ToolStripSeparator
-    Private WithEvents cmnuRenamerAuto_Movie As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuRenamerManual_Movie As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuRenamerAuto_TVEpisode As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuRenamerManual_TVEpisode As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuRenamerAuto_TVShow As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuRenamerManual_TVShows As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuTrayToolsRenamer As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents mnuMainToolsRenamer As New System.Windows.Forms.ToolStripMenuItem
+    Private WithEvents cmnuRenamerAuto_Movie As New ToolStripMenuItem
+    Private WithEvents cmnuRenamerManual_Movie As New ToolStripMenuItem
+    Private WithEvents cmnuRenamerAuto_TVEpisode As New ToolStripMenuItem
+    Private WithEvents cmnuRenamerManual_TVEpisode As New ToolStripMenuItem
+    Private WithEvents cmnuRenamerAuto_TVShow As New ToolStripMenuItem
+    Private WithEvents cmnuRenamerManual_TVShows As New ToolStripMenuItem
+    Private WithEvents cmnuTrayToolsRenamer As New ToolStripMenuItem
+    Private WithEvents mnuMainToolsRenamer As New ToolStripMenuItem
 
 #End Region 'Fields
 
@@ -71,10 +71,10 @@ Public Class BulkRenamerModule
 
     Public ReadOnly Property ModuleType() As List(Of Enums.ModuleEventType) Implements Interfaces.GenericModule.ModuleType
         Get
-            Return New List(Of Enums.ModuleEventType)(New Enums.ModuleEventType() {Enums.ModuleEventType.AfterEdit_Movie, Enums.ModuleEventType.ScraperMulti_Movie, Enums.ModuleEventType.ScraperSingle_Movie, _
-                                                                                   Enums.ModuleEventType.AfterEdit_TVEpisode, Enums.ModuleEventType.ScraperMulti_TVEpisode, Enums.ModuleEventType.ScraperSingle_TVEpisode, _
-                                                                                   Enums.ModuleEventType.AfterEdit_TVShow, Enums.ModuleEventType.ScraperMulti_TVShow, Enums.ModuleEventType.ScraperSingle_TVShow, _
-                                                                                   Enums.ModuleEventType.AfterUpdateDB_TV})
+            Return New List(Of Enums.ModuleEventType)(New Enums.ModuleEventType() {Enums.ModuleEventType.AfterEdit_Movie, Enums.ModuleEventType.ScraperMulti_Movie, Enums.ModuleEventType.ScraperSingle_Movie,
+                                                                                   Enums.ModuleEventType.AfterEdit_TVEpisode, Enums.ModuleEventType.ScraperMulti_TVEpisode, Enums.ModuleEventType.ScraperSingle_TVEpisode,
+                                                                                   Enums.ModuleEventType.AfterEdit_TVShow, Enums.ModuleEventType.ScraperMulti_TVShow, Enums.ModuleEventType.ScraperSingle_TVShow,
+                                                                                   Enums.ModuleEventType.DuringUpdateDB_TV})
         End Get
     End Property
 
@@ -91,6 +91,12 @@ Public Class BulkRenamerModule
                 Disable()
             End If
         End Set
+    End Property
+
+    ReadOnly Property IsBusy() As Boolean Implements Interfaces.GenericModule.IsBusy
+        Get
+            Return False
+        End Get
     End Property
 
     ReadOnly Property ModuleName() As String Implements Interfaces.GenericModule.ModuleName
@@ -117,7 +123,11 @@ Public Class BulkRenamerModule
                 End If
             Case Enums.ModuleEventType.AfterEdit_TVEpisode
                 If MySettings.RenameEdit_Episodes AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
-                    FileFolderRenamer.RenameSingle_Episode(_dbelement, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False)
+                    FileFolderRenamer.RenameSingle_TVEpisode(_dbelement, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False)
+                End If
+            Case Enums.ModuleEventType.DuringUpdateDB_TV
+                If _dbelement.NfoPathSpecified AndAlso MySettings.RenameUpdate_Episodes AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
+                    FileFolderRenamer.RenameSingle_TVEpisode(_dbelement, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, True, False, False)
                 End If
             Case Enums.ModuleEventType.ScraperMulti_Movie
                 If MySettings.RenameMulti_Movies AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Movies) AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Movies) Then
@@ -125,29 +135,23 @@ Public Class BulkRenamerModule
                 End If
             Case Enums.ModuleEventType.ScraperMulti_TVEpisode
                 If MySettings.RenameMulti_Shows AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
-                    FileFolderRenamer.RenameSingle_Episode(_dbelement, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False)
+                    FileFolderRenamer.RenameSingle_TVEpisode(_dbelement, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False)
                 End If
             Case Enums.ModuleEventType.ScraperMulti_TVShow
                 If MySettings.RenameMulti_Shows AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Shows) AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Seasons) AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
-                    FileFolderRenamer.RenameSingle_Show(_dbelement, MySettings.FoldersPattern_Shows, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False)
+                    FileFolderRenamer.RenameSingle_TVShow(_dbelement, MySettings.FoldersPattern_Shows, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False)
                 End If
             Case Enums.ModuleEventType.ScraperSingle_Movie
                 If MySettings.RenameSingle_Movies AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Movies) AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Movies) Then
-                    FileFolderRenamer.RenameSingle_Movie(_dbelement, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, False, False, True)
+                    FileFolderRenamer.RenameSingle_Movie(_dbelement, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, False, False, False)
                 End If
             Case Enums.ModuleEventType.ScraperSingle_TVEpisode
                 If MySettings.RenameSingle_Shows AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
-                    FileFolderRenamer.RenameSingle_Episode(_dbelement, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False)
+                    FileFolderRenamer.RenameSingle_TVEpisode(_dbelement, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False)
                 End If
-            Case Enums.ModuleEventType.AfterUpdateDB_TV
-                If MySettings.RenameUpdate_Episodes AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
-                    Dim BatchMode As Boolean = DirectCast(_params(0), Boolean)
-                    Dim ToNFO As Boolean = DirectCast(_params(1), Boolean)
-                    Dim ShowErrors As Boolean = DirectCast(_params(2), Boolean)
-                    Dim ToDB As Boolean = DirectCast(_params(3), Boolean)
-                    Dim SourceID As Long = DirectCast(_params(4), Int64)
-                    Dim FFRenamer As New FileFolderRenamer
-                    FFRenamer.RenameAfterUpdateDB_TV(SourceID, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, BatchMode, ToNFO, ShowErrors, ToDB)
+            Case Enums.ModuleEventType.ScraperSingle_TVShow
+                If MySettings.RenameSingle_Shows AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Shows) AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Seasons) AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
+                    FileFolderRenamer.RenameSingle_TVShow(_dbelement, MySettings.FoldersPattern_Shows, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False)
                 End If
         End Select
         Return New Interfaces.ModuleResult With {.breakChain = False}
@@ -156,7 +160,7 @@ Public Class BulkRenamerModule
     Private Sub cmnuRenamerAuto_Movie_Click(ByVal sender As Object, ByVal e As EventArgs) Handles cmnuRenamerAuto_Movie.Click
         Cursor.Current = Cursors.WaitCursor
         For Each sRow As DataGridViewRow In ModulesManager.Instance.RuntimeObjects.MediaListMovies.SelectedRows
-            Dim DBElement As Database.DBElement = Master.DB.LoadMovieFromDB(Convert.ToInt64(sRow.Cells("idMovie").Value))
+            Dim DBElement As Database.DBElement = Master.DB.Load_Movie(Convert.ToInt64(sRow.Cells("idMovie").Value))
             If DBElement.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(DBElement, True) Then
                 FileFolderRenamer.RenameSingle_Movie(DBElement, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, False, True, True)
                 RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_Movie, New List(Of Object)(New Object() {Convert.ToInt64(sRow.Cells("idMovie").Value)}))
@@ -168,10 +172,10 @@ Public Class BulkRenamerModule
     Private Sub cmnuRenamerAuto_TVEpisode_Click(ByVal sender As Object, ByVal e As EventArgs) Handles cmnuRenamerAuto_TVEpisode.Click
         Cursor.Current = Cursors.WaitCursor
         For Each sRow As DataGridViewRow In ModulesManager.Instance.RuntimeObjects.MediaListTVEpisodes.SelectedRows
-            Dim DBElement As Database.DBElement = Master.DB.LoadTVEpisodeFromDB(Convert.ToInt64(sRow.Cells("idEpisode").Value), True)
+            Dim DBElement As Database.DBElement = Master.DB.Load_TVEpisode(Convert.ToInt64(sRow.Cells("idEpisode").Value), True)
             If DBElement.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_TVEpisode(DBElement, True) Then
-                FileFolderRenamer.RenameSingle_Episode(DBElement, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, True, True)
-                RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_TVEpisode, New List(Of Object)(New Object() {Convert.ToInt64(sRow.Cells("idEpisode").Value)}))
+                FileFolderRenamer.RenameSingle_TVEpisode(DBElement, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, True, True)
+                RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_TVEpisode, New List(Of Object)(New Object() {Convert.ToInt64(sRow.Cells("idEpisode").Value)})) 'TODO: should be idFile (MultiEpisode handling)
             End If
         Next
         Cursor.Current = Cursors.Default
@@ -180,9 +184,9 @@ Public Class BulkRenamerModule
     Private Sub cmnuRenamerAuto_TVShow_Click(ByVal sender As Object, ByVal e As EventArgs) Handles cmnuRenamerAuto_TVShow.Click
         Cursor.Current = Cursors.WaitCursor
         For Each sRow As DataGridViewRow In ModulesManager.Instance.RuntimeObjects.MediaListTVShows.SelectedRows
-            Dim DBElement As Database.DBElement = Master.DB.LoadTVShowFromDB(Convert.ToInt64(sRow.Cells("idShow").Value), True, True)
+            Dim DBElement As Database.DBElement = Master.DB.Load_TVShow(Convert.ToInt64(sRow.Cells("idShow").Value), True, True, True)
             If DBElement.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_TVShow(DBElement, True) Then
-                FileFolderRenamer.RenameSingle_Show(DBElement, MySettings.FoldersPattern_Shows, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, True, True)
+                FileFolderRenamer.RenameSingle_TVShow(DBElement, MySettings.FoldersPattern_Shows, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, True, True)
                 RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_TVShow, New List(Of Object)(New Object() {Convert.ToInt64(sRow.Cells("idShow").Value)}))
             End If
         Next
@@ -192,7 +196,7 @@ Public Class BulkRenamerModule
     Private Sub cmnuRenamerManual_Movie_Click(ByVal sender As Object, ByVal e As EventArgs) Handles cmnuRenamerManual_Movie.Click
         Cursor.Current = Cursors.WaitCursor
         For Each sRow As DataGridViewRow In ModulesManager.Instance.RuntimeObjects.MediaListMovies.SelectedRows
-            Dim DBElement As Database.DBElement = Master.DB.LoadMovieFromDB(Convert.ToInt64(sRow.Cells("idMovie").Value))
+            Dim DBElement As Database.DBElement = Master.DB.Load_Movie(Convert.ToInt64(sRow.Cells("idMovie").Value))
             If DBElement.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(DBElement, True) Then
                 Using dRenameManual As New dlgRenameManual_Movie(DBElement)
                     Select Case dRenameManual.ShowDialog()
@@ -208,7 +212,7 @@ Public Class BulkRenamerModule
     Private Sub cmnuRenamerManual_TVEpisode_Click(ByVal sender As Object, ByVal e As EventArgs) Handles cmnuRenamerManual_TVEpisode.Click
         Cursor.Current = Cursors.WaitCursor
         For Each sRow As DataGridViewRow In ModulesManager.Instance.RuntimeObjects.MediaListTVEpisodes.SelectedRows
-            Dim DBElement As Database.DBElement = Master.DB.LoadTVEpisodeFromDB(Convert.ToInt64(sRow.Cells("idEpisode").Value), True)
+            Dim DBElement As Database.DBElement = Master.DB.Load_TVEpisode(Convert.ToInt64(sRow.Cells("idEpisode").Value), True)
             If DBElement.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_TVEpisode(DBElement, True) Then
                 Using dRenameManual As New dlgRenameManual_TVEpisode(DBElement)
                     Select Case dRenameManual.ShowDialog()
@@ -224,7 +228,7 @@ Public Class BulkRenamerModule
     Private Sub cmnuRenamerManual_TVShow_Click(ByVal sender As Object, ByVal e As EventArgs) Handles cmnuRenamerManual_TVShows.Click
         Cursor.Current = Cursors.WaitCursor
         For Each sRow As DataGridViewRow In ModulesManager.Instance.RuntimeObjects.MediaListTVShows.SelectedRows
-            Dim DBElement As Database.DBElement = Master.DB.LoadTVShowFromDB(Convert.ToInt64(sRow.Cells("idShow").Value), True, True)
+            Dim DBElement As Database.DBElement = Master.DB.Load_TVShow(Convert.ToInt64(sRow.Cells("idShow").Value), True, True, True)
             If DBElement.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_TVShow(DBElement, True) Then
                 Using dRenameManual As New dlgRenameManual_TVShow(DBElement)
                     Select Case dRenameManual.ShowDialog()
@@ -261,7 +265,7 @@ Public Class BulkRenamerModule
         RemoveToolsStripItem_Shows(cmnuRenamer_Shows)
     End Sub
 
-    Public Sub RemoveToolsStripItem_Episodes(value As System.Windows.Forms.ToolStripItem)
+    Public Sub RemoveToolsStripItem_Episodes(value As ToolStripItem)
         If ModulesManager.Instance.RuntimeObjects.ContextMenuTVEpisodeList.InvokeRequired Then
             ModulesManager.Instance.RuntimeObjects.ContextMenuTVEpisodeList.Invoke(New Delegate_RemoveToolsStripItem(AddressOf RemoveToolsStripItem_Episodes), New Object() {value})
         Else
@@ -269,7 +273,7 @@ Public Class BulkRenamerModule
         End If
     End Sub
 
-    Public Sub RemoveToolsStripItem_Movies(value As System.Windows.Forms.ToolStripItem)
+    Public Sub RemoveToolsStripItem_Movies(value As ToolStripItem)
         If ModulesManager.Instance.RuntimeObjects.ContextMenuMovieList.InvokeRequired Then
             ModulesManager.Instance.RuntimeObjects.ContextMenuMovieList.Invoke(New Delegate_RemoveToolsStripItem(AddressOf RemoveToolsStripItem_Movies), New Object() {value})
         Else
@@ -277,7 +281,7 @@ Public Class BulkRenamerModule
         End If
     End Sub
 
-    Public Sub RemoveToolsStripItem_Shows(value As System.Windows.Forms.ToolStripItem)
+    Public Sub RemoveToolsStripItem_Shows(value As ToolStripItem)
         If ModulesManager.Instance.RuntimeObjects.ContextMenuTVShowList.InvokeRequired Then
             ModulesManager.Instance.RuntimeObjects.ContextMenuTVShowList.Invoke(New Delegate_RemoveToolsStripItem(AddressOf RemoveToolsStripItem_Shows), New Object() {value})
         Else
@@ -304,7 +308,7 @@ Public Class BulkRenamerModule
         'cmnuMovies
         cmnuRenamer_Movies.Image = New Bitmap(My.Resources.icon)
         cmnuRenamer_Movies.Text = Master.eLang.GetString(257, "Rename")
-        cmnuRenamer_Movies.ShortcutKeys = CType((System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.R), System.Windows.Forms.Keys)
+        cmnuRenamer_Movies.ShortcutKeys = CType((Keys.Control Or Keys.R), Keys)
         cmnuRenamerAuto_Movie.Text = Master.eLang.GetString(293, "Auto")
         cmnuRenamerManual_Movie.Text = Master.eLang.GetString(294, "Manual")
         cmnuRenamer_Movies.DropDownItems.Add(cmnuRenamerAuto_Movie)
@@ -316,7 +320,7 @@ Public Class BulkRenamerModule
         'cmnuEpisodes
         cmnuRenamer_Episodes.Image = New Bitmap(My.Resources.icon)
         cmnuRenamer_Episodes.Text = Master.eLang.GetString(257, "Rename")
-        cmnuRenamer_Episodes.ShortcutKeys = CType((System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.R), System.Windows.Forms.Keys)
+        cmnuRenamer_Episodes.ShortcutKeys = CType((Keys.Control Or Keys.R), Keys)
         cmnuRenamerAuto_TVEpisode.Text = Master.eLang.GetString(293, "Auto")
         cmnuRenamerManual_TVEpisode.Text = Master.eLang.GetString(294, "Manual")
         cmnuRenamer_Episodes.DropDownItems.Add(cmnuRenamerAuto_TVEpisode)
@@ -328,7 +332,7 @@ Public Class BulkRenamerModule
         'cmnuShows
         cmnuRenamer_Shows.Image = New Bitmap(My.Resources.icon)
         cmnuRenamer_Shows.Text = Master.eLang.GetString(257, "Rename")
-        cmnuRenamer_Shows.ShortcutKeys = CType((System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.R), System.Windows.Forms.Keys)
+        cmnuRenamer_Shows.ShortcutKeys = CType((Keys.Control Or Keys.R), Keys)
         cmnuRenamerAuto_TVShow.Text = Master.eLang.GetString(293, "Auto")
         cmnuRenamerManual_TVShows.Text = Master.eLang.GetString(294, "Manual")
         cmnuRenamer_Shows.DropDownItems.Add(cmnuRenamerAuto_TVShow)
@@ -338,7 +342,7 @@ Public Class BulkRenamerModule
         SetToolsStripItem_Shows(cmnuRenamer_Shows)
     End Sub
 
-    Public Sub AddToolsStripItem(control As System.Windows.Forms.ToolStripMenuItem, value As System.Windows.Forms.ToolStripItem)
+    Public Sub AddToolsStripItem(control As ToolStripMenuItem, value As ToolStripItem)
         If control.Owner.InvokeRequired Then
             control.Owner.Invoke(New Delegate_AddToolsStripItem(AddressOf AddToolsStripItem), New Object() {control, value})
         Else
@@ -346,7 +350,7 @@ Public Class BulkRenamerModule
         End If
     End Sub
 
-    Public Sub SetToolsStripItem_Episodes(value As System.Windows.Forms.ToolStripItem)
+    Public Sub SetToolsStripItem_Episodes(value As ToolStripItem)
         If ModulesManager.Instance.RuntimeObjects.ContextMenuTVEpisodeList.InvokeRequired Then
             ModulesManager.Instance.RuntimeObjects.ContextMenuTVEpisodeList.Invoke(New Delegate_SetToolsStripItem(AddressOf SetToolsStripItem_Episodes), New Object() {value})
         Else
@@ -354,7 +358,7 @@ Public Class BulkRenamerModule
         End If
     End Sub
 
-    Public Sub SetToolsStripItem_Movies(value As System.Windows.Forms.ToolStripItem)
+    Public Sub SetToolsStripItem_Movies(value As ToolStripItem)
         If ModulesManager.Instance.RuntimeObjects.ContextMenuMovieList.InvokeRequired Then
             ModulesManager.Instance.RuntimeObjects.ContextMenuMovieList.Invoke(New Delegate_SetToolsStripItem(AddressOf SetToolsStripItem_Movies), New Object() {value})
         Else
@@ -362,7 +366,7 @@ Public Class BulkRenamerModule
         End If
     End Sub
 
-    Public Sub SetToolsStripItem_Shows(value As System.Windows.Forms.ToolStripItem)
+    Public Sub SetToolsStripItem_Shows(value As ToolStripItem)
         If ModulesManager.Instance.RuntimeObjects.ContextMenuTVShowList.InvokeRequired Then
             ModulesManager.Instance.RuntimeObjects.ContextMenuTVShowList.Invoke(New Delegate_SetToolsStripItem(AddressOf SetToolsStripItem_Shows), New Object() {value})
         Else
@@ -412,18 +416,18 @@ Public Class BulkRenamerModule
     End Function
 
     Sub LoadSettings()
-        MySettings.FoldersPattern_Movies = clsAdvancedSettings.GetSetting("FoldersPattern", "$T {($Y)}", , Enums.ContentType.Movie)
-        MySettings.FoldersPattern_Seasons = clsAdvancedSettings.GetSetting("FoldersPattern", "Season $K2_?", , Enums.ContentType.TVSeason)
-        MySettings.FoldersPattern_Shows = clsAdvancedSettings.GetSetting("FoldersPattern", "$Z", , Enums.ContentType.TVShow)
-        MySettings.FilesPattern_Episodes = clsAdvancedSettings.GetSetting("FilesPattern", "$Z - $W2_S?2E?{ - $T}", , Enums.ContentType.TVEpisode)
-        MySettings.FilesPattern_Movies = clsAdvancedSettings.GetSetting("FilesPattern", "$T{.$S}", , Enums.ContentType.Movie)
-        MySettings.RenameEdit_Movies = clsAdvancedSettings.GetBooleanSetting("RenameEdit", False, , Enums.ContentType.Movie)
-        MySettings.RenameEdit_Episodes = clsAdvancedSettings.GetBooleanSetting("RenameEdit", False, , Enums.ContentType.TVShow)
-        MySettings.RenameMulti_Movies = clsAdvancedSettings.GetBooleanSetting("RenameMulti", False, , Enums.ContentType.Movie)
-        MySettings.RenameMulti_Shows = clsAdvancedSettings.GetBooleanSetting("RenameMulti", False, , Enums.ContentType.TVShow)
-        MySettings.RenameSingle_Movies = clsAdvancedSettings.GetBooleanSetting("RenameSingle", False, , Enums.ContentType.Movie)
-        MySettings.RenameSingle_Shows = clsAdvancedSettings.GetBooleanSetting("RenameSingle", False, , Enums.ContentType.TVShow)
-        MySettings.RenameUpdate_Episodes = clsAdvancedSettings.GetBooleanSetting("RenameUpdate", False, , Enums.ContentType.TVEpisode)
+        MySettings.FoldersPattern_Movies = AdvancedSettings.GetSetting("FoldersPattern", "$T {($Y)}", , Enums.ContentType.Movie)
+        MySettings.FoldersPattern_Seasons = AdvancedSettings.GetSetting("FoldersPattern", "Season $K2_?", , Enums.ContentType.TVSeason)
+        MySettings.FoldersPattern_Shows = AdvancedSettings.GetSetting("FoldersPattern", "$Z", , Enums.ContentType.TVShow)
+        MySettings.FilesPattern_Episodes = AdvancedSettings.GetSetting("FilesPattern", "$Z - $W2_S?2E?{ - $T}", , Enums.ContentType.TVEpisode)
+        MySettings.FilesPattern_Movies = AdvancedSettings.GetSetting("FilesPattern", "$T{.$S}", , Enums.ContentType.Movie)
+        MySettings.RenameEdit_Movies = AdvancedSettings.GetBooleanSetting("RenameEdit", False, , Enums.ContentType.Movie)
+        MySettings.RenameEdit_Episodes = AdvancedSettings.GetBooleanSetting("RenameEdit", False, , Enums.ContentType.TVShow)
+        MySettings.RenameMulti_Movies = AdvancedSettings.GetBooleanSetting("RenameMulti", False, , Enums.ContentType.Movie)
+        MySettings.RenameMulti_Shows = AdvancedSettings.GetBooleanSetting("RenameMulti", False, , Enums.ContentType.TVShow)
+        MySettings.RenameSingle_Movies = AdvancedSettings.GetBooleanSetting("RenameSingle", False, , Enums.ContentType.Movie)
+        MySettings.RenameSingle_Shows = AdvancedSettings.GetBooleanSetting("RenameSingle", False, , Enums.ContentType.TVShow)
+        MySettings.RenameUpdate_Episodes = AdvancedSettings.GetBooleanSetting("RenameUpdate", False, , Enums.ContentType.TVEpisode)
     End Sub
 
     Private Sub mnuMainToolsRenamer_Click(ByVal sender As Object, ByVal e As EventArgs) Handles mnuMainToolsRenamer.Click, cmnuTrayToolsRenamer.Click
@@ -441,10 +445,10 @@ Public Class BulkRenamerModule
                 End Using
             Case Enums.ContentType.TV
                 Using dBulkRename As New dlgBulkRenamer_TV
-                    dBulkRename.FilterShows = ModulesManager.Instance.RuntimeObjects.FilterShows
-                    dBulkRename.FilterShowsSearch = ModulesManager.Instance.RuntimeObjects.FilterShowsSearch
-                    dBulkRename.FilterShowsType = ModulesManager.Instance.RuntimeObjects.FilterShowsType
-                    dBulkRename.ListShows = ModulesManager.Instance.RuntimeObjects.ListShows
+                    dBulkRename.FilterShows = ModulesManager.Instance.RuntimeObjects.FilterTVShows
+                    dBulkRename.FilterShowsSearch = ModulesManager.Instance.RuntimeObjects.FilterTVShowsSearch
+                    dBulkRename.FilterShowsType = ModulesManager.Instance.RuntimeObjects.FilterTVShowsType
+                    dBulkRename.ListShows = ModulesManager.Instance.RuntimeObjects.ListTVShows
                     dBulkRename.txtFilePatternEpisodes.Text = MySettings.FilesPattern_Episodes
                     dBulkRename.txtFolderPatternSeasons.Text = MySettings.FoldersPattern_Seasons
                     dBulkRename.txtFolderPatternShows.Text = MySettings.FoldersPattern_Shows
@@ -478,7 +482,7 @@ Public Class BulkRenamerModule
     End Sub
 
     Sub SaveSettings()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetSetting("FoldersPattern", MySettings.FoldersPattern_Movies, , , Enums.ContentType.Movie)
             settings.SetSetting("FoldersPattern", MySettings.FoldersPattern_Seasons, , , Enums.ContentType.TVSeason)
             settings.SetSetting("FoldersPattern", MySettings.FoldersPattern_Shows, , , Enums.ContentType.TVShow)

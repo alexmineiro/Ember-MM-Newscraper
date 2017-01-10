@@ -161,7 +161,7 @@ Public Class dlgIMDBSearchResults_TV
                 _PosterCache.Add(Res.IMDBId, CType(Res.Result.Clone, Image))
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         Finally
             pnlPicStatus.Visible = False
         End Try
@@ -175,7 +175,6 @@ Public Class dlgIMDBSearchResults_TV
         _tmpTVShow = New MediaContainers.TVShow
 
         DialogResult = DialogResult.Cancel
-        Close()
     End Sub
 
     Private Sub btnOpenFolder_Click(sender As Object, e As EventArgs) Handles btnOpenFolder.Click
@@ -206,8 +205,8 @@ Public Class dlgIMDBSearchResults_TV
         ControlsVisible(False)
         lblTitle.Text = String.Empty
         lblTagline.Text = String.Empty
-        lblYear.Text = String.Empty
-        lblDirectors.Text = String.Empty
+        lblPremiered.Text = String.Empty
+        lblCreators.Text = String.Empty
         lblGenre.Text = String.Empty
         txtPlot.Text = String.Empty
         lblIMDBID.Text = String.Empty
@@ -220,15 +219,15 @@ Public Class dlgIMDBSearchResults_TV
 
     Private Sub ControlsVisible(ByVal areVisible As Boolean)
         lblPremieredHeader.Visible = areVisible
-        lblDirectorsHeader.Visible = areVisible
+        lblCreatorsHeader.Visible = areVisible
         lblGenreHeader.Visible = areVisible
         lblPlotHeader.Visible = areVisible
         lblIMDBHeader.Visible = areVisible
         txtPlot.Visible = areVisible
-        lblYear.Visible = areVisible
+        lblPremiered.Visible = areVisible
         lblTagline.Visible = areVisible
         lblTitle.Visible = areVisible
-        lblDirectors.Visible = areVisible
+        lblCreators.Visible = areVisible
         lblGenre.Visible = areVisible
         lblIMDBID.Visible = areVisible
         pbPoster.Visible = areVisible
@@ -251,7 +250,7 @@ Public Class dlgIMDBSearchResults_TV
                 pnlTop.BackgroundImage = iBackground
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -275,7 +274,6 @@ Public Class dlgIMDBSearchResults_TV
         End If
 
         DialogResult = DialogResult.OK
-        Close()
     End Sub
 
     Private Sub SearchInfoDownloaded(ByVal sPoster As String, ByVal sInfo As MediaContainers.TVShow)
@@ -287,9 +285,9 @@ Public Class dlgIMDBSearchResults_TV
             _tmpTVShow = sInfo
             lblTitle.Text = _tmpTVShow.Title
             lblTagline.Text = String.Empty
-            lblYear.Text = _tmpTVShow.Premiered
-            'Me.lblDirector.Text = _nShow.Directors
-            lblGenre.Text = _tmpTVShow.Genre
+            lblPremiered.Text = _tmpTVShow.Premiered
+            lblCreators.Text = String.Join(" / ", _tmpTVShow.Creators)
+            lblGenre.Text = String.Join(" / ", _tmpTVShow.Genres.ToArray)
             txtPlot.Text = _tmpTVShow.Plot
             lblIMDBID.Text = _tmpTVShow.IMDB
 
@@ -346,6 +344,7 @@ Public Class dlgIMDBSearchResults_TV
 
     Private Function SetPreviewOptions() As Structures.ScrapeOptions
         Dim aOpt As New Structures.ScrapeOptions
+        aOpt.bMainCreators = True
         aOpt.bMainGenres = True
         aOpt.bMainPlot = True
         aOpt.bMainPremiered = True
@@ -361,8 +360,8 @@ Public Class dlgIMDBSearchResults_TV
         Label1.Text = Master.eLang.GetString(948, "TV Search Results")
         chkManual.Text = Master.eLang.GetString(847, "Manual IMDB Entry:")
         btnVerify.Text = Master.eLang.GetString(848, "Verify")
+        lblCreatorsHeader.Text = String.Concat(Master.eLang.GetString(744, "Creators"), ":")
         lblPremieredHeader.Text = String.Concat(Master.eLang.GetString(724, "Premiered"), ":")
-        lblDirectorsHeader.Text = String.Concat(Master.eLang.GetString(940, "Directors"), ":")
         lblGenreHeader.Text = Master.eLang.GetString(51, "Genre(s):")
         lblIMDBHeader.Text = Master.eLang.GetString(873, "IMDB ID:")
         lblPlotHeader.Text = Master.eLang.GetString(242, "Plot Outline:")
@@ -416,7 +415,7 @@ Public Class dlgIMDBSearchResults_TV
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -448,7 +447,7 @@ Public Class dlgIMDBSearchResults_TV
                 Return DirectCast(bin.Deserialize(mem), MediaContainers.TVShow)
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
         Return Nothing

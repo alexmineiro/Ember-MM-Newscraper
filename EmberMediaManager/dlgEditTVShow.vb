@@ -64,7 +64,7 @@ Public Class dlgEditTVShow
 
     Public Overloads Function ShowDialog(ByVal DBTVShow As Database.DBElement) As DialogResult
         tmpDBElement = DBTVShow
-        Return MyBase.ShowDialog()
+        Return ShowDialog()
     End Function
 
     Private Sub ActorEdit()
@@ -124,7 +124,7 @@ Public Class dlgEditTVShow
             AddHandler pbExtrafanartsImage(iIndex).Click, AddressOf pbExtrafanartsImage_Click
             AddHandler pnlExtrafanartsImage(iIndex).Click, AddressOf pnlExtrafanartsImage_Click
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
         iEFTop += 74
@@ -218,7 +218,7 @@ Public Class dlgEditTVShow
 
     Private Sub btnManual_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnManual.Click
         If dlgManualEdit.ShowDialog(tmpDBElement.NfoPath) = DialogResult.OK Then
-            tmpDBElement.TVShow = NFO.LoadTVShowFromNFO(tmpDBElement.NfoPath)
+            tmpDBElement.TVShow = NFO.LoadFromNFO_TVShow(tmpDBElement.NfoPath)
             FillInfo()
         End If
     End Sub
@@ -279,6 +279,12 @@ Public Class dlgEditTVShow
         tmpDBElement.ImagesContainer.Poster = New MediaContainers.Image
     End Sub
 
+    Private Sub btnRemoveTheme_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnRemoveTheme.Click
+        'ThemeStop()
+        tmpDBElement.Theme = New MediaContainers.Theme
+        txtLocalTheme.Text = String.Empty
+    End Sub
+
     Private Sub btnSetBannerScrape_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSetBannerScrape.Click
         Dim aContainer As New MediaContainers.SearchResultsContainer
         Dim ScrapeModifiers As New Structures.ScrapeModifiers
@@ -290,7 +296,7 @@ Public Class dlgEditTVShow
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Banner = dlgImgS.Result.ImagesContainer.Banner
-                    If tmpDBElement.ImagesContainer.Banner.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Banner.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Banner.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Banner.ImageOriginal.LoadFromMemoryStream Then
                         pbBanner.Image = tmpDBElement.ImagesContainer.Banner.ImageOriginal.Image
                         lblBannerSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbBanner.Image.Width, pbBanner.Image.Height)
                         lblBannerSize.Visible = True
@@ -310,15 +316,15 @@ Public Class dlgEditTVShow
 
     Private Sub btnSetBannerLocal_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSetBannerLocal.Click
         Try
-            With ofdImage
+            With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
                 .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
                 .FilterIndex = 0
             End With
 
-            If ofdImage.ShowDialog() = DialogResult.OK Then
+            If ofdLocalFiles.ShowDialog() = DialogResult.OK Then
                 Dim tImage As New MediaContainers.Image
-                tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+                tImage.ImageOriginal.LoadFromFile(ofdLocalFiles.FileName, True)
                 If tImage.ImageOriginal.Image IsNot Nothing Then
                     tmpDBElement.ImagesContainer.Banner = tImage
                     pbBanner.Image = tImage.ImageOriginal.Image
@@ -329,7 +335,7 @@ Public Class dlgEditTVShow
                 End If
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -349,7 +355,7 @@ Public Class dlgEditTVShow
                 End If
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -364,7 +370,7 @@ Public Class dlgEditTVShow
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.CharacterArt = dlgImgS.Result.ImagesContainer.CharacterArt
-                    If tmpDBElement.ImagesContainer.CharacterArt.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.CharacterArt.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.CharacterArt.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.CharacterArt.ImageOriginal.LoadFromMemoryStream Then
                         pbCharacterArt.Image = tmpDBElement.ImagesContainer.CharacterArt.ImageOriginal.Image
                         lblCharacterArtSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbCharacterArt.Image.Width, pbCharacterArt.Image.Height)
                         lblCharacterArtSize.Visible = True
@@ -384,15 +390,15 @@ Public Class dlgEditTVShow
 
     Private Sub btnSetCharacterArtLocal_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSetCharacterArtLocal.Click
         Try
-            With ofdImage
+            With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
                 .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
                 .FilterIndex = 0
             End With
 
-            If ofdImage.ShowDialog() = DialogResult.OK Then
+            If ofdLocalFiles.ShowDialog() = DialogResult.OK Then
                 Dim tImage As New MediaContainers.Image
-                tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+                tImage.ImageOriginal.LoadFromFile(ofdLocalFiles.FileName, True)
                 If tImage.ImageOriginal.Image IsNot Nothing Then
                     tmpDBElement.ImagesContainer.CharacterArt = tImage
                     pbCharacterArt.Image = tImage.ImageOriginal.Image
@@ -403,7 +409,7 @@ Public Class dlgEditTVShow
                 End If
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -423,7 +429,7 @@ Public Class dlgEditTVShow
                 End If
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -443,7 +449,7 @@ Public Class dlgEditTVShow
                 End If
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -458,7 +464,7 @@ Public Class dlgEditTVShow
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.ClearArt = dlgImgS.Result.ImagesContainer.ClearArt
-                    If tmpDBElement.ImagesContainer.ClearArt.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.ClearArt.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.ClearArt.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.ClearArt.ImageOriginal.LoadFromMemoryStream Then
                         pbClearArt.Image = tmpDBElement.ImagesContainer.ClearArt.ImageOriginal.Image
                         lblClearArtSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbClearArt.Image.Width, pbClearArt.Image.Height)
                         lblClearArtSize.Visible = True
@@ -478,15 +484,15 @@ Public Class dlgEditTVShow
 
     Private Sub btnSetClearArtLocal_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSetClearArtLocal.Click
         Try
-            With ofdImage
+            With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
                 .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
                 .FilterIndex = 0
             End With
 
-            If ofdImage.ShowDialog() = DialogResult.OK Then
+            If ofdLocalFiles.ShowDialog() = DialogResult.OK Then
                 Dim tImage As New MediaContainers.Image
-                tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+                tImage.ImageOriginal.LoadFromFile(ofdLocalFiles.FileName, True)
                 If tImage.ImageOriginal.Image IsNot Nothing Then
                     tmpDBElement.ImagesContainer.ClearArt = tImage
                     pbClearArt.Image = tImage.ImageOriginal.Image
@@ -497,7 +503,7 @@ Public Class dlgEditTVShow
                 End If
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -517,7 +523,7 @@ Public Class dlgEditTVShow
                 End If
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -532,7 +538,7 @@ Public Class dlgEditTVShow
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.ClearLogo = dlgImgS.Result.ImagesContainer.ClearLogo
-                    If dlgImgS.Result.ImagesContainer.ClearLogo.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.ClearLogo.ImageOriginal.FromMemoryStream Then
+                    If dlgImgS.Result.ImagesContainer.ClearLogo.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.ClearLogo.ImageOriginal.LoadFromMemoryStream Then
                         pbClearLogo.Image = tmpDBElement.ImagesContainer.ClearLogo.ImageOriginal.Image
                         lblClearLogoSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbClearLogo.Image.Width, pbClearLogo.Image.Height)
                         lblClearLogoSize.Visible = True
@@ -552,15 +558,15 @@ Public Class dlgEditTVShow
 
     Private Sub btnSetClearLogoLocal_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSetClearLogoLocal.Click
         Try
-            With ofdImage
+            With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
                 .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
                 .FilterIndex = 0
             End With
 
-            If ofdImage.ShowDialog() = DialogResult.OK Then
+            If ofdLocalFiles.ShowDialog() = DialogResult.OK Then
                 Dim tImage As New MediaContainers.Image
-                tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+                tImage.ImageOriginal.LoadFromFile(ofdLocalFiles.FileName, True)
                 If tImage.ImageOriginal.Image IsNot Nothing Then
                     tmpDBElement.ImagesContainer.ClearLogo = tImage
                     pbClearLogo.Image = tImage.ImageOriginal.Image
@@ -571,7 +577,7 @@ Public Class dlgEditTVShow
                 End If
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -591,7 +597,7 @@ Public Class dlgEditTVShow
                 End If
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -606,7 +612,7 @@ Public Class dlgEditTVShow
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Fanart = dlgImgS.Result.ImagesContainer.Fanart
-                    If tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Fanart.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Fanart.ImageOriginal.LoadFromMemoryStream Then
                         pbFanart.Image = tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image
                         lblFanartSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbFanart.Image.Width, pbFanart.Image.Height)
                         lblFanartSize.Visible = True
@@ -626,15 +632,15 @@ Public Class dlgEditTVShow
 
     Private Sub btnSetFanartLocal_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSetFanartLocal.Click
         Try
-            With ofdImage
+            With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
                 .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
                 .FilterIndex = 4
             End With
 
-            If ofdImage.ShowDialog() = DialogResult.OK Then
+            If ofdLocalFiles.ShowDialog() = DialogResult.OK Then
                 Dim tImage As New MediaContainers.Image
-                tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+                tImage.ImageOriginal.LoadFromFile(ofdLocalFiles.FileName, True)
                 If tImage.ImageOriginal.Image IsNot Nothing Then
                     tmpDBElement.ImagesContainer.Fanart = tImage
                     pbFanart.Image = tImage.ImageOriginal.Image
@@ -645,7 +651,7 @@ Public Class dlgEditTVShow
                 End If
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -660,7 +666,7 @@ Public Class dlgEditTVShow
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Landscape = dlgImgS.Result.ImagesContainer.Landscape
-                    If tmpDBElement.ImagesContainer.Landscape.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Landscape.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Landscape.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Landscape.ImageOriginal.LoadFromMemoryStream Then
                         pbLandscape.Image = tmpDBElement.ImagesContainer.Landscape.ImageOriginal.Image
                         lblLandscapeSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbLandscape.Image.Width, pbLandscape.Image.Height)
                         lblLandscapeSize.Visible = True
@@ -672,7 +678,7 @@ Public Class dlgEditTVShow
                     End If
                 End If
             Else
-                MessageBox.Show(Master.eLang.GetString(972, "No Landscapes found"), String.Empty, MessageBoxButtons.OK, MessageBoxIcon.Information)
+                MessageBox.Show(Master.eLang.GetString(1197, "No Landscapes found"), String.Empty, MessageBoxButtons.OK, MessageBoxIcon.Information)
             End If
         End If
         Cursor = Cursors.Default
@@ -680,15 +686,15 @@ Public Class dlgEditTVShow
 
     Private Sub btnSetLandscapeLocal_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSetLandscapeLocal.Click
         Try
-            With ofdImage
+            With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
                 .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
                 .FilterIndex = 0
             End With
 
-            If ofdImage.ShowDialog() = DialogResult.OK Then
+            If ofdLocalFiles.ShowDialog() = DialogResult.OK Then
                 Dim tImage As New MediaContainers.Image
-                tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+                tImage.ImageOriginal.LoadFromFile(ofdLocalFiles.FileName, True)
                 If tImage.ImageOriginal.Image IsNot Nothing Then
                     tmpDBElement.ImagesContainer.Landscape = tImage
                     pbLandscape.Image = tImage.ImageOriginal.Image
@@ -699,7 +705,7 @@ Public Class dlgEditTVShow
                 End If
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -719,7 +725,7 @@ Public Class dlgEditTVShow
                 End If
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -739,7 +745,7 @@ Public Class dlgEditTVShow
                 End If
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -754,7 +760,7 @@ Public Class dlgEditTVShow
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Poster = dlgImgS.Result.ImagesContainer.Poster
-                    If tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Poster.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Poster.ImageOriginal.LoadFromMemoryStream Then
                         pbPoster.Image = tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image
                         lblPosterSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbPoster.Image.Width, pbPoster.Image.Height)
                         lblPosterSize.Visible = True
@@ -774,15 +780,15 @@ Public Class dlgEditTVShow
 
     Private Sub btnSetPosterLocal_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSetPosterLocal.Click
         Try
-            With ofdImage
+            With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
                 .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
                 .FilterIndex = 0
             End With
 
-            If ofdImage.ShowDialog() = DialogResult.OK Then
+            If ofdLocalFiles.ShowDialog() = DialogResult.OK Then
                 Dim tImage As New MediaContainers.Image
-                tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+                tImage.ImageOriginal.LoadFromFile(ofdLocalFiles.FileName, True)
                 If tImage.ImageOriginal.Image IsNot Nothing Then
                     tmpDBElement.ImagesContainer.Poster = tImage
                     pbPoster.Image = tImage.ImageOriginal.Image
@@ -793,8 +799,41 @@ Public Class dlgEditTVShow
                 End If
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
+    End Sub
+
+    Private Sub btnSetThemeScrape_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSetThemeScrape.Click
+        Dim dThemeSelect As dlgThemeSelect
+        Dim tList As New List(Of MediaContainers.Theme)
+
+        'ThemeStop()
+        If Not ModulesManager.Instance.ScrapeTheme_Movie(tmpDBElement, Enums.ModifierType.MainTheme, tList) Then
+            If tList.Count > 0 Then
+                dThemeSelect = New dlgThemeSelect()
+                If dThemeSelect.ShowDialog(tmpDBElement, tList, True) = DialogResult.OK Then
+                    tmpDBElement.Theme = dThemeSelect.Result
+                    LoadTheme(tmpDBElement.Theme)
+                End If
+            Else
+                MessageBox.Show(Master.eLang.GetString(1163, "No Themes found"), String.Empty, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        End If
+    End Sub
+
+    Private Sub btnSetThemeLocal_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSetThemeLocal.Click
+        'ThemeStop()
+        With ofdLocalFiles
+            .InitialDirectory = tmpDBElement.ShowPath
+            .Filter = FileUtils.Common.GetOpenFileDialogFilter_Theme()
+            .FilterIndex = 0
+        End With
+
+        If ofdLocalFiles.ShowDialog() = DialogResult.OK Then
+            tmpDBElement.Theme = New MediaContainers.Theme With {.LocalFilePath = ofdLocalFiles.FileName}
+            tmpDBElement.Theme.LoadAndCache()
+            LoadTheme(tmpDBElement.Theme)
+        End If
     End Sub
 
     Private Sub BuildStars(ByVal sinRating As Single)
@@ -1038,7 +1077,7 @@ Public Class dlgEditTVShow
                 End If
             End With
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1089,7 +1128,17 @@ Public Class dlgEditTVShow
         cbOrdering.SelectedIndex = tmpDBElement.Ordering
         cbEpisodeSorting.SelectedIndex = tmpDBElement.EpisodeSorting
         If cbSourceLanguage.Items.Count > 0 Then
-            cbSourceLanguage.Text = Master.eSettings.TVGeneralLanguages.Language.FirstOrDefault(Function(l) l.abbreviation = tmpDBElement.Language).name
+            Dim tLanguage As languageProperty = APIXML.ScraperLanguagesXML.Languages.FirstOrDefault(Function(l) l.Abbreviation = tmpDBElement.Language)
+            If tLanguage IsNot Nothing Then
+                cbSourceLanguage.Text = tLanguage.Description
+            Else
+                tLanguage = APIXML.ScraperLanguagesXML.Languages.FirstOrDefault(Function(l) l.Abbreviation.StartsWith(tmpDBElement.Language_Main))
+                If tLanguage IsNot Nothing Then
+                    cbSourceLanguage.Text = tLanguage.Description
+                Else
+                    cbSourceLanguage.Text = APIXML.ScraperLanguagesXML.Languages.FirstOrDefault(Function(l) l.Abbreviation = "en-US").Description
+                End If
+            End If
         End If
 
         txtTitle.Text = tmpDBElement.TVShow.Title
@@ -1099,15 +1148,15 @@ Public Class dlgEditTVShow
         txtRuntime.Text = tmpDBElement.TVShow.Runtime
         txtSortTitle.Text = tmpDBElement.TVShow.SortTitle
         txtStatus.Text = tmpDBElement.TVShow.Status
-        txtStudio.Text = tmpDBElement.TVShow.Studio
+        txtStudio.Text = String.Join(" / ", tmpDBElement.TVShow.Studios.ToArray)
         txtVotes.Text = tmpDBElement.TVShow.Votes
 
         For i As Integer = 0 To clbGenre.Items.Count - 1
             clbGenre.SetItemChecked(i, False)
         Next
-        If Not String.IsNullOrEmpty(tmpDBElement.TVShow.Genre) Then
+        If tmpDBElement.TVShow.GenresSpecified Then
             Dim genreArray() As String
-            genreArray = tmpDBElement.TVShow.Genre.Split("/"c)
+            genreArray = tmpDBElement.TVShow.Genres.ToArray
             For g As Integer = 0 To genreArray.Count - 1
                 If clbGenre.FindString(genreArray(g).Trim) > 0 Then
                     clbGenre.SetItemChecked(clbGenre.FindString(genreArray(g).Trim), True)
@@ -1152,7 +1201,7 @@ Public Class dlgEditTVShow
         With tmpDBElement.ImagesContainer
 
             'Load all images to MemoryStream and Bitmap
-            tmpDBElement.LoadAllImages(True, False)
+            tmpDBElement.LoadAllImages(True, True)
 
             'Banner
             If Master.eSettings.TVShowBannerAnyEnabled Then
@@ -1282,6 +1331,15 @@ Public Class dlgEditTVShow
                 tcEdit.TabPages.Remove(tpPoster)
             End If
         End With
+
+        'Theme
+        If Master.eSettings.TvShowThemeAnyEnabled Then
+            If Not String.IsNullOrEmpty(tmpDBElement.Theme.LocalFilePath) OrElse Not String.IsNullOrEmpty(tmpDBElement.Theme.URLAudioStream) Then
+                LoadTheme(tmpDBElement.Theme)
+            End If
+        Else
+            tcEdit.TabPages.Remove(tpTheme)
+        End If
     End Sub
 
     Private Sub lbGenre_ItemCheck(ByVal sender As Object, ByVal e As ItemCheckEventArgs) Handles clbGenre.ItemCheck
@@ -1315,6 +1373,13 @@ Public Class dlgEditTVShow
         lbMPAA.Items.AddRange(APIXML.GetRatingList_TV)
     End Sub
 
+    Private Sub LoadTheme(ByVal Theme As MediaContainers.Theme)
+        txtLocalTheme.Text =
+            If(Theme.LocalFilePathSpecified, Theme.LocalFilePath,
+            If(Theme.URLAudioStreamSpecified, Theme.URLAudioStream,
+            If(Theme.URLWebsiteSpecified, Theme.URLWebsite, String.Empty)))
+    End Sub
+
     Private Sub lvActors_ColumnClick(ByVal sender As Object, ByVal e As ColumnClickEventArgs) Handles lvActors.ColumnClick
         ' Determine if the clicked column is already the column that is
         ' being sorted.
@@ -1335,7 +1400,7 @@ Public Class dlgEditTVShow
             ' Perform the sort with these new sort options.
             lvActors.Sort()
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1496,7 +1561,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1510,7 +1575,7 @@ Public Class dlgEditTVShow
                 BuildStars(1)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1524,7 +1589,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1538,7 +1603,7 @@ Public Class dlgEditTVShow
                 BuildStars(2)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1552,7 +1617,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1566,7 +1631,7 @@ Public Class dlgEditTVShow
                 BuildStars(3)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1580,7 +1645,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1594,7 +1659,7 @@ Public Class dlgEditTVShow
                 BuildStars(4)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1608,7 +1673,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1622,7 +1687,7 @@ Public Class dlgEditTVShow
                 BuildStars(5)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1636,7 +1701,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1650,7 +1715,7 @@ Public Class dlgEditTVShow
                 BuildStars(6)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1664,7 +1729,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1678,7 +1743,7 @@ Public Class dlgEditTVShow
                 BuildStars(7)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1692,7 +1757,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1706,7 +1771,7 @@ Public Class dlgEditTVShow
                 BuildStars(8)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1720,7 +1785,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1734,7 +1799,7 @@ Public Class dlgEditTVShow
                 BuildStars(9)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1748,7 +1813,7 @@ Public Class dlgEditTVShow
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1762,7 +1827,7 @@ Public Class dlgEditTVShow
                 BuildStars(10)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1802,7 +1867,7 @@ Public Class dlgEditTVShow
                 lbMPAA.TopIndex = 0
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1813,12 +1878,15 @@ Public Class dlgEditTVShow
     End Sub
 
     Private Sub SetInfo()
-        tmpDBElement.Ordering = DirectCast(cbOrdering.SelectedIndex, Enums.Ordering)
+        tmpDBElement.Ordering = DirectCast(cbOrdering.SelectedIndex, Enums.EpisodeOrdering)
         tmpDBElement.EpisodeSorting = DirectCast(cbEpisodeSorting.SelectedIndex, Enums.EpisodeSorting)
+
         If Not String.IsNullOrEmpty(cbSourceLanguage.Text) Then
-            tmpDBElement.Language = Master.eSettings.TVGeneralLanguages.Language.FirstOrDefault(Function(l) l.name = cbSourceLanguage.Text).abbreviation
+            tmpDBElement.Language = APIXML.ScraperLanguagesXML.Languages.FirstOrDefault(Function(l) l.Description = cbSourceLanguage.Text).Abbreviation
+            tmpDBElement.TVShow.Language = tmpDBElement.Language
         Else
-            tmpDBElement.Language = "en"
+            tmpDBElement.Language = "en-US"
+            tmpDBElement.TVShow.Language = tmpDBElement.Language
         End If
 
         tmpDBElement.TVShow.Title = txtTitle.Text.Trim
@@ -1828,7 +1896,7 @@ Public Class dlgEditTVShow
         tmpDBElement.TVShow.Runtime = txtRuntime.Text.Trim
         tmpDBElement.TVShow.SortTitle = txtSortTitle.Text.Trim
         tmpDBElement.TVShow.Status = txtStatus.Text.Trim
-        tmpDBElement.TVShow.Studio = txtStudio.Text.Trim
+        tmpDBElement.TVShow.AddStudiosFromString(txtStudio.Text.Trim)
         tmpDBElement.TVShow.Votes = txtVotes.Text.Trim
 
         If Not String.IsNullOrEmpty(txtTitle.Text) Then
@@ -1846,13 +1914,13 @@ Public Class dlgEditTVShow
         If clbGenre.CheckedItems.Count > 0 Then
 
             If clbGenre.CheckedIndices.Contains(0) Then
-                tmpDBElement.TVShow.Genre = String.Empty
+                tmpDBElement.TVShow.Genres.Clear()
             Else
                 Dim strGenre As String = String.Empty
                 Dim isFirst As Boolean = True
                 Dim iChecked = From iCheck In clbGenre.CheckedItems
                 strGenre = String.Join(" / ", iChecked.ToArray)
-                tmpDBElement.TVShow.Genre = strGenre.Trim
+                tmpDBElement.TVShow.AddGenresFromString(strGenre.Trim)
             End If
         End If
 
@@ -1879,6 +1947,7 @@ Public Class dlgEditTVShow
         btnSetFanartDL.Text = strDownload
         btnSetLandscapeDL.Text = strDownload
         btnSetPosterDL.Text = strDownload
+        btnSetThemeDL.Text = strDownload
 
         'Loacal Browse
         Dim strLocalBrowse As String = Master.eLang.GetString(78, "Local Browse")
@@ -1889,6 +1958,7 @@ Public Class dlgEditTVShow
         btnSetFanartLocal.Text = strLocalBrowse
         btnSetLandscapeLocal.Text = strLocalBrowse
         btnSetPosterLocal.Text = strLocalBrowse
+        btnSetThemeLocal.Text = strLocalBrowse
 
         'Remove
         Dim strRemove As String = Master.eLang.GetString(30, "Remove")
@@ -1899,6 +1969,7 @@ Public Class dlgEditTVShow
         btnRemoveFanart.Text = strRemove
         btnRemoveLandscape.Text = strRemove
         btnRemovePoster.Text = strRemove
+        btnRemoveTheme.Text = strRemove
 
         'Scrape
         Dim strScrape As String = Master.eLang.GetString(79, "Scrape")
@@ -1909,6 +1980,7 @@ Public Class dlgEditTVShow
         btnSetFanartScrape.Text = strScrape
         btnSetLandscapeScrape.Text = strScrape
         btnSetPosterScrape.Text = strScrape
+        btnSetThemeScrape.Text = strScrape
 
         Dim mTitle As String = tmpDBElement.TVShow.Title
         Dim sTitle As String = String.Concat(Master.eLang.GetString(663, "Edit Show"), If(String.IsNullOrEmpty(mTitle), String.Empty, String.Concat(" - ", mTitle)))
@@ -1954,7 +2026,35 @@ Public Class dlgEditTVShow
         cbEpisodeSorting.Items.AddRange(New String() {Master.eLang.GetString(755, "Episode #"), Master.eLang.GetString(728, "Aired")})
 
         cbSourceLanguage.Items.Clear()
-        cbSourceLanguage.Items.AddRange((From lLang In Master.eSettings.TVGeneralLanguages.Language Select lLang.name).ToArray)
+        cbSourceLanguage.Items.AddRange((From lLang In APIXML.ScraperLanguagesXML.Languages Select lLang.Description).ToArray)
+    End Sub
+
+    Private Sub btnLocalThemePlay_Click(sender As Object, e As EventArgs) Handles btnLocalThemePlay.Click
+        Try
+            Dim tPath As String = String.Empty
+
+            If Not String.IsNullOrEmpty(txtLocalTheme.Text) Then
+                tPath = String.Concat("""", txtLocalTheme.Text, """")
+            End If
+
+            If Not String.IsNullOrEmpty(tPath) Then
+                If Master.isWindows Then
+                    Process.Start(tPath)
+                Else
+                    Using Explorer As New Process
+                        Explorer.StartInfo.FileName = "xdg-open"
+                        Explorer.StartInfo.Arguments = tPath
+                        Explorer.Start()
+                    End Using
+                End If
+            End If
+        Catch
+            MessageBox.Show(Master.eLang.GetString(270, "The trailer could not be played. This could be due to an invalid URI or you do not have the proper player to play the trailer type."), Master.eLang.GetString(271, "Error Playing Trailer"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
+    End Sub
+
+    Private Sub txtLocalTheme_TextChanged(sender As Object, e As EventArgs) Handles txtLocalTheme.TextChanged
+        btnLocalThemePlay.Enabled = Not String.IsNullOrEmpty(txtLocalTheme.Text)
     End Sub
 
 #End Region 'Methods

@@ -131,6 +131,7 @@ namespace Trakttv
                 {
                     var response = ex.Response as HttpWebResponse;
                     errorMessage = string.Format("API error! Code = '{0}', Description = '{1}'", (int)response.StatusCode, response.StatusDescription);
+                    logger.Error(errorMessage);
                 }
 
                 if (OnDataError != null)
@@ -151,9 +152,9 @@ namespace Trakttv
         
         {
 
-           // address = address.Replace("https://", "http://");
+            // address = address.Replace("https://", "http://");
             logger.Info("[SENDToTrakt] Address: " + address);
-            //logger.Info("[SENDToTrakt] Post: " + uploadstring);
+            // logger.Info("[SENDToTrakt] Post: " + uploadstring);
 
           
             if (OnDataSend != null && oAuth)
@@ -189,7 +190,7 @@ namespace Trakttv
                 // post to trakt
                 Stream postStream = request.GetRequestStream();
                 postStream.Write(data, 0, data.Length);
-
+          
                 // get the response
                 var response = (HttpWebResponse)request.GetResponse();
                 logger.Info("[SENDToTrakt] Waiting for response...");
@@ -201,7 +202,7 @@ namespace Trakttv
                 Stream responseStream = response.GetResponseStream();
                 var reader = new StreamReader(responseStream);
                 string strResponse = reader.ReadToEnd();
-             // logger.Info("[SENDToTrakt] Response: " + strResponse);
+                // logger.Info("[SENDToTrakt] Response: " + strResponse);
                 if (OnDataReceived != null)
                     OnDataReceived(strResponse);
 
@@ -229,7 +230,6 @@ namespace Trakttv
                 return null;
             }
         }
-
 
         static string UPDATEOnTrakt(string address, string postData)
         {
@@ -348,7 +348,23 @@ namespace Trakttv
             if (response == null) return null;
             return response.FromJSONArray<TraktEpisodeWatched>();
         }
- 
+
+        /// <summary>
+        /// Returns list of watched movies (more detailed)
+        /// </summary>
+        public static List <TraktMovieHistory> GetUsersMovieWatchedHistory(string username = "")
+        {
+            var response = READFromTrakt(string.Format(TraktURIs.GETWatchedHistoryMovies, username));
+            if (response != null)
+            {
+                return response.FromJSONArray<TraktMovieHistory>().ToList();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         #endregion
 
         #region GET List(s)
@@ -846,6 +862,26 @@ namespace Trakttv
 
         #endregion
 
+        #region POST Collection
+
+        public static TraktResponse RemoveMovieFromCollection(TraktMovie movie)
+        {
+            var movies = new TraktSyncMovies
+            {
+                Movies = new List<TraktMovie>() { movie }
+            };
+
+            return RemoveMoviesFromCollection(movies);
+        }
+
+        public static TraktResponse RemoveMoviesFromCollection(TraktSyncMovies movies)
+        {
+            var response = SENDToTrakt(TraktURIs.SENDCollectionRemove, movies.ToJSON());
+            return response.FromJSON<TraktResponse>();
+        }
+
+        #endregion
+
         #region POST Watched History
 
         public static TraktResponse AddMoviesToWatchedHistory(TraktSyncMoviesWatched movies)
@@ -859,6 +895,13 @@ namespace Trakttv
             var response = SENDToTrakt(TraktURIs.SENDWatchedHistoryRemove, movies.ToJSON());
             return response.FromJSON<TraktResponse>();
         }
+
+        public static TraktResponse RemoveHistoryIDFromWatchedHistory(TraktSyncHistoryID HistoryID)
+        {
+            var response = SENDToTrakt(TraktURIs.SENDWatchedHistoryRemove, HistoryID.ToJSON());
+            return response.FromJSON<TraktResponse>();
+        }
+
 
         public static TraktResponse AddShowsToWatchedHistory(TraktSyncShows shows)
         {
@@ -921,6 +964,7 @@ namespace Trakttv
 
             return RemoveMoviesFromWatchedHistory(movies);
         }
+
 
         public static TraktResponse AddShowToWatchedHistory(TraktShow show)
         {

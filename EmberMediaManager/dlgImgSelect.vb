@@ -23,7 +23,6 @@ Imports NLog
 
 Public Class dlgImgSelect
 
-
 #Region "Fields"
 
     Shared logger As Logger = LogManager.GetCurrentClassLogger()
@@ -50,12 +49,15 @@ Public Class dlgImgSelect
     Private iListImage_Size_Panel As Size = New Size(180, 200)
     Private iListImage_Size_Resolution As Size = New Size(174, 15)
     Private iListImage_Size_Scraper As Size = New Size(174, 15)
+    Private iListImage_Size_Select As Size = New Size(16, 16)
+    Private iListImage_Location_Select As Point = New Point(iListImage_Size_Panel.Width - iListImage_Size_Select.Width - 5, 5)
 
     Private lblListImage_DiscType() As Label
     Private lblListImage_Language() As Label
     Private lblListImageList_Resolution() As Label
     Private lblListImage_Scraper() As Label
     Private pbListImage_Image() As PictureBox
+    Private pbListImage_Select() As PictureBox
     Private pnlListImage_Panel() As Panel
 
     'SubImage
@@ -276,10 +278,11 @@ Public Class dlgImgSelect
     End Sub
 
     Private Sub AddListImage(ByRef tImage As MediaContainers.Image, ByVal iIndex As Integer, ByVal ModifierType As Enums.ModifierType, Optional ByVal iSeason As Integer = -1)
-        Dim tTag As iTag = CreateImageTag(tImage, ModifierType, iSeason)
+        Dim tTag As iTag = CreateImageTag(tImage, ModifierType, iSeason, iIndex)
 
         ReDim Preserve pnlListImage_Panel(iIndex)
         ReDim Preserve pbListImage_Image(iIndex)
+        ReDim Preserve pbListImage_Select(iIndex)
         ReDim Preserve lblListImage_DiscType(iIndex)
         ReDim Preserve lblListImage_Language(iIndex)
         ReDim Preserve lblListImageList_Resolution(iIndex)
@@ -287,10 +290,17 @@ Public Class dlgImgSelect
 
         pnlListImage_Panel(iIndex) = New Panel()
         pbListImage_Image(iIndex) = New PictureBox()
+        pbListImage_Select(iIndex) = New PictureBox()
         lblListImage_DiscType(iIndex) = New Label()
         lblListImage_Language(iIndex) = New Label()
         lblListImageList_Resolution(iIndex) = New Label()
         lblListImage_Scraper(iIndex) = New Label()
+
+        pbListImage_Select(iIndex).Image = My.Resources.menuAdd
+        pbListImage_Select(iIndex).Location = iListImage_Location_Select
+        pbListImage_Select(iIndex).Size = iListImage_Size_Select
+        pbListImage_Select(iIndex).Tag = tTag
+        pbListImage_Select(iIndex).Visible = False
 
         lblListImage_DiscType(iIndex).AutoSize = False
         lblListImage_DiscType(iIndex).BackColor = Color.White
@@ -356,6 +366,7 @@ Public Class dlgImgSelect
         pnlListImage_Panel(iIndex).Top = iListImage_NextTop
 
         pnlImgSelectMain.Controls.Add(pnlListImage_Panel(iIndex))
+        pnlListImage_Panel(iIndex).Controls.Add(pbListImage_Select(iIndex))
         pnlListImage_Panel(iIndex).Controls.Add(pbListImage_Image(iIndex))
         pnlListImage_Panel(iIndex).Controls.Add(lblListImage_DiscType(iIndex))
         pnlListImage_Panel(iIndex).Controls.Add(lblListImage_Language(iIndex))
@@ -365,16 +376,24 @@ Public Class dlgImgSelect
 
         AddHandler pbListImage_Image(iIndex).DoubleClick, AddressOf pbAnyImage_DoubleClick
         AddHandler pbListImage_Image(iIndex).MouseDown, AddressOf pbListImage_MouseDown
+        AddHandler pbListImage_Image(iIndex).MouseEnter, AddressOf pbListImage_MouseEnter
+        AddHandler pbListImage_Select(iIndex).Click, AddressOf pbSelect_Click
         AddHandler pnlListImage_Panel(iIndex).DoubleClick, AddressOf pnlAnyImage_DoubleClick
         AddHandler pnlListImage_Panel(iIndex).MouseDown, AddressOf pnlListImage_MouseDown
+        AddHandler pnlListImage_Panel(iIndex).MouseEnter, AddressOf pnlListImage_MouseEnter
+        AddHandler pnlListImage_Panel(iIndex).MouseLeave, AddressOf pnlListImage_MouseLeave
         AddHandler lblListImage_DiscType(iIndex).DoubleClick, AddressOf lblAnyImage_DoubleClick
         AddHandler lblListImage_DiscType(iIndex).MouseDown, AddressOf lblListImage_MouseDown
+        AddHandler lblListImage_DiscType(iIndex).MouseEnter, AddressOf lblListImage_MouseEnter
         AddHandler lblListImage_Language(iIndex).DoubleClick, AddressOf lblAnyImage_DoubleClick
         AddHandler lblListImage_Language(iIndex).MouseDown, AddressOf lblListImage_MouseDown
+        AddHandler lblListImage_Language(iIndex).MouseEnter, AddressOf lblListImage_MouseEnter
         AddHandler lblListImageList_Resolution(iIndex).DoubleClick, AddressOf lblAnyImage_DoubleClick
         AddHandler lblListImageList_Resolution(iIndex).MouseDown, AddressOf lblListImage_MouseDown
+        AddHandler lblListImageList_Resolution(iIndex).MouseEnter, AddressOf lblListImage_MouseEnter
         AddHandler lblListImage_Scraper(iIndex).DoubleClick, AddressOf lblAnyImage_DoubleClick
         AddHandler lblListImage_Scraper(iIndex).MouseDown, AddressOf lblListImage_MouseDown
+        AddHandler lblListImage_Scraper(iIndex).MouseEnter, AddressOf lblListImage_MouseEnter
 
         If iListImage_NextLeft + iListImage_Size_Panel.Width + iListImage_DistanceLeft + iListImage_Size_Panel.Width > pnlImgSelectMain.Width - 20 Then
             iListImage_NextLeft = iListImage_DistanceLeft
@@ -531,7 +550,6 @@ Public Class dlgImgSelect
         End While
 
         DialogResult = DialogResult.Cancel
-        Close()
     End Sub
 
     Private Sub btnExtrafanarts_Click(sender As Object, e As EventArgs) Handles btnExtrafanarts.Click
@@ -629,12 +647,30 @@ Public Class dlgImgSelect
         If pnlImgSelectMain.Controls.Count > 0 Then
             For iIndex As Integer = 0 To pnlListImage_Panel.Count - 1
                 If pnlListImage_Panel(iIndex) IsNot Nothing Then
-                    If lblListImage_DiscType(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(lblListImage_DiscType(iIndex)) Then pnlListImage_Panel(iIndex).Controls.Remove(lblListImage_DiscType(iIndex))
-                    If lblListImage_Language(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(lblListImage_Language(iIndex)) Then pnlListImage_Panel(iIndex).Controls.Remove(lblListImage_Language(iIndex))
-                    If lblListImageList_Resolution(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(lblListImageList_Resolution(iIndex)) Then pnlListImage_Panel(iIndex).Controls.Remove(lblListImageList_Resolution(iIndex))
-                    If lblListImage_Scraper(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(lblListImage_Scraper(iIndex)) Then pnlListImage_Panel(iIndex).Controls.Remove(lblListImage_Scraper(iIndex))
-                    If pbListImage_Image(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(pbListImage_Image(iIndex)) Then pnlListImage_Panel(iIndex).Controls.Remove(pbListImage_Image(iIndex))
-                    If pnlImgSelectMain.Contains(pnlListImage_Panel(iIndex)) Then pnlImgSelectMain.Controls.Remove(pnlListImage_Panel(iIndex))
+                    If lblListImage_DiscType(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(lblListImage_DiscType(iIndex)) Then
+                        lblListImage_DiscType(iIndex).Dispose()
+                        pnlListImage_Panel(iIndex).Controls.Remove(lblListImage_DiscType(iIndex))
+                    End If
+                    If lblListImage_Language(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(lblListImage_Language(iIndex)) Then
+                        lblListImage_Language(iIndex).Dispose()
+                        pnlListImage_Panel(iIndex).Controls.Remove(lblListImage_Language(iIndex))
+                    End If
+                    If lblListImageList_Resolution(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(lblListImageList_Resolution(iIndex)) Then
+                        lblListImageList_Resolution(iIndex).Dispose()
+                        pnlListImage_Panel(iIndex).Controls.Remove(lblListImageList_Resolution(iIndex))
+                    End If
+                    If lblListImage_Scraper(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(lblListImage_Scraper(iIndex)) Then
+                        lblListImage_Scraper(iIndex).Dispose()
+                        pnlListImage_Panel(iIndex).Controls.Remove(lblListImage_Scraper(iIndex))
+                    End If
+                    If pbListImage_Image(iIndex) IsNot Nothing AndAlso pnlListImage_Panel(iIndex).Contains(pbListImage_Image(iIndex)) Then
+                        pbListImage_Image(iIndex).Dispose()
+                        pnlListImage_Panel(iIndex).Controls.Remove(pbListImage_Image(iIndex))
+                    End If
+                    If pnlImgSelectMain.Contains(pnlListImage_Panel(iIndex)) Then
+                        pnlListImage_Panel(iIndex).Dispose()
+                        pnlImgSelectMain.Controls.Remove(pnlListImage_Panel(iIndex))
+                    End If
                 End If
             Next
         End If
@@ -649,9 +685,18 @@ Public Class dlgImgSelect
         If pnlSubImages.Controls.Count > 0 Then
             For iIndex As Integer = 0 To pnlSubImage_Panel.Count - 1
                 If pnlSubImage_Panel(iIndex) IsNot Nothing Then
-                    If lblSubImage_Resolution(iIndex) IsNot Nothing AndAlso pnlSubImage_Panel(iIndex).Contains(lblSubImage_Resolution(iIndex)) Then pnlSubImage_Panel(iIndex).Controls.Remove(lblSubImage_Resolution(iIndex))
-                    If pbSubImage_Image(iIndex) IsNot Nothing AndAlso pnlSubImage_Panel(iIndex).Contains(pbSubImage_Image(iIndex)) Then pnlSubImage_Panel(iIndex).Controls.Remove(pbSubImage_Image(iIndex))
-                    If pnlSubImages.Contains(pnlSubImage_Panel(iIndex)) Then pnlSubImages.Controls.Remove(pnlSubImage_Panel(iIndex))
+                    If lblSubImage_Resolution(iIndex) IsNot Nothing AndAlso pnlSubImage_Panel(iIndex).Contains(lblSubImage_Resolution(iIndex)) Then
+                        lblSubImage_Resolution(iIndex).Dispose()
+                        pnlSubImage_Panel(iIndex).Controls.Remove(lblSubImage_Resolution(iIndex))
+                    End If
+                    If pbSubImage_Image(iIndex) IsNot Nothing AndAlso pnlSubImage_Panel(iIndex).Contains(pbSubImage_Image(iIndex)) Then
+                        pbSubImage_Image(iIndex).Dispose()
+                        pnlSubImage_Panel(iIndex).Controls.Remove(pbSubImage_Image(iIndex))
+                    End If
+                    If pnlSubImages.Contains(pnlSubImage_Panel(iIndex)) Then
+                        pnlSubImage_Panel(iIndex).Dispose()
+                        pnlSubImages.Controls.Remove(pnlSubImage_Panel(iIndex))
+                    End If
                 End If
             Next
         End If
@@ -954,8 +999,8 @@ Public Class dlgImgSelect
             End If
         End If
 
-        'Index (only needed for Extrathumbs)
-        If ModifierType = Enums.ModifierType.MainExtrathumbs Then
+        'Index
+        If Not iIndex = -1 Then
             nTag.iIndex = iIndex
         End If
 
@@ -1207,10 +1252,10 @@ Public Class dlgImgSelect
 
         If DoMainExtrafanarts Then btnExtrafanarts.Enabled = True
         If DoMainExtrathumbs Then btnExtrathumbs.Enabled = True
-        If DoSeasonBanner Then btnSeasonBanner.Enabled = True
-        If DoSeasonFanart Then btnSeasonFanart.Enabled = True
-        If DoSeasonLandscape Then btnSeasonLandscape.Enabled = True
-        If DoSeasonPoster Then btnSeasonPoster.Enabled = True
+        If DoSeasonBanner AndAlso Not tContentType = Enums.ContentType.TVSeason Then btnSeasonBanner.Enabled = True
+        If DoSeasonFanart AndAlso Not tContentType = Enums.ContentType.TVSeason Then btnSeasonFanart.Enabled = True
+        If DoSeasonLandscape AndAlso Not tContentType = Enums.ContentType.TVSeason Then btnSeasonLandscape.Enabled = True
+        If DoSeasonPoster AndAlso Not tContentType = Enums.ContentType.TVSeason Then btnSeasonPoster.Enabled = True
 
         'If we don't have any TopImage we can hide the panel (this should only be True while Extrafanarts or Extrathumbs scraping)
         If Not noTopImages Then
@@ -1639,7 +1684,7 @@ Public Class dlgImgSelect
         Return False
     End Function
 
-    Private Function DownloadDefaultImages() As Boolean
+    Private Sub DownloadDefaultImages()
 
         'Episode Fanart
         If DoEpisodeFanart Then
@@ -1736,7 +1781,7 @@ Public Class dlgImgSelect
                 tImg.Poster.LoadAndCache(tContentType, False, True)
             Next
         End If
-    End Function
+    End Sub
 
     Private Sub FillListImages(ByRef tTag As iTag)
         Dim iCount As Integer = 0
@@ -1935,6 +1980,11 @@ Public Class dlgImgSelect
         cmnuListImageSelectAll.Enabled = currSubImageSelectedType = Enums.ModifierType.MainExtrafanarts OrElse currSubImageSelectedType = Enums.ModifierType.MainExtrathumbs
     End Sub
 
+    Private Sub lblListImage_MouseEnter(sender As Object, e As EventArgs)
+        Dim iIndex As Integer = DirectCast(DirectCast(sender, Label).Tag, iTag).iIndex
+        pbListImage_Select(iIndex).Visible = True
+    End Sub
+
     Private Sub lblSubImage_MouseDown(sender As Object, e As MouseEventArgs)
         DoSelectSubImage(Convert.ToInt32(DirectCast(sender, Label).Name), DirectCast(DirectCast(sender, Label).Tag, iTag))
         cmnuSubImageRemoveAll.Enabled = currSubImageSelectedType = Enums.ModifierType.MainExtrafanarts OrElse currSubImageSelectedType = Enums.ModifierType.MainExtrathumbs
@@ -1964,9 +2014,19 @@ Public Class dlgImgSelect
         Cursor.Current = Cursors.Default
     End Sub
 
+    Private Sub pbSelect_Click(sender As Object, e As EventArgs)
+        Dim tImage As iTag = DirectCast(DirectCast(sender, PictureBox).Tag, iTag)
+        SetImage(tImage)
+    End Sub
+
     Private Sub pbListImage_MouseDown(sender As Object, e As MouseEventArgs)
         DoSelectListImage(Convert.ToInt32(DirectCast(sender, PictureBox).Name), DirectCast(DirectCast(sender, PictureBox).Tag, iTag))
         cmnuListImageSelectAll.Enabled = currSubImageSelectedType = Enums.ModifierType.MainExtrafanarts OrElse currSubImageSelectedType = Enums.ModifierType.MainExtrathumbs
+    End Sub
+
+    Private Sub pbListImage_MouseEnter(sender As Object, e As EventArgs)
+        Dim iIndex As Integer = DirectCast(DirectCast(sender, PictureBox).Tag, iTag).iIndex
+        pbListImage_Select(iIndex).Visible = True
     End Sub
 
     Private Sub pbSubImage_MouseDown(sender As Object, e As MouseEventArgs)
@@ -1992,6 +2052,16 @@ Public Class dlgImgSelect
     Private Sub pnlListImage_MouseDown(sender As Object, e As MouseEventArgs)
         DoSelectListImage(Convert.ToInt32(DirectCast(sender, Panel).Name), DirectCast(DirectCast(sender, Panel).Tag, iTag))
         cmnuListImageSelectAll.Enabled = currSubImageSelectedType = Enums.ModifierType.MainExtrafanarts OrElse currSubImageSelectedType = Enums.ModifierType.MainExtrathumbs
+    End Sub
+
+    Private Sub pnlListImage_MouseEnter(sender As Object, e As EventArgs)
+        Dim iIndex As Integer = DirectCast(DirectCast(sender, Panel).Tag, iTag).iIndex
+        pbListImage_Select(iIndex).Visible = True
+    End Sub
+
+    Private Sub pnlListImage_MouseLeave(sender As Object, e As EventArgs)
+        Dim iIndex As Integer = DirectCast(DirectCast(sender, Panel).Tag, iTag).iIndex
+        pbListImage_Select(iIndex).Visible = False
     End Sub
 
     Private Sub pnlSubImage_MouseDown(sender As Object, e As MouseEventArgs)
@@ -2157,6 +2227,8 @@ Public Class dlgImgSelect
     End Sub
 
     Private Sub SetParameters()
+        Dim noSubImages As Boolean = True
+
         Select Case tContentType
             Case Enums.ContentType.Movie
                 DoMainBanner = tScrapeModifiers.MainBanner AndAlso Master.eSettings.MovieBannerAnyEnabled
@@ -2168,6 +2240,7 @@ Public Class dlgImgSelect
                 DoMainFanart = tScrapeModifiers.MainFanart AndAlso Master.eSettings.MovieFanartAnyEnabled
                 DoMainLandscape = tScrapeModifiers.MainLandscape AndAlso Master.eSettings.MovieLandscapeAnyEnabled
                 DoMainPoster = tScrapeModifiers.MainPoster AndAlso Master.eSettings.MoviePosterAnyEnabled
+                If DoMainExtrafanarts OrElse DoMainExtrathumbs Then noSubImages = False
             Case Enums.ContentType.MovieSet
                 DoMainBanner = tScrapeModifiers.MainBanner AndAlso Master.eSettings.MovieSetBannerAnyEnabled
                 DoMainClearArt = tScrapeModifiers.MainClearArt AndAlso Master.eSettings.MovieSetClearArtAnyEnabled
@@ -2195,6 +2268,7 @@ Public Class dlgImgSelect
                 DoSeasonFanart = tScrapeModifiers.SeasonFanart AndAlso Master.eSettings.TVSeasonFanartAnyEnabled
                 DoSeasonLandscape = tScrapeModifiers.SeasonLandscape AndAlso Master.eSettings.TVSeasonLandscapeAnyEnabled
                 DoSeasonPoster = tScrapeModifiers.SeasonPoster AndAlso Master.eSettings.TVSeasonPosterAnyEnabled
+                If DoMainExtrafanarts OrElse DoSeasonBanner OrElse DoSeasonFanart OrElse DoSeasonLandscape OrElse DoSeasonPoster Then noSubImages = False
             Case Enums.ContentType.TVShow
                 DoMainBanner = tScrapeModifiers.MainBanner AndAlso Master.eSettings.TVShowBannerAnyEnabled
                 DoMainCharacterArt = tScrapeModifiers.MainCharacterArt AndAlso Master.eSettings.TVShowCharacterArtAnyEnabled
@@ -2204,6 +2278,7 @@ Public Class dlgImgSelect
                 DoMainFanart = tScrapeModifiers.MainFanart AndAlso Master.eSettings.TVShowFanartAnyEnabled
                 DoMainLandscape = tScrapeModifiers.MainLandscape AndAlso Master.eSettings.TVShowLandscapeAnyEnabled
                 DoMainPoster = tScrapeModifiers.MainPoster AndAlso Master.eSettings.TVShowPosterAnyEnabled
+                If DoMainExtrafanarts Then noSubImages = False
             Case Enums.ContentType.TVEpisode
                 DoEpisodeFanart = tScrapeModifiers.EpisodeFanart AndAlso Master.eSettings.TVEpisodeFanartAnyEnabled
                 DoEpisodePoster = tScrapeModifiers.EpisodePoster AndAlso Master.eSettings.TVEpisodePosterAnyEnabled
@@ -2217,6 +2292,11 @@ Public Class dlgImgSelect
                 DoSeasonLandscape = tScrapeModifiers.SeasonLandscape AndAlso Master.eSettings.TVSeasonLandscapeAnyEnabled
                 DoSeasonPoster = tScrapeModifiers.SeasonPoster AndAlso Master.eSettings.TVSeasonPosterAnyEnabled
         End Select
+
+        'If we don't have any SubImage we can hide the panel
+        If noSubImages Then
+            pnlImgSelectLeft.Visible = False
+        End If
     End Sub
 
     Private Sub SetUp()

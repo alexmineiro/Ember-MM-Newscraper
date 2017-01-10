@@ -19,12 +19,11 @@
 ' ################################################################################
 
 Imports System.Text.RegularExpressions
-Imports EmberAPI
 Imports System.Runtime.CompilerServices
 Imports NLog
 
 'The InternalsVisibleTo is required for unit testing the friend methods
-<Assembly: InternalsVisibleTo("EmberAPI_Test")> 
+<Assembly: InternalsVisibleTo("EmberAPI_Test")>
 
 Namespace Apple
 
@@ -76,7 +75,7 @@ Namespace Apple
                 _TrailerLinks = GetTrailerLinks(url, False)
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
         End Sub
 
@@ -85,7 +84,7 @@ Namespace Apple
 
             Dim BaseURL As String = "http://www.google.ch/search?q=apple+trailer+"
             Dim DownloadURL As String = "http://trailers.apple.com/trailers/"
-            Dim prevQual As String = clsAdvancedSettings.GetSetting("TrailerPrefQual", "1080p", "scraper.Apple.Trailer")
+            Dim prevQual As String = AdvancedSettings.GetSetting("TrailerPrefQual", "1080p", "scraper.Apple.Trailer")
             Dim urlHD As String = "/includes/extralarge.html"
             Dim urlHQ As String = "/includes/large.html"
 
@@ -154,7 +153,7 @@ Namespace Apple
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return TrailerLinks

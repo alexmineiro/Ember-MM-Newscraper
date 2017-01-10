@@ -58,7 +58,7 @@ Public Class dlgEditTVEpisode
 
     Public Overloads Function ShowDialog(ByVal DBTVEpisode As Database.DBElement) As DialogResult
         tmpDBElement = DBTVEpisode
-        Return MyBase.ShowDialog()
+        Return ShowDialog()
     End Function
 
     Private Sub ActorEdit()
@@ -131,7 +131,7 @@ Public Class dlgEditTVEpisode
 
     Private Sub btnManual_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnManual.Click
         If dlgManualEdit.ShowDialog(tmpDBElement.NfoPath) = DialogResult.OK Then
-            tmpDBElement.TVEpisode = NFO.LoadTVEpFromNFO(tmpDBElement.NfoPath, tmpDBElement.TVEpisode.Season, tmpDBElement.TVEpisode.Episode)
+            tmpDBElement.TVEpisode = NFO.LoadFromNFO_TVEpisode(tmpDBElement.NfoPath, tmpDBElement.TVEpisode.Season, tmpDBElement.TVEpisode.Episode)
             FillInfo()
         End If
     End Sub
@@ -398,7 +398,7 @@ Public Class dlgEditTVEpisode
                 End If
             End With
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -421,7 +421,7 @@ Public Class dlgEditTVEpisode
                 File.Delete(Path.Combine(Master.TempPath, "frame.jpg"))
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -473,8 +473,8 @@ Public Class dlgEditTVEpisode
 
     Private Sub FillInfo()
         txtAired.Text = tmpDBElement.TVEpisode.Aired
-        txtCredits.Text = tmpDBElement.TVEpisode.OldCredits
-        txtDirectors.Text = tmpDBElement.TVEpisode.Director
+        txtCredits.Text = String.Join(" / ", tmpDBElement.TVEpisode.Credits.ToArray)
+        txtDirectors.Text = String.Join(" / ", tmpDBElement.TVEpisode.Directors.ToArray)
         txtEpisode.Text = tmpDBElement.TVEpisode.Episode.ToString
         txtPlot.Text = tmpDBElement.TVEpisode.Plot
         txtRuntime.Text = tmpDBElement.TVEpisode.Runtime
@@ -532,7 +532,7 @@ Public Class dlgEditTVEpisode
         With tmpDBElement.ImagesContainer
 
             'Load all images to MemoryStream and Bitmap
-            tmpDBElement.LoadAllImages(True, False)
+            tmpDBElement.LoadAllImages(True, True)
 
             'Fanart
             If Master.eSettings.TVEpisodeFanartAnyEnabled Then
@@ -590,7 +590,7 @@ Public Class dlgEditTVEpisode
             ' Perform the sort with these new sort options.
             lvActors.Sort()
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -652,7 +652,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -666,7 +666,7 @@ Public Class dlgEditTVEpisode
                 BuildStars(1)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -680,7 +680,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -694,7 +694,7 @@ Public Class dlgEditTVEpisode
                 BuildStars(2)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -708,7 +708,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -722,7 +722,7 @@ Public Class dlgEditTVEpisode
                 BuildStars(3)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -736,7 +736,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -750,7 +750,7 @@ Public Class dlgEditTVEpisode
                 BuildStars(4)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -764,7 +764,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -778,7 +778,7 @@ Public Class dlgEditTVEpisode
                 BuildStars(5)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -792,7 +792,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -806,7 +806,7 @@ Public Class dlgEditTVEpisode
                 BuildStars(6)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -820,7 +820,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -834,7 +834,7 @@ Public Class dlgEditTVEpisode
                 BuildStars(7)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -848,7 +848,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -862,7 +862,7 @@ Public Class dlgEditTVEpisode
                 BuildStars(8)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -876,7 +876,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -890,7 +890,7 @@ Public Class dlgEditTVEpisode
                 BuildStars(9)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -904,7 +904,7 @@ Public Class dlgEditTVEpisode
             Single.TryParse(tmpRating, tmpDBL)
             BuildStars(tmpDBL)
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -918,64 +918,62 @@ Public Class dlgEditTVEpisode
                 BuildStars(10)
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
     Private Sub SetInfo()
-        With Me
-            tmpDBElement.TVEpisode.Aired = .txtAired.Text.Trim
-            tmpDBElement.TVEpisode.OldCredits = .txtCredits.Text.Trim
-            tmpDBElement.TVEpisode.Director = .txtDirectors.Text.Trim
-            tmpDBElement.TVEpisode.Episode = Convert.ToInt32(.txtEpisode.Text.Trim)
-            tmpDBElement.TVEpisode.Plot = .txtPlot.Text.Trim
-            tmpDBElement.TVEpisode.Rating = .tmpRating
-            tmpDBElement.TVEpisode.Runtime = .txtRuntime.Text.Trim
-            tmpDBElement.TVEpisode.Season = Convert.ToInt32(.txtSeason.Text.Trim)
-            tmpDBElement.TVEpisode.Title = .txtTitle.Text.Trim
-            tmpDBElement.TVEpisode.Votes = .txtVotes.Text.Trim
-            tmpDBElement.TVEpisode.VideoSource = .txtVideoSource.Text.Trim
-            tmpDBElement.VideoSource = .txtVideoSource.Text.Trim
+        tmpDBElement.TVEpisode.Aired = txtAired.Text.Trim
+        tmpDBElement.TVEpisode.AddCreditsFromString(txtCredits.Text.Trim)
+        tmpDBElement.TVEpisode.AddDirectorsFromString(txtDirectors.Text.Trim)
+        tmpDBElement.TVEpisode.Episode = Convert.ToInt32(txtEpisode.Text.Trim)
+        tmpDBElement.TVEpisode.Plot = txtPlot.Text.Trim
+        tmpDBElement.TVEpisode.Rating = tmpRating
+        tmpDBElement.TVEpisode.Runtime = txtRuntime.Text.Trim
+        tmpDBElement.TVEpisode.Season = Convert.ToInt32(txtSeason.Text.Trim)
+        tmpDBElement.TVEpisode.Title = txtTitle.Text.Trim
+        tmpDBElement.TVEpisode.Votes = txtVotes.Text.Trim
+        tmpDBElement.TVEpisode.VideoSource = txtVideoSource.Text.Trim
+        tmpDBElement.VideoSource = txtVideoSource.Text.Trim
 
-            'Actors
-            tmpDBElement.TVEpisode.Actors.Clear()
-            If .lvActors.Items.Count > 0 Then
-                Dim iOrder As Integer = 0
-                For Each lviActor As ListViewItem In .lvActors.Items
-                    Dim addActor As MediaContainers.Person = DirectCast(lviActor.Tag, MediaContainers.Person)
-                    addActor.Order = iOrder
-                    iOrder += 1
-                    tmpDBElement.TVEpisode.Actors.Add(addActor)
-                Next
-            End If
-
-            If chkWatched.Checked Then
-                'Only set to 1 if field was empty before (otherwise it would overwrite Playcount everytime which is not desirable)
-                If Not tmpDBElement.TVEpisode.PlaycountSpecified Then
-                    tmpDBElement.TVEpisode.Playcount = 1
-                    tmpDBElement.TVEpisode.LastPlayed = Date.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                End If
-            Else
-                'Unchecked Watched State -> Set Playcount back to 0, but only if it was filled before (check could save time)
-                If tmpDBElement.TVEpisode.PlaycountSpecified Then
-                    tmpDBElement.TVEpisode.Playcount = 0
-                    tmpDBElement.TVEpisode.LastPlayed = String.Empty
-                End If
-            End If
-
-            Dim removeSubtitles As New List(Of MediaInfo.Subtitle)
-            For Each Subtitle In tmpDBElement.Subtitles
-                If Subtitle.toRemove Then
-                    removeSubtitles.Add(Subtitle)
-                End If
+        'Actors
+        tmpDBElement.TVEpisode.Actors.Clear()
+        If lvActors.Items.Count > 0 Then
+            Dim iOrder As Integer = 0
+            For Each lviActor As ListViewItem In lvActors.Items
+                Dim addActor As MediaContainers.Person = DirectCast(lviActor.Tag, MediaContainers.Person)
+                addActor.Order = iOrder
+                iOrder += 1
+                tmpDBElement.TVEpisode.Actors.Add(addActor)
             Next
-            For Each Subtitle In removeSubtitles
-                If File.Exists(Subtitle.SubsPath) Then
-                    File.Delete(Subtitle.SubsPath)
-                End If
-                tmpDBElement.Subtitles.Remove(Subtitle)
-            Next
-        End With
+        End If
+
+        If chkWatched.Checked Then
+            'Only set to 1 if field was empty before (otherwise it would overwrite Playcount everytime which is not desirable)
+            If Not tmpDBElement.TVEpisode.PlaycountSpecified Then
+                tmpDBElement.TVEpisode.Playcount = 1
+                tmpDBElement.TVEpisode.LastPlayed = Date.Now.ToString("yyyy-MM-dd HH:mm:ss")
+            End If
+        Else
+            'Unchecked Watched State -> Set Playcount back to 0, but only if it was filled before (check could save time)
+            If tmpDBElement.TVEpisode.PlaycountSpecified Then
+                tmpDBElement.TVEpisode.Playcount = 0
+                tmpDBElement.TVEpisode.LastPlayed = String.Empty
+            End If
+        End If
+
+        Dim removeSubtitles As New List(Of MediaContainers.Subtitle)
+        For Each Subtitle In tmpDBElement.Subtitles
+            If Subtitle.toRemove Then
+                removeSubtitles.Add(Subtitle)
+            End If
+        Next
+        For Each Subtitle In removeSubtitles
+            If File.Exists(Subtitle.SubsPath) Then
+                File.Delete(Subtitle.SubsPath)
+            End If
+            tmpDBElement.Subtitles.Remove(Subtitle)
+        Next
     End Sub
 
     Private Sub SetUp()
@@ -1027,7 +1025,7 @@ Public Class dlgEditTVEpisode
         lblTitle.Text = Master.eLang.GetString(246, "Title:")
         lblTopDetails.Text = Master.eLang.GetString(656, "Edit the details for the selected episode.")
         lblTopTitle.Text = Master.eLang.GetString(657, "Edit Episode")
-        lblVideoSource.Text = Master.eLang.GetString(824, "Video Source:")
+        lblVideoSource.Text = String.Concat(Master.eLang.GetString(824, "Video Source"), ":")
         lblVotes.Text = Master.eLang.GetString(244, "Votes:")
         tpFanart.Text = Master.eLang.GetString(149, "Fanart")
         tpPoster.Text = Master.eLang.GetString(148, "Poster")
@@ -1037,16 +1035,16 @@ Public Class dlgEditTVEpisode
     End Sub
 
     Private Sub txtEpisode_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtEpisode.KeyPress
-        e.Handled = StringUtils.NumericOnly(e.KeyChar, True) AndAlso Not e.KeyChar = "-"
+        e.Handled = StringUtils.NumericOnly(e.KeyChar)
     End Sub
 
     Private Sub txtSeason_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtSeason.KeyPress
-        e.Handled = StringUtils.NumericOnly(e.KeyChar, True) AndAlso Not e.KeyChar = "-"
+        e.Handled = StringUtils.NumericOnly(e.KeyChar)
     End Sub
 
     Sub GenericRunCallBack(ByVal mType As Enums.ModuleEventType, ByRef _params As List(Of Object))
         If mType = Enums.ModuleEventType.FrameExtrator_TVEpisode Then
-            tmpDBElement.ImagesContainer.Poster.ImageOriginal.FromFile(Path.Combine(Master.TempPath, "frame.jpg"), True)
+            tmpDBElement.ImagesContainer.Poster.ImageOriginal.LoadFromFile(Path.Combine(Master.TempPath, "frame.jpg"), True)
             If tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image IsNot Nothing Then
                 pbPoster.Image = tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image
                 pbPoster.Tag = tmpDBElement.ImagesContainer.Poster
@@ -1068,7 +1066,7 @@ Public Class dlgEditTVEpisode
             End With
 
             If ofdImage.ShowDialog() = DialogResult.OK Then
-                tmpDBElement.ImagesContainer.Fanart.ImageOriginal.FromFile(ofdImage.FileName, True)
+                tmpDBElement.ImagesContainer.Fanart.ImageOriginal.LoadFromFile(ofdImage.FileName, True)
                 If tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image IsNot Nothing Then
                     pbFanart.Image = tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image
                     pbFanart.Tag = tmpDBElement.ImagesContainer.Fanart
@@ -1078,7 +1076,7 @@ Public Class dlgEditTVEpisode
                 End If
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1093,7 +1091,7 @@ Public Class dlgEditTVEpisode
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Fanart = dlgImgS.Result.ImagesContainer.Fanart
-                    If tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Fanart.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Fanart.ImageOriginal.LoadFromMemoryStream Then
                         pbFanart.Image = tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image
                         lblFanartSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbFanart.Image.Width, pbFanart.Image.Height)
                         lblFanartSize.Visible = True
@@ -1128,7 +1126,7 @@ Public Class dlgEditTVEpisode
                 End If
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1142,7 +1140,7 @@ Public Class dlgEditTVEpisode
             End With
 
             If ofdImage.ShowDialog() = DialogResult.OK Then
-                tmpDBElement.ImagesContainer.Poster.ImageOriginal.FromFile(ofdImage.FileName, True)
+                tmpDBElement.ImagesContainer.Poster.ImageOriginal.LoadFromFile(ofdImage.FileName, True)
                 If tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image IsNot Nothing Then
                     pbPoster.Image = tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image
                     pbPoster.Tag = tmpDBElement.ImagesContainer.Poster
@@ -1152,7 +1150,7 @@ Public Class dlgEditTVEpisode
                 End If
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1167,7 +1165,7 @@ Public Class dlgEditTVEpisode
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Poster = dlgImgS.Result.ImagesContainer.Poster
-                    If tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Poster.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Poster.ImageOriginal.LoadFromMemoryStream Then
                         pbPoster.Image = tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image
                         lblPosterSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbPoster.Image.Width, pbPoster.Image.Height)
                         lblPosterSize.Visible = True
@@ -1202,7 +1200,7 @@ Public Class dlgEditTVEpisode
                 End If
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1253,7 +1251,7 @@ Public Class dlgEditTVEpisode
 
                 Return sText
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
         End If
 
@@ -1264,13 +1262,13 @@ Public Class dlgEditTVEpisode
         Try
             If lvSubtitles.SelectedItems.Count > 0 Then
                 Dim i As ListViewItem = lvSubtitles.SelectedItems(0)
-                Dim tmpFileInfo As New MediaInfo.Fileinfo
+                Dim tmpFileInfo As New MediaContainers.Fileinfo
                 tmpFileInfo.StreamDetails.Subtitle.AddRange(tmpDBElement.Subtitles)
                 Using dEditStream As New dlgFIStreamEditor
                     Dim stream As Object = dEditStream.ShowDialog(i.Tag.ToString, tmpFileInfo, Convert.ToInt16(i.Text))
                     If Not stream Is Nothing Then
                         If i.Tag.ToString = Master.eLang.GetString(597, "Subtitle Stream") Then
-                            tmpDBElement.Subtitles(Convert.ToInt16(i.Text)) = DirectCast(stream, MediaInfo.Subtitle)
+                            tmpDBElement.Subtitles(Convert.ToInt16(i.Text)) = DirectCast(stream, MediaContainers.Subtitle)
                         End If
                         'NeedToRefresh = True
                         LoadSubtitles()
@@ -1278,7 +1276,7 @@ Public Class dlgEditTVEpisode
                 End Using
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1293,7 +1291,7 @@ Public Class dlgEditTVEpisode
                 LoadSubtitles()
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -1322,7 +1320,7 @@ Public Class dlgEditTVEpisode
 
                 g.Items.Add(i)
                 lvSubtitles.Items.Add(i)
-                Dim s As MediaInfo.Subtitle
+                Dim s As MediaContainers.Subtitle
                 For c = 0 To tmpDBElement.Subtitles.Count - 1
                     s = tmpDBElement.Subtitles(c)
                     If Not s Is Nothing Then
@@ -1345,7 +1343,7 @@ Public Class dlgEditTVEpisode
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 

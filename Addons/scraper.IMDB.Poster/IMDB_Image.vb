@@ -133,21 +133,21 @@ Public Class IMDB_Image
     End Function
 
     Sub LoadSettings()
-        ConfigModifier.MainPoster = clsAdvancedSettings.GetBooleanSetting("DoPoster", True)
+        ConfigModifier.MainPoster = AdvancedSettings.GetBooleanSetting("DoPoster", True)
     End Sub
 
     Function Scraper(ByRef DBMovie As Database.DBElement, ByRef ImagesContainer As MediaContainers.SearchResultsContainer, ByVal ScrapeModifiers As Structures.ScrapeModifiers) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Image_Movie.Scraper
-        logger.Trace("Started scrape", New StackTrace().ToString())
+        logger.Trace("[IMDB_Image] [Scraper] [Start]")
         LoadSettings()
 
-        ImagesContainer = IMDB.GetIMDBPosters(DBMovie.Movie.IMDBID)
+        ImagesContainer = IMDB.GetIMDBPosters(DBMovie.Movie.IMDB)
 
-        logger.Trace("Finished scrape", New StackTrace().ToString())
+        logger.Trace("[IMDB_Image] [Scraper] [Done]")
         Return New Interfaces.ModuleResult With {.breakChain = False}
     End Function
 
     Sub SaveSettings()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoPoster", ConfigModifier.MainPoster)
         End Using
     End Sub

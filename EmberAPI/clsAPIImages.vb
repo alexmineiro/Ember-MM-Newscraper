@@ -30,7 +30,7 @@ Public Class Images
 
 #Region "Fields"
 
-    Shared logger As Logger = NLog.LogManager.GetCurrentClassLogger()
+    Shared logger As Logger = LogManager.GetCurrentClassLogger()
 
     Private _image As Image
     Private _ms As MemoryStream
@@ -69,14 +69,14 @@ Public Class Images
     ''' <remarks>
     ''' 2013/11/25 Dekker500 - Disposed old image before replacing
     ''' </remarks>
-    Public Sub UpdateMSfromImg(nImage As Image)
+    Public Sub UpdateMSfromImg(nImage As Image, Optional iQuality As Integer = 100)
 
         Try
             Dim ICI As ImageCodecInfo = GetEncoderInfo(ImageFormat.Jpeg)
 
             Dim EncPars As EncoderParameters = New EncoderParameters(2)
             EncPars.Param(0) = New EncoderParameter(Encoder.RenderMethod, EncoderValue.RenderNonProgressive)
-            EncPars.Param(1) = New EncoderParameter(Encoder.Quality, 100)
+            EncPars.Param(1) = New EncoderParameter(Encoder.Quality, iQuality)
 
             'Write the supplied image into the MemoryStream
             If Not _ms Is Nothing Then _ms.Dispose()
@@ -89,7 +89,7 @@ Public Class Images
             _image = New Bitmap(_ms)
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
     ''' <summary>
@@ -111,7 +111,7 @@ Public Class Images
             Try
                 File.Delete(sPath)
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Param: <" & sPath & ">", ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Param: <" & sPath & ">")
             End Try
         End If
     End Sub
@@ -121,11 +121,11 @@ Public Class Images
     ''' <param name="DBMovie"></param>
     ''' <param name="ImageType"></param>
     ''' <remarks></remarks>
-    Public Shared Sub Delete_Movie(ByVal DBMovie As Database.DBElement, ByVal ImageType As Enums.ModifierType)
+    Public Shared Sub Delete_Movie(ByVal DBMovie As Database.DBElement, ByVal ImageType As Enums.ModifierType, ByVal ForceFileCleanup As Boolean)
         If String.IsNullOrEmpty(DBMovie.Filename) Then Return
 
         Try
-            For Each a In FileUtils.GetFilenameList.Movie(DBMovie, ImageType)
+            For Each a In FileUtils.GetFilenameList.Movie(DBMovie, ImageType, ForceFileCleanup)
                 Select Case ImageType
                     Case Enums.ModifierType.MainActorThumbs
                         Dim tmpPath As String = Directory.GetParent(a.Replace("<placeholder>", "dummy")).FullName
@@ -143,7 +143,7 @@ Public Class Images
                 End Select
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBMovie.Filename & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBMovie.Filename & ">")
         End Try
     End Sub
     ''' <summary>
@@ -152,17 +152,17 @@ Public Class Images
     ''' <param name="DBMovieSet"></param>
     ''' <param name="ImageType"></param>
     ''' <remarks></remarks>
-    Public Shared Sub Delete_MovieSet(ByVal DBMovieSet As Database.DBElement, ByVal ImageType As Enums.ModifierType)
+    Public Shared Sub Delete_MovieSet(ByVal DBMovieSet As Database.DBElement, ByVal ImageType As Enums.ModifierType, Optional ByVal bForceOldTitle As Boolean = False)
         If String.IsNullOrEmpty(DBMovieSet.MovieSet.Title) Then Return
 
         Try
-            For Each a In FileUtils.GetFilenameList.MovieSet(DBMovieSet, ImageType)
+            For Each a In FileUtils.GetFilenameList.MovieSet(DBMovieSet, ImageType, bForceOldTitle)
                 If File.Exists(a) Then
                     Delete(a)
                 End If
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBMovieSet.MovieSet.Title & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBMovieSet.MovieSet.Title & ">")
         End Try
     End Sub
     ''' <summary>
@@ -181,7 +181,7 @@ Public Class Images
                 End If
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBTVShow.ShowPath & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBTVShow.ShowPath & ">")
         End Try
     End Sub
     ''' <summary>
@@ -208,7 +208,7 @@ Public Class Images
                 End Select
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBTVEpisode.ShowPath & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBTVEpisode.ShowPath & ">")
         End Try
     End Sub
     ''' <summary>
@@ -227,7 +227,7 @@ Public Class Images
                 End If
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBTVSeason.ShowPath & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBTVSeason.ShowPath & ">")
         End Try
     End Sub
     ''' <summary>
@@ -257,7 +257,7 @@ Public Class Images
                 End Select
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBTVShow.ShowPath & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & DBTVShow.ShowPath & ">")
         End Try
     End Sub
     ''' <summary>
@@ -266,9 +266,8 @@ Public Class Images
     ''' <param name="sPath">Path to the image file</param>
     ''' <param name="LoadBitmap">Create bitmap from memorystream</param>
     ''' <remarks></remarks>
-    Public Sub FromFile(ByVal sPath As String, Optional LoadBitmap As Boolean = False)
+    Public Sub LoadFromFile(ByVal sPath As String, Optional LoadBitmap As Boolean = False)
         If Not String.IsNullOrEmpty(sPath) AndAlso File.Exists(sPath) Then
-            'Try
             _ms = New MemoryStream()
             Using fsImage As FileStream = File.OpenRead(sPath)
                 Dim memStream As New MemoryStream
@@ -286,7 +285,7 @@ Public Class Images
         End If
     End Sub
 
-    Public Function FromMemoryStream() As Boolean
+    Public Function LoadFromMemoryStream() As Boolean
         If HasMemoryStream Then
             _image = New Bitmap(_ms)
             Return True
@@ -300,7 +299,7 @@ Public Class Images
     ''' <param name="sURL">URL to the image file</param>
     ''' <param name="LoadBitmap">Create bitmap from memorystream</param>
     ''' <remarks></remarks>
-    Public Sub FromWeb(ByVal sURL As String, Optional LoadBitmap As Boolean = False)
+    Public Sub LoadFromWeb(ByVal sURL As String, Optional LoadBitmap As Boolean = False)
         If String.IsNullOrEmpty(sURL) Then Return
 
         Try
@@ -334,25 +333,25 @@ Public Class Images
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & sURL & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "<" & sURL & ">")
         End Try
     End Sub
 
     Public Sub ResizeExtraFanart(ByVal fromPath As String, ByVal toPath As String)
-        FromFile(fromPath)
-        Save(toPath)
+        LoadFromFile(fromPath)
+        SaveToFile(toPath)
     End Sub
 
     Public Sub ResizeExtraThumb(ByVal fromPath As String, ByVal toPath As String)
-        FromFile(fromPath)
-        Save(toPath)
+        LoadFromFile(fromPath)
+        SaveToFile(toPath)
     End Sub
     ''' <summary>
     ''' Stores the Image to the supplied <paramref name="sPath"/>
     ''' </summary>
     ''' <param name="sPath">Location to store the image</param>
     ''' <remarks></remarks>
-    Public Sub Save(ByVal sPath As String)
+    Public Sub SaveToFile(ByVal sPath As String)
         If _ms.Length > 0 Then
             Dim retSave() As Byte
             Try
@@ -368,12 +367,381 @@ Public Class Images
                     End Using
                 End If
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
         Else
             Throw New ArgumentOutOfRangeException("Looks like MemoryStream is empty")
         End If
     End Sub
+    ''' <summary>
+    ''' Save the image as a Movie image
+    ''' </summary>
+    ''' <param name="tDBElement"><c>Database.DBElement</c> representing the Movie being referred to</param>
+    ''' <param name="tImageType"></param>
+    ''' <returns><c>String</c> path to the saved image</returns>
+    ''' <remarks></remarks>
+    Public Function Save_Movie(ByVal tDBElement As Database.DBElement, ByVal tImageType As Enums.ModifierType) As String
+        Dim strReturn As String = String.Empty
+
+        Dim doResize As Boolean = False
+        Dim bResizeEnabled As Boolean = False
+        Dim intHeight As Integer = -1
+        Dim intQuality As Integer = 100
+        Dim intWidth As Integer = -1
+
+        Select Case tImageType
+            Case Enums.ModifierType.MainBanner
+                bResizeEnabled = Master.eSettings.MovieBannerResize
+                intHeight = Master.eSettings.MovieBannerHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("BannerQuality", "100", , Enums.ContentType.Movie))
+                intWidth = Master.eSettings.MovieBannerWidth
+            Case Enums.ModifierType.MainExtrafanarts
+                bResizeEnabled = Master.eSettings.MovieExtrafanartsResize
+                intHeight = Master.eSettings.MovieExtrafanartsHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("ExtrafanartsQuality", "100", , Enums.ContentType.Movie))
+                intWidth = Master.eSettings.MovieExtrafanartsWidth
+            Case Enums.ModifierType.MainExtrathumbs
+                bResizeEnabled = Master.eSettings.MovieExtrathumbsResize
+                intHeight = Master.eSettings.MovieExtrathumbsHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("ExtrathumbsQuality", "100", , Enums.ContentType.Movie))
+                intWidth = Master.eSettings.MovieExtrathumbsWidth
+            Case Enums.ModifierType.MainFanart
+                bResizeEnabled = Master.eSettings.MovieFanartResize
+                intHeight = Master.eSettings.MovieFanartHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("FanartQuality", "100", , Enums.ContentType.Movie))
+                intWidth = Master.eSettings.MovieFanartWidth
+            Case Enums.ModifierType.MainPoster
+                bResizeEnabled = Master.eSettings.MoviePosterResize
+                intHeight = Master.eSettings.MoviePosterHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("PosterQuality", "100", , Enums.ContentType.Movie))
+                intWidth = Master.eSettings.MoviePosterWidth
+        End Select
+
+        If bResizeEnabled Then
+            If _image Is Nothing Then LoadFromMemoryStream()
+            If _image IsNot Nothing Then
+                doResize = _image.Width > intWidth OrElse _image.Height > intHeight
+            End If
+        End If
+
+        Try
+            If doResize Then
+                ImageUtils.ResizeImage(_image, intWidth, intHeight)
+                'need to align _immage and _ms
+                UpdateMSfromImg(_image, intQuality)
+            End If
+
+            For Each a In FileUtils.GetFilenameList.Movie(tDBElement, tImageType)
+                SaveToFile(a)
+                strReturn = a
+            Next
+
+            If tImageType = Enums.ModifierType.MainFanart AndAlso Not String.IsNullOrEmpty(strReturn) AndAlso
+                Not String.IsNullOrEmpty(Master.eSettings.MovieBackdropsPath) AndAlso Master.eSettings.MovieBackdropsAuto Then
+                FileUtils.Common.CopyFanartToBackdropsPath(strReturn, tDBElement.ContentType)
+            End If
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name)
+        End Try
+
+        Clear() 'Dispose to save memory
+        Return strReturn
+    End Function
+    ''' <summary>
+    ''' Save the image as a MovieSet image
+    ''' </summary>
+    ''' <param name="tDBElement"><c>Database.DBElement</c> representing the MovieSet being referred to</param>
+    ''' <param name="tImageType"></param>
+    ''' <returns><c>String</c> path to the saved image</returns>
+    ''' <remarks></remarks>
+    Public Function Save_MovieSet(ByVal tDBElement As Database.DBElement, ByVal tImageType As Enums.ModifierType) As String
+        Dim strReturn As String = String.Empty
+
+        Dim doResize As Boolean = False
+        Dim bResizeEnabled As Boolean = False
+        Dim intHeight As Integer = -1
+        Dim intQuality As Integer = 100
+        Dim intWidth As Integer = -1
+
+        Select Case tImageType
+            Case Enums.ModifierType.MainBanner
+                bResizeEnabled = Master.eSettings.MovieSetBannerResize
+                intHeight = Master.eSettings.MovieSetBannerHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("BannerQuality", "100", , Enums.ContentType.MovieSet))
+                intWidth = Master.eSettings.MovieSetBannerWidth
+            Case Enums.ModifierType.MainFanart
+                bResizeEnabled = Master.eSettings.MovieSetFanartResize
+                intHeight = Master.eSettings.MovieSetFanartHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("FanartQuality", "100", , Enums.ContentType.MovieSet))
+                intWidth = Master.eSettings.MovieSetFanartWidth
+            Case Enums.ModifierType.MainPoster
+                bResizeEnabled = Master.eSettings.MovieSetPosterResize
+                intHeight = Master.eSettings.MovieSetPosterHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("PosterQuality", "100", , Enums.ContentType.MovieSet))
+                intWidth = Master.eSettings.MovieSetPosterWidth
+        End Select
+
+        If bResizeEnabled Then
+            If _image Is Nothing Then LoadFromMemoryStream()
+            If _image IsNot Nothing Then
+                doResize = _image.Width > intWidth OrElse _image.Height > intHeight
+            End If
+        End If
+
+        Try
+            If doResize Then
+                ImageUtils.ResizeImage(_image, intWidth, intHeight)
+                'need to align _immage and _ms
+                UpdateMSfromImg(_image, intQuality)
+            End If
+
+            For Each a In FileUtils.GetFilenameList.MovieSet(tDBElement, tImageType)
+                SaveToFile(a)
+                strReturn = a
+            Next
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name)
+        End Try
+
+        Clear() 'Dispose to save memory
+        Return strReturn
+    End Function
+    ''' <summary>
+    ''' Save the image as a TVAllSeasons image
+    ''' </summary>
+    ''' <param name="tDBElement"><c>Database.DBElement</c> representing the TVShow being referred to</param>
+    ''' <param name="tImageType"></param>
+    ''' <returns><c>String</c> path to the saved image</returns>
+    ''' <remarks></remarks>
+    Public Function Save_TVAllSeasons(ByVal tDBElement As Database.DBElement, ByVal tImageType As Enums.ModifierType) As String
+        Dim strReturn As String = String.Empty
+
+        Dim doResize As Boolean = False
+        Dim bResizeEnabled As Boolean = False
+        Dim intHeight As Integer = -1
+        Dim intQuality As Integer = 100
+        Dim intWidth As Integer = -1
+
+        Select Case tImageType
+            Case Enums.ModifierType.AllSeasonsBanner
+                bResizeEnabled = Master.eSettings.TVAllSeasonsBannerResize
+                intHeight = Master.eSettings.TVAllSeasonsBannerHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("BannerQuality", "100", , Enums.ContentType.TVSeason))
+                intWidth = Master.eSettings.TVAllSeasonsBannerWidth
+            Case Enums.ModifierType.SeasonFanart
+                bResizeEnabled = Master.eSettings.TVAllSeasonsFanartResize
+                intHeight = Master.eSettings.TVAllSeasonsFanartHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("FanartQuality", "100", , Enums.ContentType.TVSeason))
+                intWidth = Master.eSettings.TVAllSeasonsFanartWidth
+            Case Enums.ModifierType.SeasonPoster
+                bResizeEnabled = Master.eSettings.TVAllSeasonsPosterResize
+                intHeight = Master.eSettings.TVAllSeasonsPosterHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("PosterQuality", "100", , Enums.ContentType.TVSeason))
+                intWidth = Master.eSettings.TVAllSeasonsPosterWidth
+        End Select
+
+        If bResizeEnabled Then
+            If _image Is Nothing Then LoadFromMemoryStream()
+            If _image IsNot Nothing Then
+                doResize = _image.Width > intWidth OrElse _image.Height > intHeight
+            End If
+        End If
+
+        Try
+            If doResize Then
+                ImageUtils.ResizeImage(_image, intWidth, intHeight)
+                'need to align _immage and _ms
+                UpdateMSfromImg(_image, intQuality)
+            End If
+
+            For Each a In FileUtils.GetFilenameList.TVShow(tDBElement, tImageType)
+                SaveToFile(a)
+                strReturn = a
+            Next
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name)
+        End Try
+
+        Clear() 'Dispose to save memory
+        Return strReturn
+    End Function
+    ''' <summary>
+    ''' Save the image as a TVEpisode image
+    ''' </summary>
+    ''' <param name="tDBElement"><c>Database.DBElement</c> representing the TVEpisode being referred to</param>
+    ''' <param name="tImageType"></param>
+    ''' <returns><c>String</c> path to the saved image</returns>
+    ''' <remarks></remarks>
+    Public Function Save_TVEpisode(ByVal tDBElement As Database.DBElement, ByVal tImageType As Enums.ModifierType) As String
+        Dim strReturn As String = String.Empty
+
+        Dim doResize As Boolean = False
+        Dim bResizeEnabled As Boolean = False
+        Dim intHeight As Integer = -1
+        Dim intQuality As Integer = 100
+        Dim intWidth As Integer = -1
+
+        Select Case tImageType
+            Case Enums.ModifierType.EpisodeFanart
+                bResizeEnabled = Master.eSettings.TVEpisodeFanartResize
+                intHeight = Master.eSettings.TVEpisodeFanartHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("FanartQuality", "100", , Enums.ContentType.TVEpisode))
+                intWidth = Master.eSettings.TVEpisodeFanartWidth
+            Case Enums.ModifierType.EpisodePoster
+                bResizeEnabled = Master.eSettings.TVEpisodePosterResize
+                intHeight = Master.eSettings.TVEpisodePosterHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("PosterQuality", "100", , Enums.ContentType.TVEpisode))
+                intWidth = Master.eSettings.TVEpisodePosterWidth
+        End Select
+
+        If bResizeEnabled Then
+            If _image Is Nothing Then LoadFromMemoryStream()
+            If _image IsNot Nothing Then
+                doResize = _image.Width > intWidth OrElse _image.Height > intHeight
+            End If
+        End If
+
+        Try
+            If doResize Then
+                ImageUtils.ResizeImage(_image, intWidth, intHeight)
+                'need to align _immage and _ms
+                UpdateMSfromImg(_image, intQuality)
+            End If
+
+            For Each a In FileUtils.GetFilenameList.TVEpisode(tDBElement, tImageType)
+                SaveToFile(a)
+                strReturn = a
+            Next
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name)
+        End Try
+
+        Clear() 'Dispose to save memory
+        Return strReturn
+    End Function
+    ''' <summary>
+    ''' Save the image as a TVSeason image
+    ''' </summary>
+    ''' <param name="tDBElement"><c>Database.DBElement</c> representing the TVSeason being referred to</param>
+    ''' <param name="tImageType"></param>
+    ''' <returns><c>String</c> path to the saved image</returns>
+    ''' <remarks></remarks>
+    Public Function Save_TVSeason(ByVal tDBElement As Database.DBElement, ByVal tImageType As Enums.ModifierType) As String
+        Dim strReturn As String = String.Empty
+
+        Dim doResize As Boolean = False
+        Dim bResizeEnabled As Boolean = False
+        Dim intHeight As Integer = -1
+        Dim intQuality As Integer = 100
+        Dim intWidth As Integer = -1
+
+        Select Case tImageType
+            Case Enums.ModifierType.SeasonBanner
+                bResizeEnabled = Master.eSettings.TVSeasonBannerResize
+                intHeight = Master.eSettings.TVSeasonBannerHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("BannerQuality", "100", , Enums.ContentType.TVSeason))
+                intWidth = Master.eSettings.TVSeasonBannerWidth
+            Case Enums.ModifierType.SeasonFanart
+                bResizeEnabled = Master.eSettings.TVSeasonFanartResize
+                intHeight = Master.eSettings.TVSeasonFanartHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("FanartQuality", "100", , Enums.ContentType.TVSeason))
+                intWidth = Master.eSettings.TVSeasonFanartWidth
+            Case Enums.ModifierType.SeasonPoster
+                bResizeEnabled = Master.eSettings.TVSeasonPosterResize
+                intHeight = Master.eSettings.TVSeasonPosterHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("PosterQuality", "100", , Enums.ContentType.TVSeason))
+                intWidth = Master.eSettings.TVSeasonPosterWidth
+        End Select
+
+        If bResizeEnabled Then
+            If _image Is Nothing Then LoadFromMemoryStream()
+            If _image IsNot Nothing Then
+                doResize = _image.Width > intWidth OrElse _image.Height > intHeight
+            End If
+        End If
+
+        Try
+            If doResize Then
+                ImageUtils.ResizeImage(_image, intWidth, intHeight)
+                'need to align _immage and _ms
+                UpdateMSfromImg(_image, intQuality)
+            End If
+
+            For Each a In FileUtils.GetFilenameList.TVSeason(tDBElement, tImageType)
+                SaveToFile(a)
+                strReturn = a
+            Next
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name)
+        End Try
+
+        Clear() 'Dispose to save memory
+        Return strReturn
+    End Function
+    ''' <summary>
+    ''' Save the image as a TVShow image
+    ''' </summary>
+    ''' <param name="tDBElement"><c>Database.DBElement</c> representing the TVShow being referred to</param>
+    ''' <param name="tImageType"></param>
+    ''' <returns><c>String</c> path to the saved image</returns>
+    ''' <remarks></remarks>
+    Public Function Save_TVShow(ByVal tDBElement As Database.DBElement, ByVal tImageType As Enums.ModifierType) As String
+        Dim strReturn As String = String.Empty
+
+        Dim doResize As Boolean = False
+        Dim bResizeEnabled As Boolean = False
+        Dim intHeight As Integer = -1
+        Dim intQuality As Integer = 100
+        Dim intWidth As Integer = -1
+
+        Select Case tImageType
+            Case Enums.ModifierType.MainBanner
+                bResizeEnabled = Master.eSettings.TVShowBannerResize
+                intHeight = Master.eSettings.TVShowBannerHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("BannerQuality", "100", , Enums.ContentType.TVShow))
+                intWidth = Master.eSettings.TVShowBannerWidth
+            Case Enums.ModifierType.MainExtrafanarts
+                bResizeEnabled = Master.eSettings.TVShowExtrafanartsResize
+                intHeight = Master.eSettings.TVShowExtrafanartsHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("ExtrafanartsQuality", "100", , Enums.ContentType.TVShow))
+                intWidth = Master.eSettings.TVShowExtrafanartsWidth
+            Case Enums.ModifierType.MainFanart
+                bResizeEnabled = Master.eSettings.TVShowFanartResize
+                intHeight = Master.eSettings.TVShowFanartHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("FanartQuality", "100", , Enums.ContentType.TVShow))
+                intWidth = Master.eSettings.TVShowFanartWidth
+            Case Enums.ModifierType.MainPoster
+                bResizeEnabled = Master.eSettings.TVShowPosterResize
+                intHeight = Master.eSettings.TVShowPosterHeight
+                intQuality = CInt(AdvancedSettings.GetSetting("PosterQuality", "100", , Enums.ContentType.TVShow))
+                intWidth = Master.eSettings.TVShowPosterWidth
+        End Select
+
+        If bResizeEnabled Then
+            If _image Is Nothing Then LoadFromMemoryStream()
+            If _image IsNot Nothing Then
+                doResize = _image.Width > intWidth OrElse _image.Height > intHeight
+            End If
+        End If
+
+        Try
+            If doResize Then
+                ImageUtils.ResizeImage(_image, intWidth, intHeight)
+                'need to align _immage and _ms
+                UpdateMSfromImg(_image, intQuality)
+            End If
+
+            For Each a In FileUtils.GetFilenameList.TVShow(tDBElement, tImageType)
+                SaveToFile(a)
+                strReturn = a
+            Next
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name)
+        End Try
+
+        Clear() 'Dispose to save memory
+        Return strReturn
+    End Function
 
     Public Shared Sub SaveMovieActorThumbs(ByVal mMovie As Database.DBElement)
         'First, (Down)Load all actor thumbs from LocalFilePath or URL
@@ -381,8 +749,8 @@ Public Class Images
             tActor.Thumb.LoadAndCache(mMovie.ContentType, True)
         Next
 
-        'Secound, remove the old ones
-        Delete_Movie(mMovie, Enums.ModifierType.MainActorThumbs)
+        'Second, remove the old ones
+        Delete_Movie(mMovie, Enums.ModifierType.MainActorThumbs, False)
 
         'Thirdly, save all actor thumbs
         For Each tActor As MediaContainers.Person In mMovie.Movie.Actors
@@ -403,98 +771,11 @@ Public Class Images
 
         For Each a In FileUtils.GetFilenameList.Movie(aMovie, Enums.ModifierType.MainActorThumbs)
             tPath = a.Replace("<placeholder>", actor.Name.Replace(" ", "_"))
-            Save(tPath)
+            SaveToFile(tPath)
         Next
 
+        Clear() 'Dispose to save memory
         Return tPath
-    End Function
-    ''' <summary>
-    ''' Save the image as a movie banner
-    ''' </summary>
-    ''' <param name="mMovie"><c>Database.DBElement</c> representing the movie being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieBanner(ByVal mMovie As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.MovieBannerResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.MovieBannerWidth OrElse _image.Height > Master.eSettings.MovieBannerHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.MovieBannerWidth, Master.eSettings.MovieBannerHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.Movie(mMovie, Enums.ModifierType.MainBanner)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movie ClearArt
-    ''' </summary>
-    ''' <param name="mMovie"><c>Database.DBElement</c> representing the movie being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieClearArt(ByVal mMovie As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.Movie(mMovie, Enums.ModifierType.MainClearArt)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movie ClearLogo
-    ''' </summary>
-    ''' <param name="mMovie"><c>Database.DBElement</c> representing the movie being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieClearLogo(ByVal mMovie As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.Movie(mMovie, Enums.ModifierType.MainClearLogo)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movie landscape
-    ''' </summary>
-    ''' <param name="mMovie"><c>Database.DBElement</c> representing the movie being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieDiscArt(ByVal mMovie As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.Movie(mMovie, Enums.ModifierType.MainDiscArt)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
     End Function
     ''' <summary>
     ''' Save all movie Extrafanarts
@@ -510,8 +791,8 @@ Public Class Images
             eImg.LoadAndCache(mMovie.ContentType, True)
         Next
 
-        'Secound, remove the old ones
-        Delete_Movie(mMovie, Enums.ModifierType.MainExtrafanarts)
+        'Second, remove the old ones
+        Delete_Movie(mMovie, Enums.ModifierType.MainExtrafanarts, False)
 
         'Thirdly, save all Extrafanarts
         For Each eImg As MediaContainers.Image In mMovie.ImagesContainer.Extrafanarts
@@ -542,7 +823,7 @@ Public Class Images
 
         Dim doResize As Boolean = False
         If Master.eSettings.MovieExtrafanartsResize Then
-            If _image Is Nothing Then FromMemoryStream()
+            If _image Is Nothing Then LoadFromMemoryStream()
             doResize = _image.Width > Master.eSettings.MovieExtrafanartsWidth OrElse _image.Height > Master.eSettings.MovieExtrafanartsHeight
         End If
 
@@ -564,13 +845,14 @@ Public Class Images
                         sName = Path.Combine(a, String.Concat("extrafanart", iVal, ".jpg"))
                     End If
                     efPath = Path.Combine(a, sName)
-                    Save(efPath)
+                    SaveToFile(efPath)
                 End If
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
+        Clear() 'Dispose to save memory
         Return efPath
     End Function
     ''' <summary>
@@ -588,7 +870,7 @@ Public Class Images
         Next
 
         'Secound, remove the old ones
-        Delete_Movie(mMovie, Enums.ModifierType.MainExtrathumbs)
+        Delete_Movie(mMovie, Enums.ModifierType.MainExtrathumbs, False)
 
         'Thirdly, save all Extrathumbs
         For Each eImg As MediaContainers.Image In mMovie.ImagesContainer.Extrathumbs.OrderBy(Function(f) f.Index)
@@ -619,7 +901,7 @@ Public Class Images
 
         Dim doResize As Boolean = False
         If Master.eSettings.MovieExtrathumbsResize Then
-            If _image Is Nothing Then FromMemoryStream()
+            If _image Is Nothing Then LoadFromMemoryStream()
             doResize = _image.Width > Master.eSettings.MovieExtrathumbsWidth OrElse _image.Height > Master.eSettings.MovieExtrathumbsHeight
         End If
 
@@ -638,386 +920,15 @@ Public Class Images
                     iMod = Functions.GetExtrathumbsModifier(a)
                     iVal = iMod + 1
                     etPath = Path.Combine(a, String.Concat("thumb", iVal, ".jpg"))
-                    Save(etPath)
+                    SaveToFile(etPath)
                 End If
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
+        Clear() 'Dispose to save memory
         Return etPath
-    End Function
-    ''' <summary>
-    ''' Save the image as a movie fanart
-    ''' </summary>
-    ''' <param name="mMovie"><c></c> representing the movie being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieFanart(ByVal mMovie As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.MovieFanartResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.MovieFanartWidth OrElse _image.Height > Master.eSettings.MovieFanartHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.MovieFanartWidth, Master.eSettings.MovieFanartHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.Movie(mMovie, Enums.ModifierType.MainFanart)
-                Save(a)
-                strReturn = a
-            Next
-
-            If Master.eSettings.MovieBackdropsAuto AndAlso Directory.Exists(Master.eSettings.MovieBackdropsPath) Then
-                Save(String.Concat(Master.eSettings.MovieBackdropsPath, Path.DirectorySeparatorChar, StringUtils.CleanFileName(mMovie.Movie.OriginalTitle), "_tt", mMovie.Movie.IMDBID, ".jpg"))
-            End If
-
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movie landscape
-    ''' </summary>
-    ''' <param name="mMovie"><c>Database.DBElement</c> representing the movie being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieLandscape(ByVal mMovie As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.Movie(mMovie, Enums.ModifierType.MainLandscape)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movie poster
-    ''' </summary>
-    ''' <param name="mMovie"><c>Database.DBElement</c> representing the movie being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMoviePoster(ByVal mMovie As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.MoviePosterResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.MoviePosterWidth OrElse _image.Height > Master.eSettings.MoviePosterHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.MoviePosterWidth, Master.eSettings.MoviePosterHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.Movie(mMovie, Enums.ModifierType.MainPoster)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movieset banner
-    ''' </summary>
-    ''' <param name="mMovieSet"><c>Database.DBElement</c> representing the movieset being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieSetBanner(ByVal mMovieSet As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.MovieSetBannerResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.MovieSetBannerWidth OrElse _image.Height > Master.eSettings.MovieSetBannerHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.MovieSetBannerWidth, Master.eSettings.MovieSetBannerHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.MovieSet(mMovieSet, Enums.ModifierType.MainBanner)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movieset ClearArt
-    ''' </summary>
-    ''' <param name="mMovieSet"><c>Database.DBElement</c> representing the movieset being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieSetClearArt(ByVal mMovieSet As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.MovieSet(mMovieSet, Enums.ModifierType.MainClearArt)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movieset ClearLogo
-    ''' </summary>
-    ''' <param name="mMovieSet"><c>Database.DBElement</c> representing the movieset being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieSetClearLogo(ByVal mMovieSet As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.MovieSet(mMovieSet, Enums.ModifierType.MainClearLogo)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movieset DiscArt
-    ''' </summary>
-    ''' <param name="mMovieSet"><c>Database.DBElement</c> representing the movieset being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieSetDiscArt(ByVal mMovieSet As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.MovieSet(mMovieSet, Enums.ModifierType.MainDiscArt)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movieset Fanart
-    ''' </summary>
-    ''' <param name="mMovieSet"><c>Database.DBElement</c> representing the movieset being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieSetFanart(ByVal mMovieSet As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.MovieSetFanartResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.MovieSetFanartWidth OrElse _image.Height > Master.eSettings.MovieSetFanartHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.MovieSetFanartWidth, Master.eSettings.MovieSetFanartHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.MovieSet(mMovieSet, Enums.ModifierType.MainFanart)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movieset Landscape
-    ''' </summary>
-    ''' <param name="mMovieSet"><c>Database.DBElement</c> representing the movieset being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieSetLandscape(ByVal mMovieSet As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.MovieSet(mMovieSet, Enums.ModifierType.MainLandscape)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a movieset Poster
-    ''' </summary>
-    ''' <param name="mMovieSet"><c>Database.DBElement</c> representing the movieset being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsMovieSetPoster(ByVal mMovieSet As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.MovieSetPosterResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.MovieSetPosterWidth OrElse _image.Height > Master.eSettings.MovieSetPosterHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.MovieSetPosterWidth, Master.eSettings.MovieSetPosterHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.MovieSet(mMovieSet, Enums.ModifierType.MainPoster)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Saves the image as the AllSeason banner
-    ''' </summary>
-    ''' <param name="mShow">The <c>Database.DBElement</c> representing the show being referenced</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVAllSeasonsBanner(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVAllSeasonsBannerResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVAllSeasonsBannerWidth OrElse _image.Height > Master.eSettings.TVAllSeasonsBannerHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVAllSeasonsBannerWidth, Master.eSettings.TVAllSeasonsBannerHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.AllSeasonsBanner)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Saves the image as the AllSeason fanart
-    ''' </summary>
-    ''' <param name="mShow">The <c>Database.DBElement</c> representing the show being referenced</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVAllSeasonsFanart(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVAllSeasonsFanartResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVAllSeasonsFanartWidth OrElse _image.Height > Master.eSettings.TVAllSeasonsFanartHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVAllSeasonsFanartWidth, Master.eSettings.TVAllSeasonsFanartHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.AllSeasonsFanart)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Saves the image as the AllSeason landscape
-    ''' </summary>
-    ''' <param name="mShow">The <c>Database.DBElement</c> representing the show being referenced</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVAllSeasonsLandscape(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.AllSeasonsLandscape)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Saves the image as the AllSeason poster
-    ''' </summary>
-    ''' <param name="mShow">The <c>Database.DBElement</c> representing the show being referenced</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVAllSeasonsPoster(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVAllSeasonsPosterResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVAllSeasonsPosterWidth OrElse _image.Height > Master.eSettings.TVAllSeasonsPosterHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVAllSeasonsPosterWidth, Master.eSettings.TVAllSeasonsPosterHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.AllSeasonsPoster)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-
-        Return strReturn
     End Function
 
     Public Shared Sub SaveTVEpisodeActorThumbs(ByVal mEpisode As Database.DBElement)
@@ -1048,188 +959,11 @@ Public Class Images
 
         For Each a In FileUtils.GetFilenameList.TVEpisode(mEpisode, Enums.ModifierType.EpisodeActorThumbs)
             tPath = a.Replace("<placeholder>", actor.Name.Replace(" ", "_"))
-            Save(tPath)
+            SaveToFile(tPath)
         Next
 
+        Clear() 'Dispose to save memory
         Return tPath
-    End Function
-    ''' <summary>
-    ''' Saves the image as the episode fanart
-    ''' </summary>
-    ''' <param name="mEpisode">The <c>Database.DBElement</c> representing the show being referenced</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVEpisodeFanart(ByVal mEpisode As Database.DBElement) As String
-        If String.IsNullOrEmpty(mEpisode.Filename) Then Return String.Empty
-
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVEpisodeFanartResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVEpisodeFanartWidth OrElse _image.Height > Master.eSettings.TVEpisodeFanartHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVEpisodeFanartWidth, Master.eSettings.TVEpisodeFanartHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVEpisode(mEpisode, Enums.ModifierType.EpisodeFanart)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as an episode poster
-    ''' </summary>
-    ''' <param name="mEpisode">The <c>Database.DBElement</c> representing the show being referenced</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVEpisodePoster(ByVal mEpisode As Database.DBElement) As String
-        If String.IsNullOrEmpty(mEpisode.Filename) Then Return String.Empty
-
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVEpisodePosterResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVEpisodePosterWidth OrElse _image.Height > Master.eSettings.TVEpisodePosterHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVEpisodePosterWidth, Master.eSettings.TVEpisodePosterHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVEpisode(mEpisode, Enums.ModifierType.EpisodePoster)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's season banner
-    ''' </summary>
-    ''' <param name="mSeason"><c>Database.DBElement</c> representing the TV Season being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVSeasonBanner(ByVal mSeason As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVSeasonBannerResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVSeasonBannerWidth OrElse _image.Height > Master.eSettings.TVSeasonBannerHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVSeasonBannerWidth, Master.eSettings.TVSeasonBannerHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVSeason(mSeason, Enums.ModifierType.SeasonBanner)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as the TV Show's season fanart
-    ''' </summary>
-    ''' <param name="mSeason"><c>Database.DBElement</c> representing the TV Season being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVSeasonFanart(ByVal mSeason As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVSeasonFanartResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVSeasonFanartWidth OrElse _image.Height > Master.eSettings.TVSeasonFanartHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVSeasonFanartWidth, Master.eSettings.TVSeasonFanartHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVSeason(mSeason, Enums.ModifierType.SeasonFanart)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's season landscape
-    ''' </summary>
-    ''' <param name="mSeason"><c>Database.DBElement</c> representing the TV Season being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVSeasonLandscape(ByVal mSeason As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Try
-            For Each a In FileUtils.GetFilenameList.TVSeason(mSeason, Enums.ModifierType.SeasonLandscape)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's season poster
-    ''' </summary>
-    ''' <param name="mSeason"><c>Database.DBElement</c> representing the TV Season being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVSeasonPoster(ByVal mSeason As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVSeasonPosterResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVSeasonPosterWidth OrElse _image.Height > Master.eSettings.TVSeasonPosterHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVSeasonPosterWidth, Master.eSettings.TVSeasonPosterHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVSeason(mSeason, Enums.ModifierType.SeasonPoster)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
     End Function
 
     Public Shared Sub SaveTVShowActorThumbs(ByVal mShow As Database.DBElement)
@@ -1260,106 +994,11 @@ Public Class Images
 
         For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.MainActorThumbs)
             tPath = a.Replace("<placeholder>", actor.Name.Replace(" ", "_"))
-            Save(tPath)
+            SaveToFile(tPath)
         Next
 
+        Clear() 'Dispose to save memory
         Return tPath
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's banner
-    ''' </summary>
-    ''' <param name="mShow"><c>Database.DBElement</c> representing the TV Show being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVShowBanner(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        If String.IsNullOrEmpty(mShow.ShowPath) Then Return strReturn
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVShowBannerResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVShowBannerWidth OrElse _image.Height > Master.eSettings.TVShowBannerHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVShowBannerWidth, Master.eSettings.TVShowBannerHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.MainBanner)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's CharacterArt
-    ''' </summary>
-    ''' <param name="mShow"><c>Database.DBElement</c> representing the TV Show being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVShowCharacterArt(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        If String.IsNullOrEmpty(mShow.ShowPath) Then Return strReturn
-
-        Try
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.MainCharacterArt)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's ClearArt
-    ''' </summary>
-    ''' <param name="mShow"><c>Database.DBElement</c> representing the TV Show being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVShowClearArt(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        If String.IsNullOrEmpty(mShow.ShowPath) Then Return strReturn
-
-        Try
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.MainClearArt)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's ClearLogo
-    ''' </summary>
-    ''' <param name="mShow"><c>Database.DBElement</c> representing the TV Show being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVShowClearLogo(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        If String.IsNullOrEmpty(mShow.ShowPath) Then Return strReturn
-
-        Try
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.MainClearLogo)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
     End Function
 
     Public Shared Function SaveTVShowExtrafanarts(ByVal mShow As Database.DBElement) As String
@@ -1404,7 +1043,7 @@ Public Class Images
 
         Dim doResize As Boolean = False
         If Master.eSettings.TVShowExtrafanartsResize Then
-            If _image Is Nothing Then FromMemoryStream()
+            If _image Is Nothing Then LoadFromMemoryStream()
             doResize = _image.Width > Master.eSettings.TVShowExtrafanartsWidth OrElse _image.Height > Master.eSettings.TVShowExtrafanartsHeight
         End If
 
@@ -1426,101 +1065,15 @@ Public Class Images
                         sName = Path.Combine(a, String.Concat("extrafanart", iVal, ".jpg"))
                     End If
                     efPath = Path.Combine(a, sName)
-                    Save(efPath)
+                    SaveToFile(efPath)
                 End If
             Next
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
+        Clear() 'Dispose to save memory
         Return efPath
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's fanart
-    ''' </summary>
-    ''' <param name="mShow"><c>Database.DBElement</c> representing the TV Show being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVShowFanart(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        If String.IsNullOrEmpty(mShow.ShowPath) Then Return strReturn
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVShowFanartResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVShowFanartWidth OrElse _image.Height > Master.eSettings.TVShowFanartHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVShowFanartWidth, Master.eSettings.TVShowFanartHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.MainFanart)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's landscape
-    ''' </summary>
-    ''' <param name="mShow"><c>Database.DBElement</c> representing the TV Show being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVShowLandscape(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        If String.IsNullOrEmpty(mShow.ShowPath) Then Return strReturn
-
-        Try
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.MainLandscape)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
-    End Function
-    ''' <summary>
-    ''' Save the image as a TV Show's poster
-    ''' </summary>
-    ''' <param name="mShow"><c>Database.DBElement</c> representing the TV Show being referred to</param>
-    ''' <returns><c>String</c> path to the saved image</returns>
-    ''' <remarks></remarks>
-    Public Function SaveAsTVShowPoster(ByVal mShow As Database.DBElement) As String
-        Dim strReturn As String = String.Empty
-
-        If String.IsNullOrEmpty(mShow.ShowPath) Then Return strReturn
-
-        Dim doResize As Boolean = False
-        If Master.eSettings.TVShowPosterResize Then
-            If _image Is Nothing Then FromMemoryStream()
-            doResize = _image.Width > Master.eSettings.TVShowPosterWidth OrElse _image.Height > Master.eSettings.TVShowPosterHeight
-        End If
-
-        Try
-            If doResize Then
-                ImageUtils.ResizeImage(_image, Master.eSettings.TVShowPosterWidth, Master.eSettings.TVShowPosterHeight)
-                'need to align _immage and _ms
-                UpdateMSfromImg(_image)
-            End If
-
-            For Each a In FileUtils.GetFilenameList.TVShow(mShow, Enums.ModifierType.MainPoster)
-                Save(a)
-                strReturn = a
-            Next
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-        Return strReturn
     End Function
 
     Public Shared Function GetPreferredImagesContainer(ByVal DBElement As Database.DBElement,
@@ -1791,12 +1344,20 @@ Public Class Images
             If Not bKeepExisting OrElse Not DBElement.ImagesContainer.Extrafanarts.Count >= iLimit OrElse iLimit = 0 Then
                 iDifference = iLimit - DBElement.ImagesContainer.Extrafanarts.Count
                 Dim defImgList As New List(Of MediaContainers.Image)
-
                 Select Case tContentType
                     Case Enums.ContentType.Movie
                         GetPreferredMovieExtrafanarts(SearchResultsContainer.MainFanarts, defImgList, If(Not bKeepExisting, iLimit, iDifference), nPreferredImagesContainer.ImagesContainer.Fanart, IsAutoScraper:=IsAutoScraper)
                     Case Enums.ContentType.TVShow
-                        GetPreferredTVShowExtrafanarts(SearchResultsContainer.MainFanarts, defImgList, If(Not bKeepExisting, iLimit, iDifference))
+                        ' If option RemoveDuplicateImages is activated, compare all scraped extrafanarts of the show against all current fanart (including season fanart)
+                        ' for this put all fanart of a show in temporary container
+                        Dim tmpCurrentShowImagesContainer As New MediaContainers.PreferredImagesContainer
+                        'show fanart
+                        tmpCurrentShowImagesContainer.ImagesContainer.Extrafanarts.Add(nPreferredImagesContainer.ImagesContainer.Fanart)
+                        'season fanart
+                        For Each season In DBElement.Seasons
+                            tmpCurrentShowImagesContainer.ImagesContainer.Extrafanarts.Add(season.ImagesContainer.Fanart)
+                        Next
+                        GetPreferredTVShowExtrafanarts(SearchResultsContainer.MainFanarts, defImgList, If(Not bKeepExisting, iLimit, iDifference), tmpCurrentShowImagesContainer.ImagesContainer.Extrafanarts, IsAutoScraper:=IsAutoScraper)
                 End Select
 
                 If Not bKeepExisting Then
@@ -2963,7 +2524,9 @@ Public Class Images
 
         If DoCalculateDuplicaImages = True Then
             'make sure that extraimages is not the same as main image of movie (i.e. fanart.jpg of movie should not be part of extrafanart)
-            FindDuplicateImages(imgResultList, Enums.ContentType.Movie, CurrentImage:=CurrentMovieFanart, MatchTolerance:=Master.eSettings.GeneralImageFilterFanartMatchTolerance, Limit:=iLimit)
+            Dim lsttmpCurrentMovieFanarts As New List(Of MediaContainers.Image)
+            lsttmpCurrentMovieFanarts.Add(CurrentMovieFanart)
+            FindDuplicateImages(imgResultList, Enums.ContentType.Movie, CurrentImageList:=lsttmpCurrentMovieFanarts, MatchTolerance:=Master.eSettings.GeneralImageFilterFanartMatchTolerance, Limit:=iLimit)
         End If
 
         'If Master.eSettings.MovieFanartPrefSize = Enums.MovieFanartSize.Any Then
@@ -3044,7 +2607,9 @@ Public Class Images
         'Use Imagefilter?
         If DoCalculateDuplicaImages = True Then
             'make sure that extraimages is not the same as main image of movie (i.e. fanart.jpg of movie should not be part of extrafanart)
-            FindDuplicateImages(imgResultList, Enums.ContentType.Movie, CurrentImage:=CurrentMovieFanart, MatchTolerance:=Master.eSettings.GeneralImageFilterFanartMatchTolerance, Limit:=iLimit)
+            Dim lsttmpCurrentMovieFanarts As New List(Of MediaContainers.Image)
+            lsttmpCurrentMovieFanarts.Add(CurrentMovieFanart)
+            FindDuplicateImages(imgResultList, Enums.ContentType.Movie, CurrentImageList:=lsttmpCurrentMovieFanarts, MatchTolerance:=Master.eSettings.GeneralImageFilterFanartMatchTolerance, Limit:=iLimit)
         End If
 
         If imgResultList IsNot Nothing AndAlso imgResultList.Count > 0 Then
@@ -3503,46 +3068,53 @@ Public Class Images
         End If
     End Function
 
-    Public Shared Function GetPreferredTVShowExtrafanarts(ByRef ImageList As List(Of MediaContainers.Image), ByRef imgResultList As List(Of MediaContainers.Image), ByVal iLimit As Integer) As Boolean
+    Public Shared Function GetPreferredTVShowExtrafanarts(ByRef ImageList As List(Of MediaContainers.Image), ByRef imgResultList As List(Of MediaContainers.Image), ByVal iLimit As Integer, ByVal lsttmpCurrentTVSowFanarts As List(Of MediaContainers.Image), Optional ByVal IsAutoScraper As Boolean = False) As Boolean
+
         If ImageList.Count = 0 Then Return False
+
+        Dim DoCalculateDuplicaImages As Boolean = False
+
+        If Master.eSettings.GeneralImageFilter = True AndAlso Master.eSettings.GeneralImageFilterFanart = True AndAlso ((IsAutoScraper = True AndAlso Master.eSettings.GeneralImageFilterAutoscraper = True) OrElse (IsAutoScraper = False AndAlso Master.eSettings.GeneralImageFilterImagedialog = True)) Then
+            DoCalculateDuplicaImages = True
+        End If
 
         If Master.eSettings.TVShowExtrafanartsPrefSize = Enums.TVFanartSize.Any Then
             For Each img As MediaContainers.Image In ImageList
                 imgResultList.Add(img)
-                iLimit -= 1
-                If iLimit = 0 Then Exit For
+                'different handling if ImageFilter is activated: Dont't limit/cut images because method RemoveDuplicateImages will make sure that only "iLimit" and unique images will be returned
+                If DoCalculateDuplicaImages = False Then
+                    iLimit -= 1
+                    If iLimit = 0 Then Exit For
+                End If
             Next
         End If
 
         If (imgResultList Is Nothing OrElse imgResultList.Count < iLimit) AndAlso Master.eSettings.TVShowExtrafanartsPrefSizeOnly Then
             For Each img As MediaContainers.Image In ImageList.Where(Function(f) f.TVFanartSize = Master.eSettings.TVShowExtrafanartsPrefSize)
                 imgResultList.Add(img)
-                iLimit -= 1
-                If iLimit = 0 Then Exit For
+                'different handling if ImageFilter is activated: Dont't limit/cut images because RemoveDuplicateImages will make sure that only "iLimit" and unique images will be returned
+                If DoCalculateDuplicaImages = False Then
+                    iLimit -= 1
+                    If iLimit = 0 Then Exit For
+                End If
             Next
         End If
 
         If (imgResultList Is Nothing OrElse imgResultList.Count < iLimit) AndAlso Not Master.eSettings.TVShowExtrafanartsPrefSizeOnly AndAlso Not Master.eSettings.TVShowExtrafanartsPrefSize = Enums.TVFanartSize.Any Then
             For Each img As MediaContainers.Image In ImageList.Where(Function(f) Not String.IsNullOrEmpty(f.URLOriginal))
                 imgResultList.Add(img)
-                iLimit -= 1
-                If iLimit = 0 Then Exit For
+                'different handling if ImageFilter is activated: Dont't limit/cut images because RemoveDuplicateImages will make sure that only "iLimit" and unique images will be returned
+                If DoCalculateDuplicaImages = False Then
+                    iLimit -= 1
+                    If iLimit = 0 Then Exit For
+                End If
             Next
         End If
 
-
-
-        'If Master.eSettings.MovieFanartPrefSize = Enums.MovieFanartSize.Any Then
-        '    imgResult = ImageList.First
-        'End If
-
-        'If imgResult Is Nothing Then
-        '    imgResult = ImageList.Find(Function(f) f.MovieFanartSize = Master.eSettings.MovieFanartPrefSize)
-        'End If
-
-        'If imgResult Is Nothing AndAlso Not Master.eSettings.MovieFanartPrefSizeOnly AndAlso Not Master.eSettings.MovieFanartPrefSize = Enums.MovieFanartSize.Any Then
-        '    imgResult = ImageList.First
-        'End If
+        If DoCalculateDuplicaImages = True Then
+            'make sure that extraimages is not the same as main image of movie (i.e. fanart.jpg of movie should not be part of extrafanart)
+            FindDuplicateImages(imgResultList, Enums.ContentType.Movie, CurrentImageList:=lsttmpCurrentTVSowFanarts, MatchTolerance:=Master.eSettings.GeneralImageFilterFanartMatchTolerance, Limit:=iLimit)
+        End If
 
         If imgResultList IsNot Nothing AndAlso imgResultList.Count > 0 Then
             Return True
@@ -3630,6 +3202,7 @@ Public Class Images
     ''' <returns>true: no errors, false: no images to compare</returns>
     ''' <remarks>
     ''' Find duplicate images in a given list of images and either mark them in list by setting IsDuplicate property or remove them from the list - behaviour depends on limit parameter
+    ''' 2016/02/10 Cocotus - Supports now comparing against list of currentimages (like fanarts of tvshows (seasons)) - for that created new function SearchDuplicateImageinList
     ''' 2016/01/10 Cocotus - Optimized behaviour to support Limit parameter (will result in faster processing)
     ''' Basic usage: 
     ''' If RemoveDuplicatesFromList = false -> ALL images of movie/episode will be downloaded and checked for duplicates. Whole Imagelist will be returned (may also contain duplicate images). Duplicated images will have Image-property "IsDuplicate"=true set
@@ -3637,7 +3210,7 @@ Public Class Images
     ''' 2015/09/23 Cocotus - First implementation
     ''' Used to avoid duplicate images
     ''' </remarks>
-    Public Shared Function FindDuplicateImages(ByRef ImageList As List(Of MediaContainers.Image), ByVal ContentType As Enums.ContentType, Optional ByVal CurrentImage As MediaContainers.Image = Nothing, Optional ByVal MatchTolerance As Integer = 5, Optional ByVal Limit As Integer = 0, Optional ByVal RemoveDuplicatesFromList As Boolean = True) As Boolean
+    Public Shared Function FindDuplicateImages(ByRef ImageList As List(Of MediaContainers.Image), ByVal ContentType As Enums.ContentType, Optional ByVal CurrentImageList As List(Of MediaContainers.Image) = Nothing, Optional ByVal MatchTolerance As Integer = 5, Optional ByVal Limit As Integer = 0, Optional ByVal RemoveDuplicatesFromList As Boolean = True) As Boolean
         'if there are no images to compare, then leave immediately
         If ImageList.Count = 0 Then Return False
 
@@ -3665,6 +3238,7 @@ Public Class Images
 
         'current compared image in imagelist
         Dim tmpImage As Images = Nothing
+        Dim lsttmpSimilarityresults As New List(Of Integer)
 
         'loop through every image scrapedlist
         For i = 0 To ImageList.Count - 1
@@ -3673,60 +3247,27 @@ Public Class Images
                 'To compare images for similarity we need to load them
                 'Checking for similarity means we need to load images to compare the content! -> Need to download the scraped image
                 'If the images aren't available in cache or stored local, download them
-                If ImageList(i).LoadAndCache(ContentType, LoadBitmap:=True) Then
-                    If ImageList(i).ImageThumb IsNot Nothing Then
+                If ImageList(i).LoadAndCache(ContentType, False, True) Then
+                    If ImageList(i).ImageThumb IsNot Nothing AndAlso ImageList(i).ImageThumb.Image IsNot Nothing Then
                         tmpImage = ImageList(i).ImageThumb
-                    ElseIf ImageList(i).ImageOriginal IsNot Nothing Then
+                    ElseIf ImageList(i).ImageOriginal IsNot Nothing AndAlso ImageList(i).ImageOriginal.Image IsNot Nothing Then
                         tmpImage = ImageList(i).ImageOriginal
                     End If
 
-                    '1. Step (Optional): Check if tmpimage is identical to (current) image (i.e. fanart) of movie!
-                    If CurrentImage IsNot Nothing Then
-                        'invalid comparison (one of images is nothing?!)
-                        If tmpImage Is Nothing OrElse tmpImage.Image Is Nothing Then
-                            currentimagesimilarity = 99
-                            'image is Nothing -> no need to compare anything!
-                            logger.Warn("[FindDuplicateImages] Image is nothing. Can't compare images! Image at Index: " & i)
-                        Else
-                            If CurrentImage.LocalFilePathSpecified Then
-                                currentimagesimilarity = ImageUtils.ImageComparison.GetSimilarity(tmpImage.Image, CurrentImage.LocalFilePath, ImageUtils.ImageComparison.Algorithm.AverageHash)
-                            ElseIf CurrentImage.ImageThumb IsNot Nothing Then
-                                If CurrentImage.ImageThumb.Image IsNot Nothing Then
-                                    currentimagesimilarity = ImageUtils.ImageComparison.GetSimilarity(tmpImage.Image, CurrentImage.ImageThumb.Image, ImageUtils.ImageComparison.Algorithm.AverageHash)
-                                Else
-                                    currentimagesimilarity = 99
-                                    'image is Nothing -> no need to compare anything!
-                                    logger.Warn("[FindDuplicateImages] Currentimage is nothing. Can't compare images!")
-                                End If
-                            ElseIf CurrentImage.ImageOriginal IsNot Nothing Then
-                                If CurrentImage.ImageOriginal.Image IsNot Nothing Then
-                                    currentimagesimilarity = ImageUtils.ImageComparison.GetSimilarity(tmpImage.Image, CurrentImage.ImageOriginal.Image, ImageUtils.ImageComparison.Algorithm.AverageHash)
-                                Else
-                                    currentimagesimilarity = 99
-                                    'image is Nothing -> no need to compare anything!
-                                    logger.Warn("[FindDuplicateImages] Currentimage is nothing. Can't compare images!")
-                                End If
-                            Else
-                                currentimagesimilarity = 99
-                                'image is Nothing -> no need to compare anything!
-                                logger.Warn("[FindDuplicateImages] Currentimage is nothing. Can't compare images!")
-                            End If
-                        End If
-                        'check for duplicate
-                        If MatchTolerance >= currentimagesimilarity Then
-                            logger.Trace("[FindDuplicateImages] Duplicate images found: Image1: " & ImageList.Item(i).URLOriginal & " Image2: Current image!")
-                            If RemoveDuplicatesFromList = True Then
-                                'investigate next image, start with next item in loop
-                                Continue For
-                            End If
-                        End If
-                        'if all images will be analyzed then store index of image in imagelist with calculacted Similarityvalue
-                        If RemoveDuplicatesFromList = False Then
-                            Dim newSimilarityvalue = Tuple.Create(i, currentimagesimilarity)
-                            lstCalculatedSimilarity.Add(newSimilarityvalue)
+                    '1. Step (Optional): Check if tmpimage is identical to (current) image(s) (i.e. fanart) of movie/shows!
+                    currentimagesimilarity = SearchDuplicateImageinList(tmpImage, CurrentImageList, MatchTolerance)
+                    If MatchTolerance >= currentimagesimilarity Then
+                        logger.Trace("[FindDuplicateImages] Duplicate images found: Image1: " & ImageList.Item(i).URLOriginal & " Image2: Current image!")
+                        If RemoveDuplicatesFromList = True Then
+                            'investigate next image, start with next item in loop
+                            Continue For
                         End If
                     End If
-
+                    'if all images will be analyzed then store index of image in imagelist with calculacted Similarityvalue
+                    If RemoveDuplicatesFromList = False Then
+                        Dim newSimilarityvalue = Tuple.Create(i, currentimagesimilarity)
+                        lstCalculatedSimilarity.Add(newSimilarityvalue)
+                    End If
 
                     '2. Step: Calculate similarity for each image combination in imagelist (lstLimit or whole Imagelist depending on RemoveDuplicates parameter) - basically we compare each image to find out which images are identical to each other
                     If RemoveDuplicatesFromList = True Then
@@ -3744,10 +3285,10 @@ Public Class Images
                                     'Checking for similarity means we need to load images to compare the content! -> Need to download the scraped image
                                     'If the images aren't available in cache or stored local, download them
                                     referenceimage = Nothing
-                                    If lstLimitImages(j).LoadAndCache(ContentType, LoadBitmap:=True) Then
-                                        If lstLimitImages(j).ImageThumb IsNot Nothing Then
+                                    If lstLimitImages(j).LoadAndCache(ContentType, False, True) Then
+                                        If lstLimitImages(j).ImageThumb IsNot Nothing AndAlso lstLimitImages(j).ImageThumb.Image IsNot Nothing Then
                                             referenceimage = lstLimitImages(j).ImageThumb
-                                        ElseIf lstLimitImages(i).ImageOriginal IsNot Nothing Then
+                                        ElseIf lstLimitImages(j).ImageOriginal IsNot Nothing AndAlso lstLimitImages(j).ImageOriginal.Image IsNot Nothing Then
                                             referenceimage = lstLimitImages(j).ImageOriginal
                                         End If
                                     End If
@@ -3780,13 +3321,14 @@ Public Class Images
                             'Checking for similarity means we need to load images to compare the content! -> Need to download the scraped image
                             'If the images aren't available in cache or stored local, download them
                             Dim referenceimage As Images = Nothing
-                            If ImageList(j).LoadAndCache(ContentType, LoadBitmap:=True) Then
-                                If ImageList(j).ImageThumb IsNot Nothing Then
+                            If ImageList(j).LoadAndCache(ContentType, False, True) Then
+                                If ImageList(j).ImageThumb IsNot Nothing AndAlso ImageList(j).ImageThumb.Image IsNot Nothing Then
                                     referenceimage = ImageList(j).ImageThumb
-                                ElseIf ImageList(i).ImageOriginal IsNot Nothing Then
+                                ElseIf ImageList(j).ImageOriginal IsNot Nothing AndAlso ImageList(j).ImageOriginal.Image IsNot Nothing Then
                                     referenceimage = ImageList(j).ImageOriginal
                                 End If
                             End If
+
                             If referenceimage Is Nothing OrElse referenceimage.Image Is Nothing Then
                                 currentimagesimilarity = 99
                                 'Second (loaded) image is nothing -> no need to compare anything!
@@ -3852,6 +3394,64 @@ Public Class Images
         Return True
     End Function
 
+    ''' <summary>
+    ''' Check if an image is in a given list of images
+    ''' </summary>
+    ''' <param name="referenceImage">Current image of video file (i.e. fanart.jpg) which should be checked</param>
+    ''' <param name="searchImageList">Source <c>List</c> of <c>MediaContainers.Image</c> holding available extraFanart</param>
+    ''' <param name="MatchTolerance">0: 100% identical images, 0-5: most likely identical, >10: different images</param>
+    ''' <returns>similarity value of found duplicate image (result of image comparison)</returns>
+    ''' <remarks>
+    ''' 2016/02/10 Cocotus - First implementation
+    ''' Refactored the massive FindDuplicateImages method...
+    ''' </remarks>
+    Public Shared Function SearchDuplicateImageinList(ByRef referenceImage As Images, ByVal searchImageList As List(Of MediaContainers.Image), ByVal MatchTolerance As Integer) As Integer
+
+        Dim currentimagesimilarity As Integer = 99
+        If searchImageList Is Nothing Then
+            Return 99
+        End If
+        For Each searchImage In searchImageList
+            If searchImage IsNot Nothing Then
+                'invalid comparison (one of images is nothing?!)
+                If referenceImage Is Nothing OrElse referenceImage.Image Is Nothing Then
+                    currentimagesimilarity = 99
+                    'image is Nothing -> no need to compare anything!
+                    logger.Warn("[SearchDuplicateImageinList] Image is nothing. Can't compare images!")
+                Else
+                    If searchImage.LocalFilePathSpecified Then
+                        currentimagesimilarity = ImageUtils.ImageComparison.GetSimilarity(referenceImage.Image, searchImage.LocalFilePath, ImageUtils.ImageComparison.Algorithm.AverageHash)
+                    ElseIf searchImage.ImageThumb IsNot Nothing Then
+                        If searchImage.ImageThumb.Image IsNot Nothing Then
+                            currentimagesimilarity = ImageUtils.ImageComparison.GetSimilarity(referenceImage.Image, searchImage.ImageThumb.Image, ImageUtils.ImageComparison.Algorithm.AverageHash)
+                        Else
+                            currentimagesimilarity = 99
+                            'image is Nothing -> no need to compare anything!
+                            logger.Warn("[SearchDuplicateImageinList] searchImage is nothing. Can't compare images!")
+                        End If
+                    ElseIf searchImage.ImageOriginal IsNot Nothing Then
+                        If searchImage.ImageOriginal.Image IsNot Nothing Then
+                            currentimagesimilarity = ImageUtils.ImageComparison.GetSimilarity(referenceImage.Image, searchImage.ImageOriginal.Image, ImageUtils.ImageComparison.Algorithm.AverageHash)
+                        Else
+                            currentimagesimilarity = 99
+                            'image is Nothing -> no need to compare anything!
+                            logger.Warn("[SearchDuplicateImageinList] searchImage is nothing. Can't compare images!")
+                        End If
+                    Else
+                        currentimagesimilarity = 99
+                        'image is Nothing -> no need to compare anything!
+                        logger.Warn("[SearchDuplicateImageinList] searchImage is nothing. Can't compare images!")
+                    End If
+                End If
+                'check for duplicate
+                If MatchTolerance >= currentimagesimilarity Then
+                    logger.Trace("[SearchDuplicateImageinList] Duplicate images found: Image: " & searchImage.URLOriginal)
+                    Return currentimagesimilarity
+                End If
+            End If
+        Next
+        Return currentimagesimilarity
+    End Function
 #End Region 'Methods
 
 End Class

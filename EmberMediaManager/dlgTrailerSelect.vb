@@ -37,7 +37,6 @@ Public Class dlgTrailerSelect
     Private _result As New MediaContainers.Trailer
     Private tArray As New List(Of String)
     Private tURL As String = String.Empty
-    Private sPath As String
     Private nList As New List(Of MediaContainers.Trailer)
     Private _noDownload As Boolean
     Private _withPlayer As Boolean
@@ -100,7 +99,6 @@ Public Class dlgTrailerSelect
         txtYouTubeSearch.Text = String.Concat(DBMovie.Movie.Title, " ", Master.eSettings.MovieTrailerDefaultSearch)
 
         tmpDBElement = DBMovie
-        sPath = DBMovie.Filename
 
         AddTrailersToList(tURLList)
 
@@ -112,7 +110,7 @@ Public Class dlgTrailerSelect
             lvTrailers.Items(0).Selected = True
         End If
 
-        Return MyBase.ShowDialog()
+        Return ShowDialog()
     End Function
 
     Protected Overrides Sub Finalize()
@@ -159,11 +157,10 @@ Public Class dlgTrailerSelect
                     If _noDownload Then
                         Result.URLWebsite = txtLocalTrailer.Text
                     Else
-                        Result.TrailerOriginal.FromFile(txtLocalTrailer.Text)
+                        Result.TrailerOriginal.LoadFromFile(txtLocalTrailer.Text)
                     End If
 
                     DialogResult = DialogResult.OK
-                    Close()
                 Else
                     Process.Start(String.Concat("""", txtLocalTrailer.Text, """"))
                     didCancel = True
@@ -181,7 +178,6 @@ Public Class dlgTrailerSelect
             If _noDownload Then
                 Result.URLWebsite = sFormat.VideoURL
                 DialogResult = DialogResult.OK
-                Close()
             Else
                 If sFormat IsNot Nothing AndAlso Not String.IsNullOrEmpty(sFormat.VideoURL) Then
                     bwDownloadTrailer = New System.ComponentModel.BackgroundWorker
@@ -207,7 +203,6 @@ Public Class dlgTrailerSelect
             If _noDownload Then
                 Result.URLWebsite = txtManualTrailerLink.Text
                 DialogResult = DialogResult.OK
-                Close()
             Else
                 Dim ManualTrailer As New TrailerLinksContainer With {.VideoURL = txtManualTrailerLink.Text}
                 bwDownloadTrailer = New System.ComponentModel.BackgroundWorker
@@ -220,7 +215,6 @@ Public Class dlgTrailerSelect
                 If _noDownload Then
                     Result.URLWebsite = lvTrailers.SelectedItems(0).SubItems(2).Text.ToString
                     DialogResult = DialogResult.OK
-                    Close()
                 Else
                     Dim sFormat As New TrailerLinksContainer
                     Using dFormats As New dlgTrailerFormat
@@ -243,7 +237,6 @@ Public Class dlgTrailerSelect
                 If _noDownload Then
                     Result.URLWebsite = lvTrailers.SelectedItems(0).SubItems(2).Text.ToString
                     DialogResult = DialogResult.OK
-                    Close()
                 Else
                     If sFormat IsNot Nothing AndAlso Not String.IsNullOrEmpty(sFormat.VideoURL) Then
                         bwDownloadTrailer = New System.ComponentModel.BackgroundWorker
@@ -258,7 +251,6 @@ Public Class dlgTrailerSelect
                 If _noDownload Then
                     Result.URLWebsite = lvTrailers.SelectedItems(0).SubItems(1).Text.ToString
                     DialogResult = DialogResult.OK
-                    Close()
                 Else
                     Dim SelectedTrailer As New TrailerLinksContainer With {.VideoURL = lvTrailers.SelectedItems(0).SubItems(1).Text.ToString}
                     bwDownloadTrailer = New System.ComponentModel.BackgroundWorker
@@ -280,7 +272,7 @@ Public Class dlgTrailerSelect
         Try
             With ofdTrailer
                 .InitialDirectory = Directory.GetParent(tmpDBElement.Filename).FullName
-                .Filter = String.Concat("Supported Trailer Formats|*", Functions.ListToStringWithSeparator(Master.eSettings.FileSystemValidExts.ToArray(), ";*"))
+                .Filter = FileUtils.Common.GetOpenFileDialogFilter_Video(Master.eLang.GetString(1195, "Trailers"))
                 .FilterIndex = 0
             End With
 
@@ -288,7 +280,7 @@ Public Class dlgTrailerSelect
                 txtLocalTrailer.Text = ofdTrailer.FileName
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -383,7 +375,7 @@ Public Class dlgTrailerSelect
         If Not e.Cancelled Then
             If Convert.ToBoolean(e.Result) Then
                 If nList.Count > 0 Then
-                    Me.lvTrailers.Clear()
+                    lvTrailers.Items.Clear()
                     AddTrailersToList(nList)
                 Else
                     MessageBox.Show(Master.eLang.GetString(225, "No Trailers found"), String.Empty, MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -400,10 +392,10 @@ Public Class dlgTrailerSelect
     Private Sub bwDownloadTrailer_DoWork(ByVal sender As Object, ByVal e As System.ComponentModel.DoWorkEventArgs) Handles bwDownloadTrailer.DoWork
         Dim Args As Arguments = DirectCast(e.Argument, Arguments)
         Try
-            Result.TrailerOriginal.FromWeb(Args.Parameter)
+            Result.TrailerOriginal.LoadFromWeb(Args.Parameter)
             Result.URLWebsite = Args.Parameter.VideoURL
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
         e.Result = Args.bType
@@ -430,7 +422,6 @@ Public Class dlgTrailerSelect
         If Not e.Cancelled Then
             If Convert.ToBoolean(e.Result) Then
                 DialogResult = DialogResult.OK
-                Close()
             Else
                 pnlStatus.Visible = False
                 SetControlsEnabled(True)
@@ -447,9 +438,8 @@ Public Class dlgTrailerSelect
             Threading.Thread.Sleep(50)
         End While
 
+        Result = Nothing
         DialogResult = DialogResult.Cancel
-        Me.Result = Nothing
-        Close()
     End Sub
 
     Private Sub DownloadProgressUpdated(ByVal iProgress As Integer, ByVal strInfo As String)

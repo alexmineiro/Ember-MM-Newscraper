@@ -21,7 +21,6 @@
 Imports EmberAPI
 Imports NLog
 Imports System.Diagnostics
-Imports System.IO
 
 Namespace TMDB
 
@@ -152,13 +151,71 @@ Namespace TMDB
                 If _SpecialSettings.FallBackEng Then
                     _TMDBApiE = New TMDbLib.Client.TMDbClient(_SpecialSettings.APIKey)
                     _TMDBApiE.GetConfig()
-                    _TMDBApiE.DefaultLanguage = "en"
+                    _TMDBApiE.DefaultLanguage = "en-US"
                 Else
                     _TMDBApiE = _TMDBApi
                 End If
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
+        End Sub
+
+        Private Sub bwTMDB_DoWork(ByVal sender As Object, ByVal e As System.ComponentModel.DoWorkEventArgs) Handles bwTMDB.DoWork
+            Dim Args As Arguments = DirectCast(e.Argument, Arguments)
+            '' The rule is that if there is a tt is an IMDB otherwise is a TMDB
+
+            Select Case Args.Search
+                Case SearchType.Movies
+                    Dim r As SearchResults_Movie = SearchMovie(Args.Parameter, Args.Year)
+                    e.Result = New Results With {.ResultType = SearchType.Movies, .Result = r}
+
+                Case SearchType.MovieSets
+                    Dim r As SearchResults_MovieSet = SearchMovieSet(Args.Parameter)
+                    e.Result = New Results With {.ResultType = SearchType.MovieSets, .Result = r}
+
+                Case SearchType.TVShows
+                    Dim r As SearchResults_TVShow = SearchTVShow(Args.Parameter)
+                    e.Result = New Results With {.ResultType = SearchType.TVShows, .Result = r}
+
+                Case SearchType.SearchDetails_Movie
+                    Dim r As MediaContainers.Movie = GetInfo_Movie(Args.Parameter, Args.ScrapeOptions, True)
+                    e.Result = New Results With {.ResultType = SearchType.SearchDetails_Movie, .Result = r}
+
+                Case SearchType.SearchDetails_MovieSet
+                    Dim r As MediaContainers.MovieSet = GetInfo_MovieSet(Args.Parameter, Args.ScrapeOptions, True)
+                    e.Result = New Results With {.ResultType = SearchType.SearchDetails_MovieSet, .Result = r}
+
+                Case SearchType.SearchDetails_TVShow
+                    Dim r As MediaContainers.TVShow = GetInfo_TVShow(Args.Parameter, Args.ScrapeModifiers, Args.ScrapeOptions, True)
+                    e.Result = New Results With {.ResultType = SearchType.SearchDetails_TVShow, .Result = r}
+            End Select
+        End Sub
+
+        Private Sub bwTMDB_RunWorkerCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwTMDB.RunWorkerCompleted
+            Dim Res As Results = DirectCast(e.Result, Results)
+
+            Select Case Res.ResultType
+                Case SearchType.Movies
+                    RaiseEvent SearchResultsDownloaded_Movie(DirectCast(Res.Result, SearchResults_Movie))
+
+                Case SearchType.MovieSets
+                    RaiseEvent SearchResultsDownloaded_MovieSet(DirectCast(Res.Result, SearchResults_MovieSet))
+
+                Case SearchType.TVShows
+                    RaiseEvent SearchResultsDownloaded_TVShow(DirectCast(Res.Result, SearchResults_TVShow))
+
+                Case SearchType.SearchDetails_Movie
+                    Dim movieInfo As MediaContainers.Movie = DirectCast(Res.Result, MediaContainers.Movie)
+                    RaiseEvent SearchInfoDownloaded_Movie(_sPoster, movieInfo)
+
+                Case SearchType.SearchDetails_MovieSet
+                    Dim moviesetInfo As MediaContainers.MovieSet = DirectCast(Res.Result, MediaContainers.MovieSet)
+                    RaiseEvent SearchInfoDownloaded_MovieSet(_sPoster, moviesetInfo)
+
+                Case SearchType.SearchDetails_TVShow
+                    Dim showInfo As MediaContainers.TVShow = DirectCast(Res.Result, MediaContainers.TVShow)
+                    RaiseEvent SearchInfoDownloaded_TVShow(_sPoster, showInfo)
+            End Select
         End Sub
 
         Public Sub CancelAsync()
@@ -171,25 +228,33 @@ Namespace TMDB
         End Sub
 
         Public Sub GetMovieID(ByVal DBMovie As Database.DBElement)
-            Dim Movie As TMDbLib.Objects.Movies.Movie
+            Dim strUniqueID As String = String.Empty
+            If DBMovie.Movie.TMDBSpecified Then
+                strUniqueID = DBMovie.Movie.TMDB
+            ElseIf DBMovie.Movie.IMDBSpecified Then
+                strUniqueID = DBMovie.Movie.IMDB
+            End If
 
-            Dim APIResult As Task(Of TMDbLib.Objects.Movies.Movie)
-            APIResult = Task.Run(Function() _TMDBApi.GetMovie(DBMovie.Movie.ID))
+            If Not String.IsNullOrEmpty(strUniqueID) Then
+                Dim Movie As TMDbLib.Objects.Movies.Movie
+                Dim APIResult As Task(Of TMDbLib.Objects.Movies.Movie)
+                APIResult = Task.Run(Function() _TMDBApi.GetMovieAsync(strUniqueID))
 
-            Movie = APIResult.Result
-            If Movie Is Nothing Then Return
+                Movie = APIResult.Result
+                If Movie Is Nothing OrElse Movie.Id = 0 Then Return
 
-            DBMovie.Movie.TMDBID = CStr(Movie.Id)
+                DBMovie.Movie.TMDB = CStr(Movie.Id)
+            End If
         End Sub
 
         Public Function GetMovieID(ByVal imdbID As String) As String
             Dim Movie As TMDbLib.Objects.Movies.Movie
 
             Dim APIResult As Task(Of TMDbLib.Objects.Movies.Movie)
-            APIResult = Task.Run(Function() _TMDBApi.GetMovie(imdbID))
+            APIResult = Task.Run(Function() _TMDBApi.GetMovieAsync(imdbID))
 
             Movie = APIResult.Result
-            If Movie Is Nothing Then Return String.Empty
+            If Movie Is Nothing OrElse Movie.Id = 0 Then Return String.Empty
 
             Return CStr(Movie.Id)
         End Function
@@ -198,13 +263,13 @@ Namespace TMDB
             Dim Movie As TMDbLib.Objects.Movies.Movie
 
             Dim APIResult As Task(Of TMDbLib.Objects.Movies.Movie)
-            APIResult = Task.Run(Function() _TMDBApi.GetMovie(imdbID))
+            APIResult = Task.Run(Function() _TMDBApi.GetMovieAsync(imdbID))
 
             Movie = APIResult.Result
             If Movie Is Nothing Then Return String.Empty
 
-            If Movie.BelongsToCollection IsNot Nothing AndAlso Movie.BelongsToCollection.Item(0).Id > 0 Then
-                Return CStr(Movie.BelongsToCollection.Item(0).Id)
+            If Movie.BelongsToCollection IsNot Nothing AndAlso Movie.BelongsToCollection.Id > 0 Then
+                Return CStr(Movie.BelongsToCollection.Id)
             Else
                 Return String.Empty
             End If
@@ -213,13 +278,10 @@ Namespace TMDB
         '''  Scrape MovieDetails from TMDB
         ''' </summary>
         ''' <param name="strID">TMDBID or ID (IMDB ID starts with "tt") of movie to be scraped</param>
-        ''' <param name="FullCrew">Module setting: Scrape full cast?</param>
         ''' <param name="GetPoster">Scrape posters for the movie?</param>
-        ''' <param name="Options">Module settings<param>
-        ''' <param name="IsSearch">Not used at moment</param>
         ''' <returns>True: success, false: no success</returns>
-        Public Function GetMovieInfo(ByVal strID As String, ByVal GetPoster As Boolean, ByVal FilteredOptions As Structures.ScrapeOptions, ByVal IsSearch As Boolean) As MediaContainers.Movie
-            If String.IsNullOrEmpty(strID) OrElse strID.Length < 2 Then Return Nothing
+        Public Function GetInfo_Movie(ByVal strID As String, ByVal FilteredOptions As Structures.ScrapeOptions, ByVal GetPoster As Boolean) As MediaContainers.Movie
+            If String.IsNullOrEmpty(strID) Then Return Nothing
 
             Dim nMovie As New MediaContainers.Movie
 
@@ -228,19 +290,19 @@ Namespace TMDB
             Dim APIResult As Task(Of TMDbLib.Objects.Movies.Movie)
             Dim APIResultE As Task(Of TMDbLib.Objects.Movies.Movie)
 
-            If strID.Substring(0, 2).ToLower = "tt" Then
+            If strID.ToLower.StartsWith("tt") Then
                 'search movie by IMDB ID
-                APIResult = Task.Run(Function() _TMDBApi.GetMovie(strID, TMDbLib.Objects.Movies.MovieMethods.Credits Or TMDbLib.Objects.Movies.MovieMethods.Releases Or TMDbLib.Objects.Movies.MovieMethods.Videos))
+                APIResult = Task.Run(Function() _TMDBApi.GetMovieAsync(strID, TMDbLib.Objects.Movies.MovieMethods.Credits Or TMDbLib.Objects.Movies.MovieMethods.Releases Or TMDbLib.Objects.Movies.MovieMethods.Videos))
                 If _SpecialSettings.FallBackEng Then
-                    APIResultE = Task.Run(Function() _TMDBApiE.GetMovie(strID, TMDbLib.Objects.Movies.MovieMethods.Credits Or TMDbLib.Objects.Movies.MovieMethods.Releases Or TMDbLib.Objects.Movies.MovieMethods.Videos))
+                    APIResultE = Task.Run(Function() _TMDBApiE.GetMovieAsync(strID, TMDbLib.Objects.Movies.MovieMethods.Credits Or TMDbLib.Objects.Movies.MovieMethods.Releases Or TMDbLib.Objects.Movies.MovieMethods.Videos))
                 Else
                     APIResultE = APIResult
                 End If
             Else
                 'search movie by TMDB ID
-                APIResult = Task.Run(Function() _TMDBApi.GetMovie(CInt(strID), TMDbLib.Objects.Movies.MovieMethods.Credits Or TMDbLib.Objects.Movies.MovieMethods.Releases Or TMDbLib.Objects.Movies.MovieMethods.Videos))
+                APIResult = Task.Run(Function() _TMDBApi.GetMovieAsync(CInt(strID), TMDbLib.Objects.Movies.MovieMethods.Credits Or TMDbLib.Objects.Movies.MovieMethods.Releases Or TMDbLib.Objects.Movies.MovieMethods.Videos))
                 If _SpecialSettings.FallBackEng Then
-                    APIResultE = Task.Run(Function() _TMDBApiE.GetMovie(CInt(strID), TMDbLib.Objects.Movies.MovieMethods.Credits Or TMDbLib.Objects.Movies.MovieMethods.Releases Or TMDbLib.Objects.Movies.MovieMethods.Videos))
+                    APIResultE = Task.Run(Function() _TMDBApiE.GetMovieAsync(CInt(strID), TMDbLib.Objects.Movies.MovieMethods.Credits Or TMDbLib.Objects.Movies.MovieMethods.Releases Or TMDbLib.Objects.Movies.MovieMethods.Videos))
                 Else
                     APIResultE = APIResult
                 End If
@@ -258,8 +320,8 @@ Namespace TMDB
             nMovie.Scrapersource = "TMDB"
 
             'IDs
-            nMovie.TMDBID = CStr(Result.Id)
-            If Result.ImdbId IsNot Nothing Then nMovie.ID = Result.ImdbId
+            nMovie.TMDB = CStr(Result.Id)
+            If Result.ImdbId IsNot Nothing Then nMovie.IMDB = Result.ImdbId
 
             If bwTMDB.CancellationPending Or Result Is Nothing Then Return Nothing
 
@@ -282,12 +344,12 @@ Namespace TMDB
                 If Result.Releases IsNot Nothing AndAlso Result.Releases.Countries IsNot Nothing AndAlso Result.Releases.Countries.Count > 0 Then
                     For Each cCountry In Result.Releases.Countries
                         If Not String.IsNullOrEmpty(cCountry.Certification) Then
-                            Try
-                                Dim tCountry As String = APIXML.CertLanguagesXML.Language.FirstOrDefault(Function(l) l.abbreviation = cCountry.Iso_3166_1.ToLower).name
-                                nMovie.Certifications.Add(String.Concat(tCountry, ":", cCountry.Certification))
-                            Catch ex As Exception
+                            Dim CertificationLanguage = APIXML.CertLanguagesXML.Language.FirstOrDefault(Function(l) l.abbreviation = cCountry.Iso_3166_1.ToLower)
+                            If CertificationLanguage IsNot Nothing AndAlso CertificationLanguage.name IsNot Nothing AndAlso Not String.IsNullOrEmpty(CertificationLanguage.name) Then
+                                nMovie.Certifications.Add(String.Concat(CertificationLanguage.name, ":", cCountry.Certification))
+                            Else
                                 logger.Warn("Unhandled certification language encountered: {0}", cCountry.Iso_3166_1.ToLower)
-                            End Try
+                            End If
                         End If
                     Next
                 End If
@@ -297,14 +359,24 @@ Namespace TMDB
 
             'Collection ID
             If FilteredOptions.bMainCollectionID Then
-                If Result.BelongsToCollection Is Nothing OrElse (Result.BelongsToCollection IsNot Nothing AndAlso Result.BelongsToCollection.Count = 0) Then
-                    If _SpecialSettings.FallBackEng AndAlso ResultE.BelongsToCollection IsNot Nothing AndAlso ResultE.BelongsToCollection.Count > 0 Then
-                        nMovie.AddSet(Nothing, ResultE.BelongsToCollection.Item(0).Name, Nothing, CStr(ResultE.BelongsToCollection.Item(0).Id))
-                        nMovie.TMDBColID = CStr(ResultE.BelongsToCollection.Item(0).Id)
+                If Result.BelongsToCollection Is Nothing Then
+                    If _SpecialSettings.FallBackEng AndAlso ResultE.BelongsToCollection IsNot Nothing Then
+                        nMovie.AddSet(New MediaContainers.SetDetails With {
+                                      .ID = -1,
+                                      .Order = -1,
+                                      .Plot = String.Empty,
+                                      .Title = ResultE.BelongsToCollection.Name,
+                                      .TMDB = CStr(ResultE.BelongsToCollection.Id)})
+                        nMovie.TMDBColID = CStr(ResultE.BelongsToCollection.Id)
                     End If
                 Else
-                    nMovie.AddSet(Nothing, Result.BelongsToCollection.Item(0).Name, Nothing, CStr(ResultE.BelongsToCollection.Item(0).Id))
-                    nMovie.TMDBColID = CStr(Result.BelongsToCollection.Item(0).Id)
+                    nMovie.AddSet(New MediaContainers.SetDetails With {
+                                  .ID = -1,
+                                  .Order = -1,
+                                  .Plot = String.Empty,
+                                  .Title = ResultE.BelongsToCollection.Name,
+                                  .TMDB = CStr(ResultE.BelongsToCollection.Id)})
+                    nMovie.TMDBColID = CStr(Result.BelongsToCollection.Id)
                 End If
             End If
 
@@ -339,7 +411,7 @@ Namespace TMDB
 
             'Genres
             If FilteredOptions.bMainGenres Then
-                Dim aGenres As System.Collections.Generic.List(Of TMDbLib.Objects.General.Genre) = Nothing
+                Dim aGenres As List(Of TMDbLib.Objects.General.Genre) = Nothing
                 If Result.Genres Is Nothing OrElse (Result.Genres IsNot Nothing AndAlso Result.Genres.Count = 0) Then
                     If _SpecialSettings.FallBackEng AndAlso ResultE.Genres IsNot Nothing AndAlso ResultE.Genres.Count > 0 Then
                         aGenres = ResultE.Genres
@@ -487,7 +559,12 @@ Namespace TMDB
                 End If
 
                 If aTrailers IsNot Nothing AndAlso aTrailers.Count > 0 Then
-                    nMovie.Trailer = "http://www.youtube.com/watch?hd=1&v=" & aTrailers(0).Key
+                    For Each tTrailer In aTrailers
+                        If YouTube.Scraper.IsAvailable("http://www.youtube.com/watch?hd=1&v=" & tTrailer.Key) Then
+                            nMovie.Trailer = "http://www.youtube.com/watch?hd=1&v=" & tTrailer.Key
+                            Exit For
+                        End If
+                    Next
                 End If
             End If
 
@@ -509,7 +586,7 @@ Namespace TMDB
             Return nMovie
         End Function
 
-        Public Function GetMovieSetInfo(ByVal strID As String, ByVal GetPoster As Boolean, ByVal FilteredOptions As Structures.ScrapeOptions, ByVal IsSearch As Boolean) As MediaContainers.MovieSet
+        Public Function GetInfo_MovieSet(ByVal strID As String, ByVal FilteredOptions As Structures.ScrapeOptions, ByVal GetPoster As Boolean) As MediaContainers.MovieSet
             If String.IsNullOrEmpty(strID) OrElse Not Integer.TryParse(strID, 0) Then Return Nothing
 
             Dim nMovieSet As New MediaContainers.MovieSet
@@ -519,9 +596,9 @@ Namespace TMDB
             Dim APIResult As Task(Of TMDbLib.Objects.Collections.Collection)
             Dim APIResultE As Task(Of TMDbLib.Objects.Collections.Collection)
 
-            APIResult = Task.Run(Function() _TMDBApi.GetCollection(CInt(strID), _SpecialSettings.PrefLanguage))
+            APIResult = Task.Run(Function() _TMDBApi.GetCollectionAsync(CInt(strID), _SpecialSettings.PrefLanguage))
             If _SpecialSettings.FallBackEng Then
-                APIResultE = Task.Run(Function() _TMDBApiE.GetCollection(CInt(strID)))
+                APIResultE = Task.Run(Function() _TMDBApiE.GetCollectionAsync(CInt(strID)))
             Else
                 APIResultE = APIResult
             End If
@@ -590,8 +667,8 @@ Namespace TMDB
         ''' <param name="strID">TMDB ID of tv show to be scraped</param>
         ''' <param name="GetPoster">Scrape posters for the movie?</param>
         ''' <returns>True: success, false: no success</returns>
-        Public Function GetTVShowInfo(ByVal strID As String, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef FilteredOptions As Structures.ScrapeOptions, ByVal GetPoster As Boolean) As MediaContainers.TVShow
-            If String.IsNullOrEmpty(strID) OrElse strID.Length < 2 Then Return Nothing
+        Public Function GetInfo_TVShow(ByVal strID As String, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef FilteredOptions As Structures.ScrapeOptions, ByVal GetPoster As Boolean) As MediaContainers.TVShow
+            If String.IsNullOrEmpty(strID) Then Return Nothing
 
             Dim nTVShow As New MediaContainers.TVShow
 
@@ -601,9 +678,9 @@ Namespace TMDB
             Dim APIResultE As Task(Of TMDbLib.Objects.TvShows.TvShow)
 
             'search movie by TMDB ID
-            APIResult = Task.Run(Function() _TMDBApi.GetTvShow(CInt(strID), TMDbLib.Objects.TvShows.TvShowMethods.ContentRatings Or TMDbLib.Objects.TvShows.TvShowMethods.Credits Or TMDbLib.Objects.TvShows.TvShowMethods.ExternalIds))
+            APIResult = Task.Run(Function() _TMDBApi.GetTvShowAsync(CInt(strID), TMDbLib.Objects.TvShows.TvShowMethods.ContentRatings Or TMDbLib.Objects.TvShows.TvShowMethods.Credits Or TMDbLib.Objects.TvShows.TvShowMethods.ExternalIds))
             If _SpecialSettings.FallBackEng Then
-                APIResultE = Task.Run(Function() _TMDBApiE.GetTvShow(CInt(strID), TMDbLib.Objects.TvShows.TvShowMethods.ContentRatings Or TMDbLib.Objects.TvShows.TvShowMethods.Credits Or TMDbLib.Objects.TvShows.TvShowMethods.ExternalIds))
+                APIResultE = Task.Run(Function() _TMDBApiE.GetTvShowAsync(CInt(strID), TMDbLib.Objects.TvShows.TvShowMethods.ContentRatings Or TMDbLib.Objects.TvShows.TvShowMethods.Credits Or TMDbLib.Objects.TvShows.TvShowMethods.ExternalIds))
             Else
                 APIResultE = APIResult
             End If
@@ -649,12 +726,12 @@ Namespace TMDB
                 If Result.ContentRatings IsNot Nothing AndAlso Result.ContentRatings.Results IsNot Nothing AndAlso Result.ContentRatings.Results.Count > 0 Then
                     For Each aCountry In Result.ContentRatings.Results
                         If Not String.IsNullOrEmpty(aCountry.Rating) Then
-                            Try
-                                Dim tCountry As String = APIXML.CertLanguagesXML.Language.FirstOrDefault(Function(l) l.abbreviation = aCountry.Iso_3166_1.ToLower).name
-                                nTVShow.Certifications.Add(String.Concat(tCountry, ":", aCountry.Rating))
-                            Catch ex As Exception
+                            Dim CertificationLanguage = APIXML.CertLanguagesXML.Language.FirstOrDefault(Function(l) l.abbreviation = aCountry.Iso_3166_1.ToLower)
+                            If CertificationLanguage IsNot Nothing AndAlso CertificationLanguage.name IsNot Nothing AndAlso Not String.IsNullOrEmpty(CertificationLanguage.name) Then
+                                nTVShow.Certifications.Add(String.Concat(CertificationLanguage.name, ":", aCountry.Rating))
+                            Else
                                 logger.Warn("Unhandled certification language encountered: {0}", aCountry.Iso_3166_1.ToLower)
-                            End Try
+                            End If
                         End If
                     Next
                 End If
@@ -676,7 +753,7 @@ Namespace TMDB
             'Creators
             If FilteredOptions.bMainCreators Then
                 If Result.CreatedBy IsNot Nothing Then
-                    For Each aCreator As TMDbLib.Objects.People.Person In Result.CreatedBy
+                    For Each aCreator As TMDbLib.Objects.TvShows.CreatedBy In Result.CreatedBy
                         nTVShow.Creators.Add(aCreator.Name)
                     Next
                 End If
@@ -686,7 +763,7 @@ Namespace TMDB
 
             'Genres
             If FilteredOptions.bMainGenres Then
-                Dim aGenres As System.Collections.Generic.List(Of TMDbLib.Objects.General.Genre) = Nothing
+                Dim aGenres As List(Of TMDbLib.Objects.General.Genre) = Nothing
                 If Result.Genres Is Nothing OrElse (Result.Genres IsNot Nothing AndAlso Result.Genres.Count = 0) Then
                     If _SpecialSettings.FallBackEng AndAlso ResultE.Genres IsNot Nothing AndAlso ResultE.Genres.Count > 0 Then
                         aGenres = ResultE.Genres
@@ -775,7 +852,7 @@ Namespace TMDB
             'Runtime
             If FilteredOptions.bMainRuntime Then
                 If Result.EpisodeRunTime Is Nothing OrElse Result.EpisodeRunTime.Count = 0 Then
-                    If _SpecialSettings.FallBackEng AndAlso ResultE.EpisodeRunTime IsNot Nothing Then
+                    If _SpecialSettings.FallBackEng AndAlso ResultE.EpisodeRunTime IsNot Nothing AndAlso ResultE.EpisodeRunTime.Count > 0 Then
                         nTVShow.Runtime = CStr(ResultE.EpisodeRunTime.Item(0))
                     End If
                 Else
@@ -842,110 +919,60 @@ Namespace TMDB
 
             'Seasons and Episodes
             If ScrapeModifiers.withEpisodes OrElse ScrapeModifiers.withSeasons Then
-                For Each aSeason As TMDbLib.Objects.TvShows.TvSeason In Result.Seasons
-                    GetTVSeasonInfo(nTVShow, Result.Id, aSeason.SeasonNumber, ScrapeModifiers, FilteredOptions)
+                For Each aSeason As TMDbLib.Objects.Search.SearchTvSeason In Result.Seasons
+                    GetInfo_TVSeason(nTVShow, Result.Id, aSeason.SeasonNumber, ScrapeModifiers, FilteredOptions)
                 Next
             End If
 
             Return nTVShow
         End Function
 
-        Public Sub GetTVSeasonInfo(ByRef nTVShow As MediaContainers.TVShow, ByVal ShowID As Integer, ByVal SeasonNumber As Integer, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef FilteredOptions As Structures.ScrapeOptions)
-            Dim nSeason As New MediaContainers.SeasonDetails
-
-            Dim APIResult As Task(Of TMDbLib.Objects.TvShows.TvSeason)
-            APIResult = Task.Run(Function() _TMDBApi.GetTvSeason(ShowID, SeasonNumber, TMDbLib.Objects.TvShows.TvSeasonMethods.Credits Or TMDbLib.Objects.TvShows.TvSeasonMethods.ExternalIds))
-
-            Dim SeasonInfo As TMDbLib.Objects.TvShows.TvSeason = APIResult.Result
-
-            nSeason.TMDB = CStr(SeasonInfo.Id)
-            If SeasonInfo.ExternalIds IsNot Nothing AndAlso SeasonInfo.ExternalIds.TvdbId IsNot Nothing Then nSeason.TVDB = CStr(SeasonInfo.ExternalIds.TvdbId)
-
-            If ScrapeModifiers.withSeasons Then
-
-                'Aired
-                If FilteredOptions.bSeasonAired Then
-                    If SeasonInfo.AirDate IsNot Nothing Then
-                        Dim ScrapedDate As String = CStr(SeasonInfo.AirDate)
-                        If Not String.IsNullOrEmpty(ScrapedDate) Then
-                            Dim RelDate As Date
-                            If Date.TryParse(ScrapedDate, RelDate) Then
-                                'always save date in same date format not depending on users language setting!
-                                nSeason.Aired = RelDate.ToString("yyyy-MM-dd")
-                            Else
-                                nSeason.Aired = ScrapedDate
-                            End If
-                        End If
-                    End If
-                End If
-
-                'Plot
-                If FilteredOptions.bSeasonPlot Then
-                    If SeasonInfo.Overview IsNot Nothing Then
-                        nSeason.Plot = SeasonInfo.Overview
-                    End If
-                End If
-
-                'Season #
-                If CInt(SeasonInfo.SeasonNumber) >= 0 Then
-                    nSeason.Season = CInt(SeasonInfo.SeasonNumber)
-                End If
-
-                'Title
-                If SeasonInfo.Name IsNot Nothing Then
-                    nSeason.Title = SeasonInfo.Name
-                End If
-
-                nTVShow.KnownSeasons.Add(nSeason)
-            End If
-
-            If ScrapeModifiers.withEpisodes AndAlso SeasonInfo.Episodes IsNot Nothing Then
-                For Each aEpisode As TMDbLib.Objects.TvShows.TvEpisode In SeasonInfo.Episodes
-                    nTVShow.KnownEpisodes.Add(GetTVEpisodeInfo(aEpisode, FilteredOptions))
-                    'nShowContainer.KnownEpisodes.Add(GetTVEpisodeInfo(ShowID, SeasonNumber, aEpisode.EpisodeNumber, Options))
-                Next
-            End If
-        End Sub
-
-        Public Function GetTVEpisodeInfo(ByVal ShowID As Integer, ByVal Aired As String, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.EpisodeDetails
+        Public Function GetInfo_TVEpisode(ByVal ShowID As Integer, ByVal Aired As String, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.EpisodeDetails
             Dim nTVEpisode As New MediaContainers.EpisodeDetails
             Dim ShowInfo As TMDbLib.Objects.TvShows.TvShow
 
             Dim showAPIResult As Task(Of TMDbLib.Objects.TvShows.TvShow)
-            showAPIResult = Task.Run(Function() _TMDBApi.GetTvShow(CInt(ShowID)))
+            showAPIResult = Task.Run(Function() _TMDBApi.GetTvShowAsync(ShowID))
 
             ShowInfo = showAPIResult.Result
 
-            For Each aSeason As TMDbLib.Objects.TvShows.TvSeason In ShowInfo.Seasons
+            For Each aSeason As TMDbLib.Objects.Search.SearchTvSeason In ShowInfo.Seasons
                 Dim seasonAPIResult As Task(Of TMDbLib.Objects.TvShows.TvSeason)
-                seasonAPIResult = Task.Run(Function() _TMDBApi.GetTvSeason(ShowID, aSeason.SeasonNumber, TMDbLib.Objects.TvShows.TvSeasonMethods.Credits Or TMDbLib.Objects.TvShows.TvSeasonMethods.ExternalIds))
+                seasonAPIResult = Task.Run(Function() _TMDBApi.GetTvSeasonAsync(ShowID, aSeason.SeasonNumber, TMDbLib.Objects.TvShows.TvSeasonMethods.Credits Or TMDbLib.Objects.TvShows.TvSeasonMethods.ExternalIds))
 
                 Dim SeasonInfo As TMDbLib.Objects.TvShows.TvSeason = seasonAPIResult.Result
-                For Each aEpisode As TMDbLib.Objects.TvShows.TvEpisode In SeasonInfo.Episodes.Where(Function(f) f.AirDate = CDate(Aired))
-                    Return GetTVEpisodeInfo(aEpisode, FilteredOptions)
-                    'Return GetTVEpisodeInfo(ShowID, season.SeasonNumber, episode.EpisodeNumber, Options)
-                Next
+                Dim EpisodeList As IEnumerable(Of TMDbLib.Objects.Search.TvSeasonEpisode) = SeasonInfo.Episodes.Where(Function(f) CBool(f.AirDate = CDate(Aired)))
+                If EpisodeList IsNot Nothing AndAlso EpisodeList.Count = 1 Then
+                    Return GetInfo_TVEpisode(ShowID, EpisodeList(0).SeasonNumber, EpisodeList(0).EpisodeNumber, FilteredOptions)
+                ElseIf EpisodeList.Count > 0 Then
+                    Return Nothing
+                End If
             Next
 
             Return Nothing
         End Function
 
-        Public Function GetTVEpisodeInfo(ByVal tmdbID As Integer, ByVal SeasonNumber As Integer, ByVal EpisodeNumber As Integer, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.EpisodeDetails
+        Public Function GetInfo_TVEpisode(ByVal tmdbID As Integer, ByVal SeasonNumber As Integer, ByVal EpisodeNumber As Integer, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.EpisodeDetails
             Dim APIResult As Task(Of TMDbLib.Objects.TvShows.TvEpisode)
-            APIResult = Task.Run(Function() _TMDBApi.GetTvEpisode(tmdbID, SeasonNumber, EpisodeNumber, TMDbLib.Objects.TvShows.TvEpisodeMethods.Credits Or TMDbLib.Objects.TvShows.TvEpisodeMethods.ExternalIds))
+            APIResult = Task.Run(Function() _TMDBApi.GetTvEpisodeAsync(tmdbID, SeasonNumber, EpisodeNumber, TMDbLib.Objects.TvShows.TvEpisodeMethods.Credits Or TMDbLib.Objects.TvShows.TvEpisodeMethods.ExternalIds))
 
-            Dim EpisodeInfo As TMDbLib.Objects.TvShows.TvEpisode = APIResult.Result
+            If APIResult IsNot Nothing AndAlso APIResult.Exception Is Nothing AndAlso APIResult.Result IsNot Nothing Then
+                Dim EpisodeInfo As TMDbLib.Objects.TvShows.TvEpisode = APIResult.Result
 
-            If EpisodeInfo Is Nothing OrElse EpisodeInfo.Id Is Nothing OrElse Not EpisodeInfo.Id > 0 Then
+                If EpisodeInfo Is Nothing OrElse EpisodeInfo.Id Is Nothing OrElse Not EpisodeInfo.Id > 0 Then
+                    logger.Error(String.Format("Can't scrape or episode not found: tmdbID={0}, Season{1}, Episode{2}", tmdbID, SeasonNumber, EpisodeNumber))
+                    Return Nothing
+                End If
+
+                Dim nEpisode As MediaContainers.EpisodeDetails = GetInfo_TVEpisode(EpisodeInfo, FilteredOptions)
+                Return nEpisode
+            Else
                 logger.Error(String.Format("Can't scrape or episode not found: tmdbID={0}, Season{1}, Episode{2}", tmdbID, SeasonNumber, EpisodeNumber))
                 Return Nothing
             End If
-
-            Dim nEpisode As MediaContainers.EpisodeDetails = GetTVEpisodeInfo(EpisodeInfo, FilteredOptions)
-            Return nEpisode
         End Function
 
-        Public Function GetTVEpisodeInfo(ByRef EpisodeInfo As TMDbLib.Objects.TvShows.TvEpisode, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.EpisodeDetails
+        Public Function GetInfo_TVEpisode(ByRef EpisodeInfo As TMDbLib.Objects.TvShows.TvEpisode, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.EpisodeDetails
             Dim nTVEpisode As New MediaContainers.EpisodeDetails
 
             nTVEpisode.Scrapersource = "TMDB"
@@ -961,7 +988,7 @@ Namespace TMDB
             End If
 
             'Season # Standard
-            If CInt(EpisodeInfo.SeasonNumber) >= 0 Then
+            If EpisodeInfo.SeasonNumber >= 0 Then
                 nTVEpisode.Season = CInt(EpisodeInfo.SeasonNumber)
             End If
 
@@ -979,14 +1006,16 @@ Namespace TMDB
 
             'Aired
             If FilteredOptions.bEpisodeAired Then
-                Dim ScrapedDate As String = CStr(EpisodeInfo.AirDate)
-                If Not String.IsNullOrEmpty(ScrapedDate) AndAlso Not ScrapedDate = "00:00:00" Then
-                    Dim RelDate As Date
-                    If Date.TryParse(ScrapedDate, RelDate) Then
-                        'always save date in same date format not depending on users language setting!
-                        nTVEpisode.Aired = RelDate.ToString("yyyy-MM-dd")
-                    Else
-                        nTVEpisode.Aired = ScrapedDate
+                If EpisodeInfo.AirDate IsNot Nothing Then
+                    Dim ScrapedDate As String = CStr(EpisodeInfo.AirDate)
+                    If Not String.IsNullOrEmpty(ScrapedDate) AndAlso Not ScrapedDate = "00:00:00" Then
+                        Dim RelDate As Date
+                        If Date.TryParse(ScrapedDate, RelDate) Then
+                            'always save date in same date format not depending on users language setting!
+                            nTVEpisode.Aired = RelDate.ToString("yyyy-MM-dd")
+                        Else
+                            nTVEpisode.Aired = ScrapedDate
+                        End If
                     End If
                 End If
             End If
@@ -1046,22 +1075,87 @@ Namespace TMDB
             Return nTVEpisode
         End Function
 
-        Public Function GetTVSeasonInfo(ByVal tmdbID As Integer, ByVal SeasonNumber As Integer, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.SeasonDetails
+        Public Sub GetInfo_TVSeason(ByRef nTVShow As MediaContainers.TVShow, ByVal ShowID As Integer, ByVal SeasonNumber As Integer, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef FilteredOptions As Structures.ScrapeOptions)
+            Dim nSeason As New MediaContainers.SeasonDetails
+
             Dim APIResult As Task(Of TMDbLib.Objects.TvShows.TvSeason)
-            APIResult = Task.Run(Function() _TMDBApi.GetTvSeason(tmdbID, SeasonNumber, TMDbLib.Objects.TvShows.TvSeasonMethods.Credits Or TMDbLib.Objects.TvShows.TvSeasonMethods.ExternalIds))
+            APIResult = Task.Run(Function() _TMDBApi.GetTvSeasonAsync(ShowID, SeasonNumber, TMDbLib.Objects.TvShows.TvSeasonMethods.Credits Or TMDbLib.Objects.TvShows.TvSeasonMethods.ExternalIds))
 
-            Dim SeasonInfo As TMDbLib.Objects.TvShows.TvSeason = APIResult.Result
+            If APIResult IsNot Nothing AndAlso APIResult.Exception Is Nothing AndAlso APIResult.Result IsNot Nothing Then
+                Dim SeasonInfo As TMDbLib.Objects.TvShows.TvSeason = APIResult.Result
 
-            If SeasonInfo Is Nothing OrElse SeasonInfo.Id Is Nothing OrElse Not SeasonInfo.Id > 0 Then
+                nSeason.TMDB = CStr(SeasonInfo.Id)
+                If SeasonInfo.ExternalIds IsNot Nothing AndAlso SeasonInfo.ExternalIds.TvdbId IsNot Nothing Then nSeason.TVDB = CStr(SeasonInfo.ExternalIds.TvdbId)
+
+                If ScrapeModifiers.withSeasons Then
+
+                    'Aired
+                    If FilteredOptions.bSeasonAired Then
+                        If SeasonInfo.AirDate IsNot Nothing Then
+                            Dim ScrapedDate As String = CStr(SeasonInfo.AirDate)
+                            If Not String.IsNullOrEmpty(ScrapedDate) Then
+                                Dim RelDate As Date
+                                If Date.TryParse(ScrapedDate, RelDate) Then
+                                    'always save date in same date format not depending on users language setting!
+                                    nSeason.Aired = RelDate.ToString("yyyy-MM-dd")
+                                Else
+                                    nSeason.Aired = ScrapedDate
+                                End If
+                            End If
+                        End If
+                    End If
+
+                    'Plot
+                    If FilteredOptions.bSeasonPlot Then
+                        If SeasonInfo.Overview IsNot Nothing Then
+                            nSeason.Plot = SeasonInfo.Overview
+                        End If
+                    End If
+
+                    'Season #
+                    If SeasonInfo.SeasonNumber >= 0 Then
+                        nSeason.Season = SeasonInfo.SeasonNumber
+                    End If
+
+                    'Title
+                    If SeasonInfo.Name IsNot Nothing Then
+                        nSeason.Title = SeasonInfo.Name
+                    End If
+
+                    nTVShow.KnownSeasons.Add(nSeason)
+                End If
+
+                If ScrapeModifiers.withEpisodes AndAlso SeasonInfo.Episodes IsNot Nothing Then
+                    For Each aEpisode As TMDbLib.Objects.Search.TvSeasonEpisode In SeasonInfo.Episodes
+                        nTVShow.KnownEpisodes.Add(GetInfo_TVEpisode(ShowID, aEpisode.SeasonNumber, aEpisode.EpisodeNumber, FilteredOptions))
+                    Next
+                End If
+            Else
+                logger.Error(String.Format("Can't scrape or season not found: ShowID={0}, Season={1}", ShowID, SeasonNumber))
+            End If
+        End Sub
+
+        Public Function GetInfo_TVSeason(ByVal tmdbID As Integer, ByVal SeasonNumber As Integer, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.SeasonDetails
+            Dim APIResult As Task(Of TMDbLib.Objects.TvShows.TvSeason)
+            APIResult = Task.Run(Function() _TMDBApi.GetTvSeasonAsync(tmdbID, SeasonNumber, TMDbLib.Objects.TvShows.TvSeasonMethods.Credits Or TMDbLib.Objects.TvShows.TvSeasonMethods.ExternalIds))
+
+            If APIResult IsNot Nothing AndAlso APIResult.Exception Is Nothing AndAlso APIResult.Result IsNot Nothing Then
+                Dim SeasonInfo As TMDbLib.Objects.TvShows.TvSeason = APIResult.Result
+
+                If SeasonInfo Is Nothing OrElse SeasonInfo.Id Is Nothing OrElse Not SeasonInfo.Id > 0 Then
+                    logger.Error(String.Format("Can't scrape or season not found: tmdbID={0}, Season={1}", tmdbID, SeasonNumber))
+                    Return Nothing
+                End If
+
+                Dim nTVSeason As MediaContainers.SeasonDetails = GetInfo_TVSeason(SeasonInfo, FilteredOptions)
+                Return nTVSeason
+            Else
                 logger.Error(String.Format("Can't scrape or season not found: tmdbID={0}, Season={1}", tmdbID, SeasonNumber))
                 Return Nothing
             End If
-
-            Dim nTVSeason As MediaContainers.SeasonDetails = GetTVSeasonInfo(SeasonInfo, FilteredOptions)
-            Return nTVSeason
         End Function
 
-        Public Function GetTVSeasonInfo(ByRef SeasonInfo As TMDbLib.Objects.TvShows.TvSeason, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.SeasonDetails
+        Public Function GetInfo_TVSeason(ByRef SeasonInfo As TMDbLib.Objects.TvShows.TvSeason, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.SeasonDetails
             Dim nTVSeason As New MediaContainers.SeasonDetails
 
             nTVSeason.Scrapersource = "TMDB"
@@ -1071,8 +1165,8 @@ Namespace TMDB
             If SeasonInfo.ExternalIds IsNot Nothing AndAlso SeasonInfo.ExternalIds.TvdbId IsNot Nothing Then nTVSeason.TVDB = CStr(SeasonInfo.ExternalIds.TvdbId)
 
             'Season #
-            If CInt(SeasonInfo.SeasonNumber) >= 0 Then
-                nTVSeason.Season = CInt(SeasonInfo.SeasonNumber)
+            If SeasonInfo.SeasonNumber >= 0 Then
+                nTVSeason.Season = SeasonInfo.SeasonNumber
             End If
 
             'Aired
@@ -1113,15 +1207,15 @@ Namespace TMDB
 
             Try
                 Dim APIResult As Task(Of TMDbLib.Objects.Find.FindContainer)
-                APIResult = Task.Run(Function() _TMDBApi.Find(TMDbLib.Objects.Find.FindExternalSource.Imdb, imdbID))
+                APIResult = Task.Run(Function() _TMDBApi.FindAsync(TMDbLib.Objects.Find.FindExternalSource.Imdb, imdbID))
 
-                If APIResult IsNot Nothing AndAlso APIResult.Result IsNot Nothing AndAlso
+                If APIResult IsNot Nothing AndAlso APIResult.Exception Is Nothing AndAlso APIResult.Result IsNot Nothing AndAlso
                     APIResult.Result.TvResults IsNot Nothing AndAlso APIResult.Result.TvResults.Count > 0 Then
                     tmdbID = APIResult.Result.TvResults.Item(0).Id.ToString
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return tmdbID
@@ -1132,35 +1226,37 @@ Namespace TMDB
 
             Try
                 Dim APIResult As Task(Of TMDbLib.Objects.Find.FindContainer)
-                APIResult = Task.Run(Function() _TMDBApi.Find(TMDbLib.Objects.Find.FindExternalSource.TvDb, tvdbID))
+                APIResult = Task.Run(Function() _TMDBApi.FindAsync(TMDbLib.Objects.Find.FindExternalSource.TvDb, tvdbID))
 
-                If APIResult IsNot Nothing AndAlso APIResult.Result IsNot Nothing AndAlso
+                If APIResult IsNot Nothing AndAlso APIResult.Exception Is Nothing AndAlso APIResult.Result IsNot Nothing AndAlso
                     APIResult.Result.TvResults IsNot Nothing AndAlso APIResult.Result.TvResults.Count > 0 Then
                     tmdbID = APIResult.Result.TvResults.Item(0).Id.ToString
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return tmdbID
         End Function
 
         Public Function GetMovieStudios(ByVal strID As String) As List(Of String)
-            If String.IsNullOrEmpty(strID) OrElse strID.Length > 2 Then Return New List(Of String)
+            If String.IsNullOrEmpty(strID) Then Return New List(Of String)
 
             Dim alStudio As New List(Of String)
-            Dim Movie As TMDbLib.Objects.Movies.Movie
+            Dim Movie As TMDbLib.Objects.Movies.Movie = Nothing
 
-            Dim APIResult As Task(Of TMDbLib.Objects.Movies.Movie)
+            Dim APIResult As Task(Of TMDbLib.Objects.Movies.Movie) = Nothing
 
-            If strID.Substring(0, 2).ToLower = "tt" Then
-                APIResult = Task.Run(Function() _TMDBApi.GetMovie(strID))
-            Else
-                APIResult = Task.Run(Function() _TMDBApi.GetMovie(CInt(strID)))
+            If strID.ToLower.StartsWith("tt") Then
+                APIResult = Task.Run(Function() _TMDBApi.GetMovieAsync(strID))
+            ElseIf Integer.TryParse(strID, 0) Then
+                APIResult = Task.Run(Function() _TMDBApi.GetMovieAsync(CInt(strID)))
             End If
 
-            Movie = APIResult.Result
+            If APIResult IsNot Nothing AndAlso APIResult.Result IsNot Nothing Then
+                Movie = APIResult.Result
+            End If
 
             If Movie IsNot Nothing AndAlso Movie.ProductionCompanies IsNot Nothing AndAlso Movie.ProductionCompanies.Count > 0 Then
                 For Each cStudio In Movie.ProductionCompanies
@@ -1177,12 +1273,12 @@ Namespace TMDB
             Select Case eType
                 Case Enums.ScrapeType.AllAsk, Enums.ScrapeType.FilterAsk, Enums.ScrapeType.MarkedAsk, Enums.ScrapeType.MissingAsk, Enums.ScrapeType.NewAsk, Enums.ScrapeType.SelectedAsk, Enums.ScrapeType.SingleField
                     If r.Matches.Count = 1 Then
-                        Return GetMovieInfo(r.Matches.Item(0).TMDBID, False, FilteredOptions, True)
+                        Return GetInfo_Movie(r.Matches.Item(0).TMDB, FilteredOptions, False)
                     Else
                         Using dlgSearch As New dlgTMDBSearchResults_Movie(_SpecialSettings, Me)
                             If dlgSearch.ShowDialog(r, strMovieName, oDBMovie.Filename) = DialogResult.OK Then
-                                If Not String.IsNullOrEmpty(dlgSearch.Result.TMDBID) Then
-                                    Return GetMovieInfo(dlgSearch.Result.TMDBID, False, FilteredOptions, True)
+                                If Not String.IsNullOrEmpty(dlgSearch.Result.TMDB) Then
+                                    Return GetInfo_Movie(dlgSearch.Result.TMDB, FilteredOptions, False)
                                 End If
                             End If
                         End Using
@@ -1190,15 +1286,12 @@ Namespace TMDB
 
                 Case Enums.ScrapeType.AllSkip, Enums.ScrapeType.FilterSkip, Enums.ScrapeType.MarkedSkip, Enums.ScrapeType.MissingSkip, Enums.ScrapeType.NewSkip, Enums.ScrapeType.SelectedSkip
                     If r.Matches.Count = 1 Then
-                        Return GetMovieInfo(r.Matches.Item(0).TMDBID, False, FilteredOptions, True)
+                        Return GetInfo_Movie(r.Matches.Item(0).TMDB, FilteredOptions, False)
                     End If
 
                 Case Enums.ScrapeType.AllAuto, Enums.ScrapeType.FilterAuto, Enums.ScrapeType.MarkedAuto, Enums.ScrapeType.MissingAuto, Enums.ScrapeType.NewAuto, Enums.ScrapeType.SelectedAuto, Enums.ScrapeType.SingleScrape
-                    Dim exactHaveYear As Integer = FindYear(oDBMovie.Filename, r.Matches)
-                    If r.Matches.Count = 1 Then
-                        Return GetMovieInfo(r.Matches.Item(0).TMDBID, False, FilteredOptions, True)
-                    ElseIf r.Matches.Count > 1 Then
-                        Return GetMovieInfo(r.Matches.Item(If(exactHaveYear >= 0, exactHaveYear, 0)).TMDBID, False, FilteredOptions, True)
+                    If r.Matches.Count > 0 Then
+                        Return GetInfo_Movie(r.Matches.Item(0).TMDB, FilteredOptions, False)
                     End If
             End Select
 
@@ -1211,12 +1304,12 @@ Namespace TMDB
             Select Case eType
                 Case Enums.ScrapeType.AllAsk, Enums.ScrapeType.FilterAsk, Enums.ScrapeType.MarkedAsk, Enums.ScrapeType.MissingAsk, Enums.ScrapeType.NewAsk, Enums.ScrapeType.SelectedAsk, Enums.ScrapeType.SingleField
                     If r.Matches.Count = 1 Then
-                        Return GetMovieSetInfo(r.Matches.Item(0).TMDB, False, FilteredOptions, True)
+                        Return GetInfo_MovieSet(r.Matches.Item(0).TMDB, FilteredOptions, False)
                     Else
                         Using dlgSearch As New dlgTMDBSearchResults_MovieSet(_SpecialSettings, Me)
                             If dlgSearch.ShowDialog(r, strMovieSetName) = DialogResult.OK Then
                                 If Not String.IsNullOrEmpty(dlgSearch.Result.TMDB) Then
-                                    Return GetMovieSetInfo(dlgSearch.Result.TMDB, False, FilteredOptions, True)
+                                    Return GetInfo_MovieSet(dlgSearch.Result.TMDB, FilteredOptions, False)
                                 End If
                             End If
                         End Using
@@ -1224,12 +1317,12 @@ Namespace TMDB
 
                 Case Enums.ScrapeType.AllSkip, Enums.ScrapeType.FilterSkip, Enums.ScrapeType.MarkedSkip, Enums.ScrapeType.MissingSkip, Enums.ScrapeType.NewSkip, Enums.ScrapeType.SelectedSkip
                     If r.Matches.Count = 1 Then
-                        Return GetMovieSetInfo(r.Matches.Item(0).TMDB, False, FilteredOptions, True)
+                        Return GetInfo_MovieSet(r.Matches.Item(0).TMDB, FilteredOptions, False)
                     End If
 
                 Case Enums.ScrapeType.AllAuto, Enums.ScrapeType.FilterAuto, Enums.ScrapeType.MarkedAuto, Enums.ScrapeType.MissingAuto, Enums.ScrapeType.NewAuto, Enums.ScrapeType.SelectedAuto, Enums.ScrapeType.SingleScrape
                     If r.Matches.Count > 0 Then
-                        Return GetMovieSetInfo(r.Matches.Item(0).TMDB, False, FilteredOptions, True)
+                        Return GetInfo_MovieSet(r.Matches.Item(0).TMDB, FilteredOptions, False)
                     End If
             End Select
 
@@ -1242,12 +1335,12 @@ Namespace TMDB
             Select Case eType
                 Case Enums.ScrapeType.AllAsk, Enums.ScrapeType.FilterAsk, Enums.ScrapeType.MarkedAsk, Enums.ScrapeType.MissingAsk, Enums.ScrapeType.NewAsk, Enums.ScrapeType.SelectedAsk, Enums.ScrapeType.SingleField
                     If r.Matches.Count = 1 Then
-                        Return GetTVShowInfo(r.Matches.Item(0).TMDB, ScrapeModifiers, FilteredOptions, False)
+                        Return GetInfo_TVShow(r.Matches.Item(0).TMDB, ScrapeModifiers, FilteredOptions, False)
                     Else
                         Using dlgSearch As New dlgTMDBSearchResults_TV(_SpecialSettings, Me)
                             If dlgSearch.ShowDialog(r, strShowName, oDBTV.ShowPath) = DialogResult.OK Then
                                 If Not String.IsNullOrEmpty(dlgSearch.Result.TMDB) Then
-                                    Return GetTVShowInfo(dlgSearch.Result.TMDB, ScrapeModifiers, FilteredOptions, False)
+                                    Return GetInfo_TVShow(dlgSearch.Result.TMDB, ScrapeModifiers, FilteredOptions, False)
                                 End If
                             End If
                         End Using
@@ -1255,37 +1348,16 @@ Namespace TMDB
 
                 Case Enums.ScrapeType.AllSkip, Enums.ScrapeType.FilterSkip, Enums.ScrapeType.MarkedSkip, Enums.ScrapeType.MissingSkip, Enums.ScrapeType.NewSkip, Enums.ScrapeType.SelectedSkip
                     If r.Matches.Count = 1 Then
-                        Return GetTVShowInfo(r.Matches.Item(0).TMDB, ScrapeModifiers, FilteredOptions, False)
+                        Return GetInfo_TVShow(r.Matches.Item(0).TMDB, ScrapeModifiers, FilteredOptions, False)
                     End If
 
                 Case Enums.ScrapeType.AllAuto, Enums.ScrapeType.FilterAuto, Enums.ScrapeType.MarkedAuto, Enums.ScrapeType.MissingAuto, Enums.ScrapeType.NewAuto, Enums.ScrapeType.SelectedAuto, Enums.ScrapeType.SingleScrape
                     If r.Matches.Count > 0 Then
-                        Return GetTVShowInfo(r.Matches.Item(0).TMDB, ScrapeModifiers, FilteredOptions, False)
+                        Return GetInfo_TVShow(r.Matches.Item(0).TMDB, ScrapeModifiers, FilteredOptions, False)
                     End If
             End Select
 
             Return Nothing
-        End Function
-
-        Private Function FindYear(ByVal tmpname As String, ByVal lst As List(Of MediaContainers.Movie)) As Integer
-            Dim tmpyear As String = ""
-            Dim i As Integer
-            Dim ret As Integer = -1
-            tmpname = Path.GetFileNameWithoutExtension(tmpname)
-            tmpname = tmpname.Replace(".", " ").Trim.Replace("(", " ").Replace(")", "").Trim
-            i = tmpname.LastIndexOf(" ")
-            If i >= 0 Then
-                tmpyear = tmpname.Substring(i + 1, tmpname.Length - i - 1)
-                If Integer.TryParse(tmpyear, 0) AndAlso Convert.ToInt32(tmpyear) > 1950 Then 'let's assume there are no movies older then 1950
-                    For c = 0 To lst.Count - 1
-                        If lst(c).Year = tmpyear Then
-                            ret = c
-                            Exit For
-                        End If
-                    Next
-                End If
-            End If
-            Return ret
         End Function
 
         Public Sub GetSearchMovieInfoAsync(ByVal tmdbID As String, ByVal Movie As MediaContainers.Movie, ByRef FilteredOptions As Structures.ScrapeOptions)
@@ -1318,7 +1390,7 @@ Namespace TMDB
             End If
         End Sub
 
-        Public Sub SearchMovieAsync(ByVal sMovie As String, ByRef filterOptions As Structures.ScrapeOptions, Optional ByVal sYear As String = "")
+        Public Sub SearchAsync_Movie(ByVal sMovie As String, ByRef filterOptions As Structures.ScrapeOptions, Optional ByVal sYear As String = "")
             '' The rule is that if there is a tt is an IMDB otherwise is a TMDB
             Dim tYear As Integer = 0
 
@@ -1334,7 +1406,7 @@ Namespace TMDB
             End If
         End Sub
 
-        Public Sub SearchMovieSetAsync(ByVal sMovieSet As String, ByRef filterOptions As Structures.ScrapeOptions)
+        Public Sub SearchAsync_MovieSet(ByVal sMovieSet As String, ByRef filterOptions As Structures.ScrapeOptions)
             '' The rule is that if there is a tt is an IMDB otherwise is a TMDB
             If Not bwTMDB.IsBusy Then
                 bwTMDB.WorkerReportsProgress = False
@@ -1344,7 +1416,7 @@ Namespace TMDB
             End If
         End Sub
 
-        Public Sub SearchTVShowAsync(ByVal sShow As String, ByRef filterOptions As Structures.ScrapeOptions)
+        Public Sub SearchAsync_TVShow(ByVal sShow As String, ByRef filterOptions As Structures.ScrapeOptions)
 
             If Not bwTMDB.IsBusy Then
                 bwTMDB.WorkerReportsProgress = False
@@ -1352,64 +1424,6 @@ Namespace TMDB
                 bwTMDB.RunWorkerAsync(New Arguments With {.Search = SearchType.TVShows,
                   .Parameter = sShow, .ScrapeOptions = filterOptions})
             End If
-        End Sub
-
-        Private Sub bwTMDB_DoWork(ByVal sender As Object, ByVal e As System.ComponentModel.DoWorkEventArgs) Handles bwTMDB.DoWork
-            Dim Args As Arguments = DirectCast(e.Argument, Arguments)
-            '' The rule is that if there is a tt is an IMDB otherwise is a TMDB
-
-            Select Case Args.Search
-                Case SearchType.Movies
-                    Dim r As SearchResults_Movie = SearchMovie(Args.Parameter, Args.Year)
-                    e.Result = New Results With {.ResultType = SearchType.Movies, .Result = r}
-
-                Case SearchType.MovieSets
-                    Dim r As SearchResults_MovieSet = SearchMovieSet(Args.Parameter)
-                    e.Result = New Results With {.ResultType = SearchType.MovieSets, .Result = r}
-
-                Case SearchType.TVShows
-                    Dim r As SearchResults_TVShow = SearchTVShow(Args.Parameter)
-                    e.Result = New Results With {.ResultType = SearchType.TVShows, .Result = r}
-
-                Case SearchType.SearchDetails_Movie
-                    Dim r As MediaContainers.Movie = GetMovieInfo(Args.Parameter, True, Args.ScrapeOptions, True)
-                    e.Result = New Results With {.ResultType = SearchType.SearchDetails_Movie, .Result = r}
-
-                Case SearchType.SearchDetails_MovieSet
-                    Dim r As MediaContainers.MovieSet = GetMovieSetInfo(Args.Parameter, True, Args.ScrapeOptions, True)
-                    e.Result = New Results With {.ResultType = SearchType.SearchDetails_MovieSet, .Result = r}
-
-                Case SearchType.SearchDetails_TVShow
-                    Dim r As MediaContainers.TVShow = GetTVShowInfo(Args.Parameter, Args.ScrapeModifiers, Args.ScrapeOptions, True)
-                    e.Result = New Results With {.ResultType = SearchType.SearchDetails_TVShow, .Result = r}
-            End Select
-        End Sub
-
-        Private Sub bwTMDB_RunWorkerCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwTMDB.RunWorkerCompleted
-            Dim Res As Results = DirectCast(e.Result, Results)
-
-            Select Case Res.ResultType
-                Case SearchType.Movies
-                    RaiseEvent SearchResultsDownloaded_Movie(DirectCast(Res.Result, SearchResults_Movie))
-
-                Case SearchType.MovieSets
-                    RaiseEvent SearchResultsDownloaded_MovieSet(DirectCast(Res.Result, SearchResults_MovieSet))
-
-                Case SearchType.TVShows
-                    RaiseEvent SearchResultsDownloaded_TVShow(DirectCast(Res.Result, SearchResults_TVShow))
-
-                Case SearchType.SearchDetails_Movie
-                    Dim movieInfo As MediaContainers.Movie = DirectCast(Res.Result, MediaContainers.Movie)
-                    RaiseEvent SearchInfoDownloaded_Movie(_sPoster, movieInfo)
-
-                Case SearchType.SearchDetails_MovieSet
-                    Dim moviesetInfo As MediaContainers.MovieSet = DirectCast(Res.Result, MediaContainers.MovieSet)
-                    RaiseEvent SearchInfoDownloaded_MovieSet(_sPoster, moviesetInfo)
-
-                Case SearchType.SearchDetails_TVShow
-                    Dim showInfo As MediaContainers.TVShow = DirectCast(Res.Result, MediaContainers.TVShow)
-                    RaiseEvent SearchInfoDownloaded_TVShow(_sPoster, showInfo)
-            End Select
         End Sub
 
         Private Function SearchMovie(ByVal strMovie As String, Optional ByVal iYear As Integer = 0) As SearchResults_Movie
@@ -1422,14 +1436,38 @@ Namespace TMDB
             Dim aE As Boolean
 
             Dim APIResult As Task(Of TMDbLib.Objects.General.SearchContainer(Of TMDbLib.Objects.Search.SearchMovie))
-            APIResult = Task.Run(Function() _TMDBApi.SearchMovie(strMovie, Page, _SpecialSettings.GetAdultItems, iYear))
+            APIResult = Task.Run(Function() _TMDBApi.SearchMovieAsync(strMovie, Page, _SpecialSettings.GetAdultItems, iYear))
 
             Movies = APIResult.Result
 
             If Movies.TotalResults = 0 AndAlso _SpecialSettings.FallBackEng Then
-                APIResult = Task.Run(Function() _TMDBApiE.SearchMovie(strMovie, Page, _SpecialSettings.GetAdultItems, iYear))
+                APIResult = Task.Run(Function() _TMDBApiE.SearchMovieAsync(strMovie, Page, _SpecialSettings.GetAdultItems, iYear))
                 Movies = APIResult.Result
                 aE = True
+            End If
+
+            'try -1 year if no search result was found
+            If Movies.TotalResults = 0 AndAlso iYear > 0 AndAlso _SpecialSettings.SearchDeviant Then
+                APIResult = Task.Run(Function() _TMDBApiE.SearchMovieAsync(strMovie, Page, _SpecialSettings.GetAdultItems, iYear - 1))
+                Movies = APIResult.Result
+
+                If Movies.TotalResults = 0 AndAlso _SpecialSettings.FallBackEng Then
+                    APIResult = Task.Run(Function() _TMDBApiE.SearchMovieAsync(strMovie, Page, _SpecialSettings.GetAdultItems, iYear - 1))
+                    Movies = APIResult.Result
+                    aE = True
+                End If
+
+                'still no search result, try +1 year
+                If Movies.TotalResults = 0 Then
+                    APIResult = Task.Run(Function() _TMDBApiE.SearchMovieAsync(strMovie, Page, _SpecialSettings.GetAdultItems, iYear + 1))
+                    Movies = APIResult.Result
+
+                    If Movies.TotalResults = 0 AndAlso _SpecialSettings.FallBackEng Then
+                        APIResult = Task.Run(Function() _TMDBApiE.SearchMovieAsync(strMovie, Page, _SpecialSettings.GetAdultItems, iYear + 1))
+                        Movies = APIResult.Result
+                        aE = True
+                    End If
+                End If
             End If
 
             If Movies.TotalResults > 0 Then
@@ -1456,17 +1494,17 @@ Namespace TMDB
                                                                                                      .Plot = tPlot,
                                                                                                      .Title = tTitle,
                                                                                                      .ThumbPoster = tThumbPoster,
-                                                                                                     .TMDBID = CStr(aMovie.Id),
+                                                                                                     .TMDB = CStr(aMovie.Id),
                                                                                                      .Year = tYear}
                             R.Matches.Add(lNewMovie)
                         Next
                     End If
                     Page = Page + 1
                     If aE Then
-                        APIResult = Task.Run(Function() _TMDBApiE.SearchMovie(strMovie, Page, _SpecialSettings.GetAdultItems, iYear))
+                        APIResult = Task.Run(Function() _TMDBApiE.SearchMovieAsync(strMovie, Page, _SpecialSettings.GetAdultItems, iYear))
                         Movies = APIResult.Result
                     Else
-                        APIResult = Task.Run(Function() _TMDBApi.SearchMovie(strMovie, Page, _SpecialSettings.GetAdultItems, iYear))
+                        APIResult = Task.Run(Function() _TMDBApi.SearchMovieAsync(strMovie, Page, _SpecialSettings.GetAdultItems, iYear))
                         Movies = APIResult.Result
                     End If
                 End While
@@ -1480,17 +1518,17 @@ Namespace TMDB
 
             Dim R As New SearchResults_MovieSet
             Dim Page As Integer = 1
-            Dim MovieSets As TMDbLib.Objects.General.SearchContainer(Of TMDbLib.Objects.Search.SearchResultCollection)
+            Dim MovieSets As TMDbLib.Objects.General.SearchContainer(Of TMDbLib.Objects.Search.SearchCollection)
             Dim TotP As Integer
             Dim aE As Boolean
 
-            Dim APIResult As Task(Of TMDbLib.Objects.General.SearchContainer(Of TMDbLib.Objects.Search.SearchResultCollection))
-            APIResult = Task.Run(Function() _TMDBApi.SearchCollection(strMovieSet, Page))
+            Dim APIResult As Task(Of TMDbLib.Objects.General.SearchContainer(Of TMDbLib.Objects.Search.SearchCollection))
+            APIResult = Task.Run(Function() _TMDBApi.SearchCollectionAsync(strMovieSet, Page))
 
             MovieSets = APIResult.Result
 
             If MovieSets.TotalResults = 0 AndAlso _SpecialSettings.FallBackEng Then
-                APIResult = Task.Run(Function() _TMDBApiE.SearchCollection(strMovieSet, Page))
+                APIResult = Task.Run(Function() _TMDBApiE.SearchCollectionAsync(strMovieSet, Page))
                 MovieSets = APIResult.Result
                 aE = True
             End If
@@ -1515,10 +1553,10 @@ Namespace TMDB
                     End If
                     Page = Page + 1
                     If aE Then
-                        APIResult = Task.Run(Function() _TMDBApiE.SearchCollection(strMovieSet, Page))
+                        APIResult = Task.Run(Function() _TMDBApiE.SearchCollectionAsync(strMovieSet, Page))
                         MovieSets = APIResult.Result
                     Else
-                        APIResult = Task.Run(Function() _TMDBApi.SearchCollection(strMovieSet, Page))
+                        APIResult = Task.Run(Function() _TMDBApi.SearchCollectionAsync(strMovieSet, Page))
                         MovieSets = APIResult.Result
                     End If
                 End While
@@ -1537,12 +1575,12 @@ Namespace TMDB
             Dim aE As Boolean
 
             Dim APIResult As Task(Of TMDbLib.Objects.General.SearchContainer(Of TMDbLib.Objects.Search.SearchTv))
-            APIResult = Task.Run(Function() _TMDBApi.SearchTvShow(strShow, Page))
+            APIResult = Task.Run(Function() _TMDBApi.SearchTvShowAsync(strShow, Page))
 
             Shows = APIResult.Result
 
             If Shows.TotalResults = 0 AndAlso _SpecialSettings.FallBackEng Then
-                APIResult = Task.Run(Function() _TMDBApiE.SearchTvShow(strShow, Page))
+                APIResult = Task.Run(Function() _TMDBApiE.SearchTvShowAsync(strShow, Page))
                 Shows = APIResult.Result
                 aE = True
             End If
@@ -1571,10 +1609,10 @@ Namespace TMDB
                     End If
                     Page = Page + 1
                     If aE Then
-                        APIResult = Task.Run(Function() _TMDBApiE.SearchTvShow(strShow, Page))
+                        APIResult = Task.Run(Function() _TMDBApiE.SearchTvShowAsync(strShow, Page))
                         Shows = APIResult.Result
                     Else
-                        APIResult = Task.Run(Function() _TMDBApi.SearchTvShow(strShow, Page))
+                        APIResult = Task.Run(Function() _TMDBApi.SearchTvShowAsync(strShow, Page))
                         Shows = APIResult.Result
                     End If
                 End While

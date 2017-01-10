@@ -40,7 +40,7 @@ Namespace VideobusterDE
 
             Dim pSearchResultsArea As String = "<div class=""main left"">(?<RESULTS>.*?)sidebar"
             Dim pSearchResults As String = "<div class=""infos""><a href=""(?<URL>.*?)"" class=""title"">(?<TITLE>.*?)<"
-            Dim pPlaylistArea As String = "<div class=""playlist"">(?<PLAYLIST>.*?)verwandt"
+            Dim pPlaylistArea As String = "<div class=""playlist"">(?<PLAYLIST>.*?)<\/div><div id="""
             Dim pTrailers As String = "<div class=""item"">.*?<small>(?<DURATION>.*?) min.*?<a href=""(?<VIDEOURL>.*?)"".*?title=""(?<TITLE>.*?)"".*?<meta itemprop=""height"" content=""(?<RESOLUTION>.*?)"".*?inLanguage"" content=""(?<LANGUAGE>.*?)"""
 
             Dim SearchURL = String.Concat("https://www.videobuster.de/titlesearch.php?oldvalue_tab_search_content=movies&search_title=", _
@@ -89,7 +89,7 @@ Namespace VideobusterDE
                     End If
                 End If
             Catch ex As TimeoutException
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return alTrailers

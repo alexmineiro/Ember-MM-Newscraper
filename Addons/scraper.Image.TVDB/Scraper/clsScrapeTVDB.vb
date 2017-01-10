@@ -59,7 +59,7 @@ Namespace TVDBs
                 _TVDBMirror = New TVDB.Model.Mirror With {.Address = "http://thetvdb.com", .ContainsBannerFile = True, .ContainsXmlFile = True, .ContainsZipFile = False}
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
         End Sub
         ''' <summary>
@@ -89,7 +89,7 @@ Namespace TVDBs
 
                     'EpisodePoster
                     If FilteredModifiers.EpisodePoster AndAlso Results.Series.Episodes IsNot Nothing Then
-                        For Each tEpisode As TVDB.Model.Episode In Results.Series.Episodes
+                        For Each tEpisode As TVDB.Model.Episode In Results.Series.Episodes.Where(Function(f) Not String.IsNullOrEmpty(f.PictureFilename))
                             Dim img As New MediaContainers.Image With {
                             .Episode = tEpisode.Number,
                             .Height = CStr(tEpisode.ThumbHeight),
@@ -192,13 +192,13 @@ Namespace TVDBs
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return alContainer
         End Function
 
-        Public Function GetImages_TVEpisode(ByVal tvdbID As String, ByVal iSeason As Integer, ByVal iEpisode As Integer, ByVal FilteredModifiers As Structures.ScrapeModifiers) As MediaContainers.SearchResultsContainer
+        Public Function GetImages_TVEpisode(ByVal tvdbID As String, ByVal iSeason As Integer, ByVal iEpisode As Integer, ByVal tEpisodeOrdering As Enums.EpisodeOrdering, ByVal FilteredModifiers As Structures.ScrapeModifiers) As MediaContainers.SearchResultsContainer
             Dim alContainer As New MediaContainers.SearchResultsContainer
 
             Try
@@ -212,24 +212,36 @@ Namespace TVDBs
 
                 'EpisodePoster
                 If FilteredModifiers.EpisodePoster AndAlso Results.Series.Episodes IsNot Nothing Then
-                    For Each tEpisode As TVDB.Model.Episode In Results.Series.Episodes.Where(Function(f) f.SeasonNumber = iSeason And f.CombinedEpisodeNumber = iEpisode)
-                        Dim img As New MediaContainers.Image With {
-                            .Episode = tEpisode.Number,
-                            .Height = CStr(tEpisode.ThumbHeight),
-                            .LongLang = If(tEpisode.Language IsNot Nothing, Localization.ISOGetLangByCode2(tEpisode.Language), String.Empty),
-                            .Scraper = "TVDB",
-                            .Season = tEpisode.SeasonNumber,
-                            .ShortLang = If(tEpisode.Language IsNot Nothing, tEpisode.Language, String.Empty),
-                            .URLOriginal = String.Concat(_TVDBMirror.Address, "/banners/", tEpisode.PictureFilename),
-                            .URLThumb = If(Not String.IsNullOrEmpty(tEpisode.PictureFilename), String.Concat(_TVDBMirror.Address, "/banners/_cache/", tEpisode.PictureFilename), String.Empty),
-                            .Width = CStr(tEpisode.ThumbWidth)}
+                    Dim EpisodeImages As IEnumerable(Of TVDB.Model.Episode) = Nothing
+                    Select Case tEpisodeOrdering
+                        Case Enums.EpisodeOrdering.Absolute
+                            EpisodeImages = Results.Series.Episodes.Where(Function(f) f.AbsoluteNumber = iEpisode)
+                        Case Enums.EpisodeOrdering.DVD
+                            EpisodeImages = Results.Series.Episodes.Where(Function(f) f.DVDSeason = iSeason And f.DVDEpisodeNumber = iEpisode)
+                        Case Enums.EpisodeOrdering.Standard
+                            EpisodeImages = Results.Series.Episodes.Where(Function(f) f.SeasonNumber = iSeason And f.Number = iEpisode)
+                    End Select
 
-                        alContainer.EpisodePosters.Add(img)
-                    Next
+                    If EpisodeImages IsNot Nothing Then
+                        For Each tEpisode As TVDB.Model.Episode In EpisodeImages
+                            Dim img As New MediaContainers.Image With {
+                                .Episode = iEpisode,
+                                .Height = CStr(tEpisode.ThumbHeight),
+                                .LongLang = If(tEpisode.Language IsNot Nothing, Localization.ISOGetLangByCode2(tEpisode.Language), String.Empty),
+                                .Scraper = "TVDB",
+                                .Season = iSeason,
+                                .ShortLang = If(tEpisode.Language IsNot Nothing, tEpisode.Language, String.Empty),
+                                .URLOriginal = String.Concat(_TVDBMirror.Address, "/banners/", tEpisode.PictureFilename),
+                                .URLThumb = If(Not String.IsNullOrEmpty(tEpisode.PictureFilename), String.Concat(_TVDBMirror.Address, "/banners/_cache/", tEpisode.PictureFilename), String.Empty),
+                                .Width = CStr(tEpisode.ThumbWidth)}
+
+                            alContainer.EpisodePosters.Add(img)
+                        Next
+                    End If
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return alContainer

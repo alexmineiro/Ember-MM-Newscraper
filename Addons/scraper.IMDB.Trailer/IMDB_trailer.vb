@@ -125,11 +125,11 @@ Public Class IMDB_Trailer
     End Function
 
     Sub LoadSettings()
-        ConfigScrapeModifiers.MainTrailer = clsAdvancedSettings.GetBooleanSetting("DoTrailer", True)
+        ConfigScrapeModifiers.MainTrailer = AdvancedSettings.GetBooleanSetting("DoTrailer", True)
     End Sub
 
     Sub SaveSettings()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoTrailer", ConfigScrapeModifiers.MainTrailer)
         End Using
     End Sub
@@ -145,17 +145,17 @@ Public Class IMDB_Trailer
         End If
     End Sub
 
-    Function Scraper(ByRef DBMovie As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef TrailerList As List(Of MediaContainers.Trailer)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Trailer_Movie.Scraper
-        logger.Trace("Started scrape", New StackTrace().ToString())
+    Function Scraper_Movie(ByRef DBMovie As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef TrailerList As List(Of MediaContainers.Trailer)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Trailer_Movie.Scraper
+        logger.Trace("[IMDB_Trailer] [Scraper_Movie] [Start]")
 
         Dim tIMDBID As String = String.Empty
 
-        If Not String.IsNullOrEmpty(DBMovie.Movie.IMDBID) Then
+        If Not String.IsNullOrEmpty(DBMovie.Movie.IMDB) Then
             Dim _scraper As New IMDBs.Scraper()
 
-            TrailerList = _scraper.GetTrailers(DBMovie.Movie.IMDBID)
+            TrailerList = _scraper.GetTrailers(DBMovie.Movie.IMDB)
         End If
-        logger.Trace("Finished scrape", New StackTrace().ToString())
+        logger.Trace("[IMDB_Trailer] [Scraper_Movie] [Done]")
         Return New Interfaces.ModuleResult With {.breakChain = False}
     End Function
 

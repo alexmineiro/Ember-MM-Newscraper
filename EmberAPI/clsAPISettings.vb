@@ -97,7 +97,7 @@ Public Class Settings
             Return Settings._XMLSettings.MovieGeneralLanguage
         End Get
         Set(ByVal value As String)
-            Settings._XMLSettings.MovieGeneralLanguage = If(String.IsNullOrEmpty(value), "en", value)
+            Settings._XMLSettings.MovieGeneralLanguage = If(String.IsNullOrEmpty(value), "en-US", value)
         End Set
     End Property
 
@@ -106,16 +106,7 @@ Public Class Settings
             Return Settings._XMLSettings.TVGeneralLanguage
         End Get
         Set(ByVal value As String)
-            Settings._XMLSettings.TVGeneralLanguage = If(String.IsNullOrEmpty(value), "en", value)
-        End Set
-    End Property
-
-    Public Property TVGeneralLanguages() As clsXMLTVDBLanguages
-        Get
-            Return Settings._XMLSettings.TVGeneralLanguages
-        End Get
-        Set(ByVal value As clsXMLTVDBLanguages)
-            Settings._XMLSettings.TVGeneralLanguages = value
+            Settings._XMLSettings.TVGeneralLanguage = If(String.IsNullOrEmpty(value), "en-US", value)
         End Set
     End Property
 
@@ -407,11 +398,11 @@ Public Class Settings
         End Set
     End Property
 
-    Public Property TVScraperOptionsOrdering() As Enums.Ordering
+    Public Property TVScraperOptionsOrdering() As Enums.EpisodeOrdering
         Get
             Return Settings._XMLSettings.TVScraperOptionsOrdering
         End Get
-        Set(ByVal value As Enums.Ordering)
+        Set(ByVal value As Enums.EpisodeOrdering)
             Settings._XMLSettings.TVScraperOptionsOrdering = value
         End Set
     End Property
@@ -813,6 +804,15 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property MovieScraperCollectionsExtendedInfo() As Boolean
+        Get
+            Return Settings._XMLSettings.MovieScraperCollectionsExtendedInfo
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.MovieScraperCollectionsExtendedInfo = value
+        End Set
+    End Property
+
     Public Property MovieScraperCountry() As Boolean
         Get
             Return Settings._XMLSettings.MovieScraperCountry
@@ -1012,30 +1012,30 @@ Public Class Settings
         End Set
     End Property
 
-    Public Property GeneralFilterPanelStateMovie() As Boolean
+    Public Property GeneralFilterPanelIsRaisedMovie() As Boolean
         Get
-            Return Settings._XMLSettings.GeneralFilterPanelStateMovie
+            Return Settings._XMLSettings.GeneralFilterPanelIsRaisedMovie
         End Get
         Set(ByVal value As Boolean)
-            Settings._XMLSettings.GeneralFilterPanelStateMovie = value
+            Settings._XMLSettings.GeneralFilterPanelIsRaisedMovie = value
         End Set
     End Property
 
-    Public Property GeneralFilterPanelStateMovieSet() As Boolean
+    Public Property GeneralFilterPanelIsRaisedMovieSet() As Boolean
         Get
-            Return Settings._XMLSettings.GeneralFilterPanelStateMovieSet
+            Return Settings._XMLSettings.GeneralFilterPanelIsRaisedMovieSet
         End Get
         Set(ByVal value As Boolean)
-            Settings._XMLSettings.GeneralFilterPanelStateMovieSet = value
+            Settings._XMLSettings.GeneralFilterPanelIsRaisedMovieSet = value
         End Set
     End Property
 
-    Public Property GeneralFilterPanelStateShow() As Boolean
+    Public Property GeneralFilterPanelIsRaisedTVShow() As Boolean
         Get
-            Return Settings._XMLSettings.GeneralFilterPanelStateShow
+            Return Settings._XMLSettings.GeneralFilterPanelIsRaisedTVShow
         End Get
         Set(ByVal value As Boolean)
-            Settings._XMLSettings.GeneralFilterPanelStateShow = value
+            Settings._XMLSettings.GeneralFilterPanelIsRaisedTVShow = value
         End Set
     End Property
 
@@ -1093,21 +1093,21 @@ Public Class Settings
         End Set
     End Property
 
-    Public Property GeneralMovieInfoPanelState() As Integer
+    Public Property GeneralInfoPanelStateMovie() As Integer
         Get
-            Return Settings._XMLSettings.GeneralMovieInfoPanelState
+            Return Settings._XMLSettings.GeneralInfoPanelStateMovie
         End Get
         Set(ByVal value As Integer)
-            Settings._XMLSettings.GeneralMovieInfoPanelState = value
+            Settings._XMLSettings.GeneralInfoPanelStateMovie = value
         End Set
     End Property
 
-    Public Property GeneralMovieSetInfoPanelState() As Integer
+    Public Property GeneralInfoPanelStateMovieSet() As Integer
         Get
-            Return Settings._XMLSettings.GeneralMovieSetInfoPanelState
+            Return Settings._XMLSettings.GeneralInfoPanelStateMovieSet
         End Get
         Set(ByVal value As Integer)
-            Settings._XMLSettings.GeneralMovieSetInfoPanelState = value
+            Settings._XMLSettings.GeneralInfoPanelStateMovieSet = value
         End Set
     End Property
 
@@ -1188,14 +1188,6 @@ Public Class Settings
         End Get
         Set(ByVal value As Boolean)
             Settings._XMLSettings.MovieScraperUseDetailView = value
-        End Set
-    End Property
-    Public Property MovieScraperReleaseFormat() As Boolean
-        Get
-            Return Settings._XMLSettings.MovieScraperReleaseFormat
-        End Get
-        Set(ByVal value As Boolean)
-            Settings._XMLSettings.MovieScraperReleaseFormat = value
         End Set
     End Property
 
@@ -1446,6 +1438,87 @@ Public Class Settings
         End Get
         Set(ByVal value As String)
             Settings._XMLSettings.MovieGeneralCustomMarker4Name = value
+        End Set
+    End Property
+
+    Public Property MovieGeneralCustomScrapeButtonEnabled() As Boolean
+        Get
+            Return Settings._XMLSettings.MovieGeneralCustomScrapeButtonEnabled
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.MovieGeneralCustomScrapeButtonEnabled = value
+        End Set
+    End Property
+
+    Public Property MovieGeneralCustomScrapeButtonModifierType() As Enums.ModifierType
+        Get
+            Return Settings._XMLSettings.MovieGeneralCustomScrapeButtonModifierType
+        End Get
+        Set(ByVal value As Enums.ModifierType)
+            Settings._XMLSettings.MovieGeneralCustomScrapeButtonModifierType = value
+        End Set
+    End Property
+
+    Public Property MovieGeneralCustomScrapeButtonScrapeType() As Enums.ScrapeType
+        Get
+            Return Settings._XMLSettings.MovieGeneralCustomScrapeButtonScrapeType
+        End Get
+        Set(ByVal value As Enums.ScrapeType)
+            Settings._XMLSettings.MovieGeneralCustomScrapeButtonScrapeType = value
+        End Set
+    End Property
+
+    Public Property MovieSetGeneralCustomScrapeButtonEnabled() As Boolean
+        Get
+            Return Settings._XMLSettings.MovieSetGeneralCustomScrapeButtonEnabled
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.MovieSetGeneralCustomScrapeButtonEnabled = value
+        End Set
+    End Property
+
+    Public Property MovieSetGeneralCustomScrapeButtonModifierType() As Enums.ModifierType
+        Get
+            Return Settings._XMLSettings.MovieSetGeneralCustomScrapeButtonModifierType
+        End Get
+        Set(ByVal value As Enums.ModifierType)
+            Settings._XMLSettings.MovieSetGeneralCustomScrapeButtonModifierType = value
+        End Set
+    End Property
+
+    Public Property MovieSetGeneralCustomScrapeButtonScrapeType() As Enums.ScrapeType
+        Get
+            Return Settings._XMLSettings.MovieSetGeneralCustomScrapeButtonScrapeType
+        End Get
+        Set(ByVal value As Enums.ScrapeType)
+            Settings._XMLSettings.MovieSetGeneralCustomScrapeButtonScrapeType = value
+        End Set
+    End Property
+
+    Public Property TVGeneralCustomScrapeButtonEnabled() As Boolean
+        Get
+            Return Settings._XMLSettings.TVGeneralCustomScrapeButtonEnabled
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.TVGeneralCustomScrapeButtonEnabled = value
+        End Set
+    End Property
+
+    Public Property TVGeneralCustomScrapeButtonModifierType() As Enums.ModifierType
+        Get
+            Return Settings._XMLSettings.TVGeneralCustomScrapeButtonModifierType
+        End Get
+        Set(ByVal value As Enums.ModifierType)
+            Settings._XMLSettings.TVGeneralCustomScrapeButtonModifierType = value
+        End Set
+    End Property
+
+    Public Property TVGeneralCustomScrapeButtonScrapeType() As Enums.ScrapeType
+        Get
+            Return Settings._XMLSettings.TVGeneralCustomScrapeButtonScrapeType
+        End Get
+        Set(ByVal value As Enums.ScrapeType)
+            Settings._XMLSettings.TVGeneralCustomScrapeButtonScrapeType = value
         End Set
     End Property
 
@@ -3661,12 +3734,12 @@ Public Class Settings
         End Set
     End Property
 
-    Public Property GeneralTVShowInfoPanelState() As Integer
+    Public Property GeneralInfoPanelStateTVShow() As Integer
         Get
-            Return Settings._XMLSettings.GeneralTVShowInfoPanelState
+            Return Settings._XMLSettings.GeneralInfoPanelStateTVShow
         End Get
         Set(ByVal value As Integer)
-            Settings._XMLSettings.GeneralTVShowInfoPanelState = value
+            Settings._XMLSettings.GeneralInfoPanelStateTVShow = value
         End Set
     End Property
 
@@ -3976,30 +4049,30 @@ Public Class Settings
         End Set
     End Property
 
-    Public Property GeneralMainSplitterPanelState() As Integer
+    Public Property GeneralSplitterDistanceMain() As Integer
         Get
-            Return Settings._XMLSettings.GeneralMainSplitterPanelState
+            Return Settings._XMLSettings.GeneralSplitterDistanceMain
         End Get
         Set(ByVal value As Integer)
-            Settings._XMLSettings.GeneralMainSplitterPanelState = value
+            Settings._XMLSettings.GeneralSplitterDistanceMain = value
         End Set
     End Property
 
-    Public Property GeneralShowSplitterPanelState() As Integer
+    Public Property GeneralSplitterDistanceTVShow() As Integer
         Get
-            Return Settings._XMLSettings.GeneralShowSplitterPanelState
+            Return Settings._XMLSettings.GeneralSplitterDistanceTVShow
         End Get
         Set(ByVal value As Integer)
-            Settings._XMLSettings.GeneralShowSplitterPanelState = value
+            Settings._XMLSettings.GeneralSplitterDistanceTVShow = value
         End Set
     End Property
 
-    Public Property GeneralSeasonSplitterPanelState() As Integer
+    Public Property GeneralSplitterDistanceTVSeason() As Integer
         Get
-            Return Settings._XMLSettings.GeneralSeasonSplitterPanelState
+            Return Settings._XMLSettings.GeneralSplitterDistanceTVSeason
         End Get
         Set(ByVal value As Integer)
-            Settings._XMLSettings.GeneralSeasonSplitterPanelState = value
+            Settings._XMLSettings.GeneralSplitterDistanceTVSeason = value
         End Set
     End Property
 
@@ -4354,12 +4427,21 @@ Public Class Settings
         End Set
     End Property
 
-    Public Property MovieImagesPrefLanguage() As String
+    Public Property MovieImagesForcedLanguage() As String
         Get
-            Return Settings._XMLSettings.MovieImagesPrefLanguage
+            Return Settings._XMLSettings.MovieImagesForcedLanguage
         End Get
         Set(ByVal value As String)
-            Settings._XMLSettings.MovieImagesPrefLanguage = value
+            Settings._XMLSettings.MovieImagesForcedLanguage = value
+        End Set
+    End Property
+
+    Public Property MovieImagesForceLanguage() As Boolean
+        Get
+            Return Settings._XMLSettings.MovieImagesForceLanguage
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.MovieImagesForceLanguage = value
         End Set
     End Property
 
@@ -4369,6 +4451,24 @@ Public Class Settings
         End Get
         Set(ByVal value As Boolean)
             Settings._XMLSettings.MovieImagesMediaLanguageOnly = value
+        End Set
+    End Property
+
+    Public Property MovieSetImagesForcedLanguage() As String
+        Get
+            Return Settings._XMLSettings.MovieSetImagesForcedLanguage
+        End Get
+        Set(ByVal value As String)
+            Settings._XMLSettings.MovieSetImagesForcedLanguage = value
+        End Set
+    End Property
+
+    Public Property MovieSetImagesForceLanguage() As Boolean
+        Get
+            Return Settings._XMLSettings.MovieSetImagesForceLanguage
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.MovieSetImagesForceLanguage = value
         End Set
     End Property
 
@@ -4417,12 +4517,21 @@ Public Class Settings
         End Set
     End Property
 
-    Public Property TVImagesPrefLanguage() As String
+    Public Property TVImagesForceLanguage() As Boolean
         Get
-            Return Settings._XMLSettings.TVImagesPrefLanguage
+            Return Settings._XMLSettings.TVImagesForceLanguage
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.TVImagesForceLanguage = value
+        End Set
+    End Property
+
+    Public Property TVImagesForcedLanguage() As String
+        Get
+            Return Settings._XMLSettings.TVImagesForcedLanguage
         End Get
         Set(ByVal value As String)
-            Settings._XMLSettings.TVImagesPrefLanguage = value
+            Settings._XMLSettings.TVImagesForcedLanguage = value
         End Set
     End Property
 
@@ -4867,12 +4976,12 @@ Public Class Settings
         End Set
     End Property
 
-    Public Property MovieYAMJCompatibleSets() As Boolean
+    Public Property MovieScraperCollectionsYAMJCompatibleSets() As Boolean
         Get
-            Return Settings._XMLSettings.MovieYAMJCompatibleSets
+            Return Settings._XMLSettings.MovieScraperCollectionsYAMJCompatibleSets
         End Get
         Set(ByVal value As Boolean)
-            Settings._XMLSettings.MovieYAMJCompatibleSets = value
+            Settings._XMLSettings.MovieScraperCollectionsYAMJCompatibleSets = value
         End Set
     End Property
 
@@ -6619,7 +6728,7 @@ Public Class Settings
 
     Public Sub Load()
         'Cocotus, Load from central "Settings" folder if it exists!
-        Dim configpath As String = FileUtils.Common.ReturnSettingsFile("Settings", "Settings.xml")
+        Dim configpath As String = Path.Combine(Master.SettingsPath, "Settings.xml")
 
         Try
             If File.Exists(configpath) Then
@@ -6632,7 +6741,7 @@ Public Class Settings
                 Master.eSettings = Me
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
             logger.Info("An attempt is made to repair the Settings.xml")
             Try
                 Using srSettings As New StreamReader(configpath)
@@ -6659,17 +6768,13 @@ Public Class Settings
                     logger.Info("AdvancedSettings.xml successfully repaired")
                 End Using
             Catch ex2 As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex2)
+                logger.Error(ex2, New StackFrame().GetMethod().Name)
                 File.Copy(configpath, String.Concat(configpath, "_backup"), True)
                 Master.eSettings = New Settings
             End Try
         End Try
 
         SetDefaultsForLists(Enums.DefaultType.All, False)
-
-        If Master.eSettings.TVGeneralLanguages Is Nothing OrElse Master.eSettings.TVGeneralLanguages.Language.Count <= 0 Then
-            LoadTVLanguages()
-        End If
 
         ' Fix added to avoid to have no movie NFO saved
         If Not (Master.eSettings.MovieUseBoxee Or Master.eSettings.MovieUseEden Or Master.eSettings.MovieUseExpert Or Master.eSettings.MovieUseFrodo Or Master.eSettings.MovieUseNMJ Or Master.eSettings.MovieUseYAMJ) Then
@@ -6704,24 +6809,6 @@ Public Class Settings
         End If
     End Sub
 
-    Public Sub LoadTVLanguages()
-        Try
-            Dim configpath As String = FileUtils.Common.ReturnSettingsFile("Defaults", "DefaultTVLanguages.xml")
-
-            Dim objStreamReader As New StreamReader(configpath)
-            Dim xXMLSettings As New XmlSerializer(_XMLSettings.GetType)
-            Dim tSettings As New clsXMLSettings
-
-            tSettings = CType(xXMLSettings.Deserialize(objStreamReader), clsXMLSettings)
-            objStreamReader.Close()
-
-            _XMLSettings.TVGeneralLanguages = tSettings.TVGeneralLanguages
-
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
-    End Sub
-
     Public Sub Save()
         Try
             Dim xmlSerial As New XmlSerializer(GetType(Settings))
@@ -6729,7 +6816,7 @@ Public Class Settings
             xmlSerial.Serialize(xmlWriter, Master.eSettings)
             xmlWriter.Close()
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
     ''' <summary>
@@ -6764,16 +6851,6 @@ Public Class Settings
         GeneralDateAddedIgnoreNFO = False
         GeneralDateTime = Enums.DateTime.Now
         GeneralDigitGrpSymbolVotes = False
-        GeneralDoubleClickScrape = False
-        GeneralFilterPanelStateMovie = False
-        GeneralFilterPanelStateMovieSet = False
-        GeneralFilterPanelStateShow = False
-        GeneralMainFilterSortColumn_Movies = 3
-        GeneralMainFilterSortColumn_MovieSets = 1
-        GeneralMainFilterSortColumn_Shows = 1
-        GeneralMainFilterSortOrder_Movies = 0
-        GeneralMainFilterSortOrder_MovieSets = 0
-        GeneralMainFilterSortOrder_Shows = 0
         GeneralDisplayBanner = True
         GeneralDisplayCharacterArt = True
         GeneralDisplayClearArt = True
@@ -6783,33 +6860,43 @@ Public Class Settings
         GeneralDisplayFanartSmall = True
         GeneralDisplayLandscape = True
         GeneralDisplayPoster = True
-        GeneralImagesGlassOverlay = False
+        GeneralDoubleClickScrape = False
+        GeneralFilterPanelIsRaisedMovie = False
+        GeneralFilterPanelIsRaisedMovieSet = False
+        GeneralFilterPanelIsRaisedTVShow = False
         GeneralImageFilter = True
         GeneralImageFilterAutoscraper = True
-        GeneralImageFilterImagedialog = False
         GeneralImageFilterFanart = True
-        GeneralImageFilterPoster = False
         GeneralImageFilterFanartMatchTolerance = 4
+        GeneralImageFilterImagedialog = False
+        GeneralImageFilterPoster = False
         GeneralImageFilterPosterMatchTolerance = 1
+        GeneralImagesGlassOverlay = False
+        GeneralInfoPanelStateMovie = 200
+        GeneralInfoPanelStateMovieSet = 200
+        GeneralInfoPanelStateTVShow = 200
         GeneralLanguage = "English_(en_US)"
-        GeneralMainSplitterPanelState = 550
-        GeneralMovieInfoPanelState = 200
-        GeneralMovieSetInfoPanelState = 200
-        GeneralMovieTheme = "Default"
+        GeneralMainFilterSortColumn_MovieSets = 1
+        GeneralMainFilterSortColumn_Movies = 3
+        GeneralMainFilterSortColumn_Shows = 1
+        GeneralMainFilterSortOrder_MovieSets = 0
+        GeneralMainFilterSortOrder_Movies = 0
+        GeneralMainFilterSortOrder_Shows = 0
         GeneralMovieSetTheme = "Default"
+        GeneralMovieTheme = "Default"
         GeneralOverwriteNfo = False
-        GeneralSeasonSplitterPanelState = 200
         GeneralShowGenresText = True
-        GeneralShowLangFlags = True
         GeneralShowImgDims = True
         GeneralShowImgNames = True
-        GeneralShowSplitterPanelState = 200
+        GeneralShowLangFlags = True
         GeneralSourceFromFolder = False
+        GeneralSplitterDistanceMain = 550
+        GeneralSplitterDistanceTVSeason = 200
+        GeneralSplitterDistanceTVShow = 200
         GeneralTVEpisodeTheme = "Default"
-        GeneralTVShowInfoPanelState = 200
         GeneralTVShowTheme = "Default"
-        'Me.GeneralWindowLoc =
-        'Me.GeneralWindowSize =
+        GeneralWindowLoc = New Point(10, 10)
+        GeneralWindowSize = New Size(1024, 768)
         GeneralWindowState = FormWindowState.Maximized
         MovieActorThumbsExtExpertBDMV = ".jpg"
         MovieActorThumbsExtExpertMulti = ".jpg"
@@ -6867,18 +6954,22 @@ Public Class Settings
         MovieGeneralCustomMarker2Name = String.Empty
         MovieGeneralCustomMarker3Name = String.Empty
         MovieGeneralCustomMarker4Name = String.Empty
+        MovieGeneralCustomScrapeButtonEnabled = False
+        MovieGeneralCustomScrapeButtonModifierType = Enums.ModifierType.All
+        MovieGeneralCustomScrapeButtonScrapeType = Enums.ScrapeType.NewSkip
         MovieGeneralFlagLang = String.Empty
         MovieGeneralIgnoreLastScan = True
-        MovieGeneralLanguage = "en"
+        MovieGeneralLanguage = "en-US"
         MovieGeneralMarkNew = False
         MovieGeneralMediaListSorting = New List(Of ListSorting)
         MovieImagesCacheEnabled = False
         MovieImagesDisplayImageSelect = True
+        MovieImagesForcedLanguage = "en"
+        MovieImagesForceLanguage = False
         MovieImagesGetBlankImages = False
         MovieImagesGetEnglishImages = False
         MovieImagesMediaLanguageOnly = False
         MovieImagesNotSaveURLToNfo = False
-        MovieImagesPrefLanguage = "en"
         MovieIMDBURL = String.Empty
         MovieLandscapeKeepExisting = False
         MovieLevTolerance = 0
@@ -6939,10 +7030,11 @@ Public Class Settings
         MovieScraperCleanPlotOutline = False
         MovieScraperCollectionID = True
         MovieScraperCollectionsAuto = True
+        MovieScraperCollectionsExtendedInfo = False
+        MovieScraperCollectionsYAMJCompatibleSets = False
         MovieScraperCountry = True
         MovieScraperDirector = True
         MovieScraperDurationRuntimeFormat = "<m>"
-        MovieScraperReleaseFormat = False
         MovieScraperGenre = True
         MovieScraperGenreLimit = 0
         MovieScraperMetaDataIFOScan = True
@@ -6991,10 +7083,15 @@ Public Class Settings
         MovieSetFanartPrefSize = Enums.MovieFanartSize.Any
         MovieSetFanartResize = False
         MovieSetFanartWidth = 0
+        MovieSetGeneralCustomScrapeButtonEnabled = False
+        MovieSetGeneralCustomScrapeButtonModifierType = Enums.ModifierType.All
+        MovieSetGeneralCustomScrapeButtonScrapeType = Enums.ScrapeType.NewSkip
         MovieSetGeneralMarkNew = False
         MovieSetGeneralMediaListSorting = New List(Of ListSorting)
         MovieSetImagesCacheEnabled = False
         MovieSetImagesDisplayImageSelect = True
+        MovieSetImagesForcedLanguage = "en"
+        MovieSetImagesForceLanguage = False
         MovieSetImagesGetBlankImages = False
         MovieSetImagesGetEnglishImages = False
         MovieSetImagesMediaLanguageOnly = False
@@ -7088,21 +7185,24 @@ Public Class Settings
         TVEpisodeProperCase = True
         TVGeneralClickScrape = False
         TVGeneralClickScrapeAsk = False
+        TVGeneralCustomScrapeButtonEnabled = False
+        TVGeneralCustomScrapeButtonModifierType = Enums.ModifierType.All
+        TVGeneralCustomScrapeButtonScrapeType = Enums.ScrapeType.NewSkip
         TVGeneralEpisodeListSorting = New List(Of ListSorting)
         TVGeneralFlagLang = String.Empty
         TVGeneralIgnoreLastScan = True
-        TVGeneralLanguage = "en"
-        TVGeneralLanguages = New clsXMLTVDBLanguages
+        TVGeneralLanguage = "en-US"
         TVGeneralMarkNewEpisodes = False
         TVGeneralMarkNewShows = False
         TVGeneralSeasonListSorting = New List(Of ListSorting)
         TVGeneralShowListSorting = New List(Of ListSorting)
         TVImagesCacheEnabled = True
         TVImagesDisplayImageSelect = True
+        TVImagesForcedLanguage = "en"
+        TVImagesForceLanguage = False
         TVImagesGetBlankImages = False
         TVImagesGetEnglishImages = False
         TVImagesMediaLanguageOnly = False
-        TVImagesPrefLanguage = "en"
         TVLockEpisodeActors = False
         TVLockEpisodeAired = False
         TVLockEpisodeCredits = False
@@ -7146,7 +7246,7 @@ Public Class Settings
         TVScraperEpisodeRuntime = True
         TVScraperEpisodeTitle = True
         TVScraperMetaDataScan = True
-        TVScraperOptionsOrdering = Enums.Ordering.Standard
+        TVScraperOptionsOrdering = Enums.EpisodeOrdering.Standard
         TVScraperSeasonAired = True
         TVScraperSeasonPlot = True
         TVScraperSeasonTitle = False
@@ -7254,8 +7354,6 @@ Public Class Settings
         TVSortTokensIsEmpty = False
         Username = String.Empty
         Version = String.Empty
-
-        LoadTVLanguages()
     End Sub
 
     Public Sub SetDefaultsForLists(ByVal Type As Enums.DefaultType, ByVal Force As Boolean)
@@ -7265,9 +7363,13 @@ Public Class Settings
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]tt\d*")            'IMDB ID
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]blu[\W_]?ray.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]bd[\W_]?rip.*")
+            Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]3d.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]dvd.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]720.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]1080.*")
+            Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]1440.*")
+            Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]2160.*")
+            Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]4k.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]ac3.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]dts.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]divx.*")
@@ -7278,6 +7380,7 @@ Public Class Settings
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]hd(tv)?.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]unrated.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]uncut.*")
+            Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]german.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]([a-z]{3}|multi)[sd]ub.*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]\[offline\].*")
             Master.eSettings.MovieFilterCustom.Add("(?i)[\W_]ntsc.*")
@@ -7298,7 +7401,10 @@ Public Class Settings
             Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]bd[\W_]?rip.*")
             Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]dvd.*")
             Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]720.*")
-            Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]1080.*") 'not really needed because the year title will catch this one, but just in case a user doesn't want the year filter but wants to filter 1080
+            Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]1080.*")
+            Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]1440.*")
+            Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]2160.*")
+            Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]4k.*")
             Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]ac3.*")
             Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]dts.*")
             Master.eSettings.TVShowFilterCustom.Add("(?i)[\W_]divx.*")
@@ -7328,7 +7434,10 @@ Public Class Settings
             Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]bd[\W_]?rip.*")
             Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]dvd.*")
             Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]720.*")
-            Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]1080.*") 'not really needed because the year title will catch this one, but just in case a user doesn't want the year filter but wants to filter 1080
+            Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]1080.*")
+            Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]1440.*")
+            Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]2160.*")
+            Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]4k.*")
             Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]ac3.*")
             Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]dts.*")
             Master.eSettings.TVEpisodeFilterCustom.Add("(?i)[\W_]divx.*")
@@ -7345,6 +7454,7 @@ Public Class Settings
             Master.eSettings.TVEpisodeFilterCustom.Add("[\W_]PAL[\W_]?.*")
             Master.eSettings.TVEpisodeFilterCustom.Add("\.[->] ")               'convert dots to space
             Master.eSettings.TVEpisodeFilterCustom.Add("_[->] ")                'convert underscore to space
+            Master.eSettings.TVEpisodeFilterCustom.Add(" - [->] ")                'convert space-minus-space to space
         End If
 
         If (Type = Enums.DefaultType.All OrElse Type = Enums.DefaultType.MovieSortTokens) AndAlso (Force OrElse (Master.eSettings.MovieSortTokens.Count <= 0 AndAlso Not Master.eSettings.MovieSortTokensIsEmpty)) Then
@@ -7410,23 +7520,24 @@ Public Class Settings
             Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 2, .Hide = True, .Column = "Year", .LabelID = 278, .LabelText = "Year"})
             Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 3, .Hide = True, .Column = "MPAA", .LabelID = 401, .LabelText = "MPAA"})
             Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 4, .Hide = True, .Column = "Rating", .LabelID = 400, .LabelText = "Rating"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 5, .Hide = True, .Column = "Imdb", .LabelID = 61, .LabelText = "IMDB ID"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 6, .Hide = True, .Column = "TMDB", .LabelID = 933, .LabelText = "TMDB ID"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 7, .Hide = False, .Column = "NfoPath", .LabelID = 150, .LabelText = "NFO"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 8, .Hide = False, .Column = "BannerPath", .LabelID = 838, .LabelText = "Banner"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 9, .Hide = False, .Column = "ClearArtPath", .LabelID = 1096, .LabelText = "ClearArt"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 10, .Hide = False, .Column = "ClearLogoPath", .LabelID = 1097, .LabelText = "ClearLogo"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 11, .Hide = False, .Column = "DiscArtPath", .LabelID = 1098, .LabelText = "DiscArt"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 12, .Hide = False, .Column = "EFanartsPath", .LabelID = 992, .LabelText = "Extrafanarts"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 13, .Hide = False, .Column = "EThumbsPath", .LabelID = 153, .LabelText = "Extrathumbs"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 14, .Hide = False, .Column = "FanartPath", .LabelID = 149, .LabelText = "Fanart"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 15, .Hide = False, .Column = "LandscapePath", .LabelID = 1035, .LabelText = "Landscape"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 16, .Hide = False, .Column = "PosterPath", .LabelID = 148, .LabelText = "Poster"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 17, .Hide = False, .Column = "HasSub", .LabelID = 152, .LabelText = "Subtitles"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 18, .Hide = False, .Column = "ThemePath", .LabelID = 1118, .LabelText = "Theme"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 19, .Hide = False, .Column = "TrailerPath", .LabelID = 151, .LabelText = "Trailer"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 20, .Hide = False, .Column = "HasSet", .LabelID = 1295, .LabelText = "Part of a MovieSet"})
-            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 21, .Hide = False, .Column = "Playcount", .LabelID = 981, .LabelText = "Watched"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 5, .Hide = True, .Column = "Top250", .LabelID = -1, .LabelText = "Top250"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 6, .Hide = True, .Column = "Imdb", .LabelID = 61, .LabelText = "IMDB ID"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 7, .Hide = True, .Column = "TMDB", .LabelID = 933, .LabelText = "TMDB ID"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 8, .Hide = False, .Column = "NfoPath", .LabelID = 150, .LabelText = "NFO"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 9, .Hide = False, .Column = "BannerPath", .LabelID = 838, .LabelText = "Banner"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 10, .Hide = False, .Column = "ClearArtPath", .LabelID = 1096, .LabelText = "ClearArt"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 11, .Hide = False, .Column = "ClearLogoPath", .LabelID = 1097, .LabelText = "ClearLogo"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 12, .Hide = False, .Column = "DiscArtPath", .LabelID = 1098, .LabelText = "DiscArt"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 13, .Hide = False, .Column = "EFanartsPath", .LabelID = 992, .LabelText = "Extrafanarts"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 14, .Hide = False, .Column = "EThumbsPath", .LabelID = 153, .LabelText = "Extrathumbs"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 15, .Hide = False, .Column = "FanartPath", .LabelID = 149, .LabelText = "Fanart"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 16, .Hide = False, .Column = "LandscapePath", .LabelID = 1035, .LabelText = "Landscape"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 17, .Hide = False, .Column = "PosterPath", .LabelID = 148, .LabelText = "Poster"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 18, .Hide = False, .Column = "HasSub", .LabelID = 152, .LabelText = "Subtitles"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 19, .Hide = False, .Column = "ThemePath", .LabelID = 1118, .LabelText = "Theme"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 20, .Hide = False, .Column = "TrailerPath", .LabelID = 151, .LabelText = "Trailer"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 21, .Hide = False, .Column = "HasSet", .LabelID = 1295, .LabelText = "Part of a MovieSet"})
+            Master.eSettings.MovieGeneralMediaListSorting.Add(New ListSorting With {.DisplayIndex = 22, .Hide = False, .Column = "iLastPlayed", .LabelID = 981, .LabelText = "Watched"})
         End If
 
         If (Type = Enums.DefaultType.All OrElse Type = Enums.DefaultType.MovieSetListSorting) AndAlso (Force OrElse Master.eSettings.MovieSetGeneralMediaListSorting.Count <= 0) Then
@@ -7735,92 +7846,6 @@ Public Class Settings
         Return TVShowThemeTvTunesEnable AndAlso (TVShowThemeTvTunesShowPath OrElse (TVShowThemeTvTunesCustom AndAlso Not String.IsNullOrEmpty(TVShowThemeTvTunesCustomPath) OrElse (TVShowThemeTvTunesSub AndAlso Not String.IsNullOrEmpty(TVShowThemeTvTunesSubDir))))
     End Function
 
-    Private Shared Function CompareLanguagesLong(
-        ByVal x As TVDBLanguagesLanguage, ByVal y As TVDBLanguagesLanguage) As Integer
-
-        If x Is Nothing Then
-            If y Is Nothing Then
-                ' If x is Nothing and y is Nothing, they're
-                ' equal.
-                Return 0
-            Else
-                ' If x is Nothing and y is not Nothing, y
-                ' is greater.
-                Return -1
-            End If
-        Else
-            ' If x is not Nothing...
-            '
-            If y Is Nothing Then
-                ' ...and y is Nothing, x is greater.
-                Return 1
-            Else
-                ' ...and y is not Nothing, compare the
-                ' lengths of the two strings.
-                '
-
-                'Dim retval As Integer = _
-                '    x.LongLang.Length.CompareTo(y.LongLang.Length)
-
-                'If retval <> 0 Then
-                '    ' If the strings are not of equal length,
-                '    ' the longer string is greater.
-                '    '
-                '    Return retval
-                'Else
-                '    ' If the strings are of equal length,
-                '    ' sort them with ordinary string comparison.
-                '    '
-                Return x.name.CompareTo(y.name)
-                'End If
-            End If
-        End If
-
-    End Function
-
-    Private Shared Function CompareLanguagesShort(
-        ByVal x As TVDBLanguagesLanguage, ByVal y As TVDBLanguagesLanguage) As Integer
-
-        If x Is Nothing Then
-            If y Is Nothing Then
-                ' If x is Nothing and y is Nothing, they're
-                ' equal.
-                Return 0
-            Else
-                ' If x is Nothing and y is not Nothing, y
-                ' is greater.
-                Return -1
-            End If
-        Else
-            ' If x is not Nothing...
-            '
-            If y Is Nothing Then
-                ' ...and y is Nothing, x is greater.
-                Return 1
-            Else
-                ' ...and y is not Nothing, compare the
-                ' lengths of the two strings.
-                '
-
-                'Dim retval As Integer = _
-                '    x.ShortLang.Length.CompareTo(y.ShortLang.Length)
-
-                'If retval <> 0 Then
-                '    ' If the strings are not of equal length,
-                '    ' the longer string is greater.
-                '    '
-                '    Return retval
-                'Else
-                '    ' If the strings are of equal length,
-                '    ' sort them with ordinary string comparison.
-                '    '
-                Return x.abbreviation.CompareTo(y.abbreviation)
-                'End If
-            End If
-        End If
-
-    End Function
-
 #End Region 'Methods
 
 #Region "Nested Types"
@@ -7830,7 +7855,7 @@ Public Class Settings
 #Region "Fields"
 
         Private _filetype As String
-        Private _metadata As MediaInfo.Fileinfo
+        Private _metadata As MediaContainers.Fileinfo
 
 #End Region 'Fields
 
@@ -7853,11 +7878,11 @@ Public Class Settings
             End Set
         End Property
 
-        Public Property MetaData() As MediaInfo.Fileinfo
+        Public Property MetaData() As MediaContainers.Fileinfo
             Get
                 Return _metadata
             End Get
-            Set(ByVal value As MediaInfo.Fileinfo)
+            Set(ByVal value As MediaContainers.Fileinfo)
                 _metadata = value
             End Set
         End Property
@@ -7868,7 +7893,7 @@ Public Class Settings
 
         Public Sub Clear()
             _filetype = String.Empty
-            _metadata = New MediaInfo.Fileinfo
+            _metadata = New MediaContainers.Fileinfo
         End Sub
 
 #End Region 'Methods

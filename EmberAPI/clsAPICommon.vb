@@ -558,20 +558,16 @@ Public Class Enums
 
 #Region "Enumerations"
 
-    Public Enum SortMethod_MovieSet As Integer
-        Year = 0    'default in Kodi, so let's on the first position of enumeration
-        Title = 1
-    End Enum
-    ''' <summary>
-    ''' 0 results in using the current datetime when adding a video
-    ''' 1 results in prefering to use the files mtime (if it's valid) and only using the file's ctime if the mtime isn't valid
-    ''' 2 results in using the newer datetime of the file's mtime and ctime
-    ''' </summary>
-    ''' <remarks></remarks>
-    Public Enum DateTime As Integer
-        Now = 0
-        mtime = 1
-        Newer = 2
+    Public Enum ContentType As Integer
+        None = 0
+        Generic = 1
+        Movie = 2
+        MovieSet = 3
+        Music = 4
+        TV = 5
+        TVEpisode = 6
+        TVSeason = 7
+        TVShow = 8
     End Enum
 
     Public Enum DefaultType As Integer
@@ -593,24 +589,35 @@ Public Class Enums
         MovieSetSortTokens = 15
         TVSortTokens = 16
     End Enum
-
-    Public Enum DelType As Integer
-        Movies = 0
-        Shows = 1
-        Seasons = 2
-        Episodes = 3
+    ''' <summary>
+    ''' 0 results in using the current datetime when adding a video
+    ''' 1 results in prefering to use the files mtime (if it's valid) and only using the file's ctime if the mtime isn't valid
+    ''' 2 results in using the newer datetime of the file's mtime and ctime
+    ''' </summary>
+    ''' <remarks></remarks>
+    Public Enum DateTime As Integer
+        Now = 0
+        ctime = 1
+        mtime = 2
+        Newer = 3
     End Enum
-
-    Public Enum ContentType As Integer
-        None = 0
-        Generic = 1
-        Movie = 2
-        MovieSet = 3
-        Music = 4
-        TV = 5
-        TVEpisode = 6
-        TVSeason = 7
-        TVShow = 8
+    ''' <summary>
+    ''' Enum representing valid TV series ordering.
+    ''' </summary>
+    ''' <remarks></remarks>
+    Public Enum EpisodeOrdering As Integer
+        Standard = 0
+        DVD = 1
+        Absolute = 2
+        DayOfYear = 3
+    End Enum
+    ''' <summary>
+    ''' Enum representing Order of displaying Episodes
+    ''' </summary>
+    ''' <remarks></remarks>
+    Public Enum EpisodeSorting As Integer
+        Episode = 0
+        Aired = 1
     End Enum
 
     Public Enum ModifierType As Integer
@@ -655,27 +662,27 @@ Public Class Enums
 
     Public Enum ModuleEventType As Integer
         ''' <summary>
-        ''' Called after edit movie, movie is already saved to DB
+        ''' Called after edit movie
         ''' </summary>
         ''' <remarks></remarks>
         AfterEdit_Movie = 0
         ''' <summary>
-        ''' Called after edit movieset, movie is already saved to DB
+        ''' Called after edit movieset
         ''' </summary>
         ''' <remarks></remarks>
         AfterEdit_MovieSet = 1
         ''' <summary>
-        ''' Called after edit episode, episode is already saved to DB
+        ''' Called after edit episode
         ''' </summary>
         ''' <remarks></remarks>
         AfterEdit_TVEpisode = 2
         ''' <summary>
-        ''' Called after edit season, season is already saved to DB
+        ''' Called after edit season
         ''' </summary>
         ''' <remarks></remarks>
         AfterEdit_TVSeason = 3
         ''' <summary>
-        ''' Called after edit show, show is already saved to DB
+        ''' Called after edit show
         ''' </summary>
         ''' <remarks></remarks>
         AfterEdit_TVShow = 4
@@ -695,88 +702,148 @@ Public Class Enums
         ''' <remarks></remarks>
         BeforeEdit_Movie = 7
         ''' <summary>
+        ''' Called when Manual editing or reading from nfo
+        ''' </summary>
+        ''' <remarks></remarks>
+        BeforeEdit_MovieSet = 8
+        ''' <summary>
+        ''' Called when Manual editing or reading from nfo
+        ''' </summary>
+        ''' <remarks></remarks>
+        BeforeEdit_TVEpisode = 9
+        ''' <summary>
+        ''' Called when Manual editing or reading from nfo
+        ''' </summary>
+        ''' <remarks></remarks>
+        BeforeEdit_TVSeason = 10
+        ''' <summary>
+        ''' Called when Manual editing or reading from nfo
+        ''' </summary>
+        ''' <remarks></remarks>
+        BeforeEdit_TVShow = 11
+        ''' <summary>
         ''' Command Line Module Call
         ''' </summary>
         ''' <remarks></remarks>
-        CommandLine = 8
-        FrameExtrator_Movie = 9
-        FrameExtrator_TVEpisode = 10
-        Generic = 11
-        MediaPlayer_Audio = 12
-        MediaPlayer_Video = 13
-        MediaPlayerPlay_Audio = 14
-        MediaPlayerPlay_Video = 15
-        MediaPlayerPlaylistAdd_Audio = 16
-        MediaPlayerPlaylistAdd_Video = 17
-        MediaPlayerPlaylistClear_Audio = 18
-        MediaPlayerPlaylistClear_Video = 19
-        MediaPlayerStop_Audio = 20
-        MediaPlayerStop_Video = 21
-        Notification = 23
+        CommandLine = 12
+        FrameExtrator_Movie = 13
+        FrameExtrator_TVEpisode = 14
+        Generic = 15
+        MediaPlayer_Audio = 16
+        MediaPlayer_Video = 17
+        MediaPlayerPlay_Audio = 18
+        MediaPlayerPlay_Video = 19
+        MediaPlayerPlaylistAdd_Audio = 20
+        MediaPlayerPlaylistAdd_Video = 21
+        MediaPlayerPlaylistClear_Audio = 22
+        MediaPlayerPlaylistClear_Video = 23
+        MediaPlayerStop_Audio = 24
+        MediaPlayerStop_Video = 25
+        Notification = 26
         OnBannerSave_Movie = 24
-        OnClearArtSave_Movie = 25
-        OnClearLogoSave_Movie = 26
-        OnDiscArtSave_Movie = 27
-        OnFanartDelete_Movie = 28
-        OnFanartSave_Movie = 29
-        OnLandscapeSave_Movie = 30
-        OnNFORead_TVShow = 31
-        OnNFOSave_Movie = 32
-        OnNFOSave_TVShow = 33
-        OnPosterDelete_Movie = 34
-        OnPosterSave_Movie = 35
-        OnThemeSave_Movie = 36
-        OnTrailerSave_Movie = 37
-        RandomFrameExtrator = 38
+        OnClearArtSave_Movie = 28
+        OnClearLogoSave_Movie = 29
+        OnDiscArtSave_Movie = 30
+        OnFanartDelete_Movie = 31
+        OnFanartSave_Movie = 32
+        OnLandscapeSave_Movie = 33
+        OnNFORead_TVShow = 34
+        OnNFOSave_Movie = 35
+        OnNFOSave_TVShow = 36
+        OnPosterDelete_Movie = 37
+        OnPosterSave_Movie = 38
+        OnThemeSave_Movie = 39
+        OnTrailerSave_Movie = 40
+        RandomFrameExtrator = 41
+        Remove_Movie = 42
+        Remove_MovieSet = 43
+        Remove_TVEpisode = 44
+        Remove_TVSeason = 45
+        Remove_TVShow = 46
         ''' <summary>
-        ''' Called when auto scraper finishs but before save to DB
+        ''' Called during auto scraping
         ''' </summary>
         ''' <remarks></remarks>
-        ScraperMulti_Movie = 39
+        ScraperMulti_Movie = 47
         ''' <summary>
-        ''' Called when auto scraper finishs but before save to DB
+        ''' Called during auto scraping
         ''' </summary>
         ''' <remarks></remarks>
-        ScraperMulti_TVEpisode = 40
+        ScraperMulti_TVEpisode = 48
         ''' <summary>
-        ''' Called when single scraper finishs, movie is already saved to DB
+        ''' Called during manual scraping
         ''' </summary>
         ''' <remarks></remarks>
-        ScraperSingle_Movie = 41
+        ScraperSingle_Movie = 49
         ''' <summary>
-        ''' Called when single scraper finishs, episode is already saved to DB
+        ''' Called during manual scraping
         ''' </summary>
         ''' <remarks></remarks>
-        ScraperSingle_TVEpisode = 42
-        ShowMovie = 43
-        ShowTVShow = 44
-        SyncModuleSettings = 45
-        Sync_Movie = 46
-        Sync_MovieSet = 47
-        Sync_TVEpisode = 48
-        Sync_TVSeason = 49
-        Sync_TVShow = 50
-        Task = 51
+        ScraperSingle_TVEpisode = 50
+        ShowMovie = 51
+        ShowTVShow = 52
+        SyncModuleSettings = 53
+        Sync_Movie = 54
+        Sync_MovieSet = 55
+        Sync_TVEpisode = 56
+        Sync_TVSeason = 57
+        Sync_TVShow = 58
+        Task = 59
         ''' <summary>
-        ''' Called when auto scraper finishs but before save to DB
+        ''' Called during auto scraping
         ''' </summary>
         ''' <remarks></remarks>
-        ScraperMulti_TVShow = 53
+        ScraperMulti_TVShow = 60
         ''' <summary>
-        ''' Called when single scraper finishs, tv show is already saved to DB
+        ''' Called during manual scraping
         ''' </summary>
         ''' <remarks></remarks>
-        ScraperSingle_TVShow = 54
+        ScraperSingle_TVShow = 61
         ''' <summary>
-        ''' Called when auto scraper finishs but before save to DB
+        ''' Called during auto scraping
         ''' </summary>
         ''' <remarks></remarks>
-        ScraperMulti_TVSeason = 55
+        ScraperMulti_TVSeason = 62
         ''' <summary>
-        ''' Called when single scraper finishs, tv season is already saved to DB
+        ''' Called during manual scraping
         ''' </summary>
         ''' <remarks></remarks>
-        ScraperSingle_TVSeason = 56
+        ScraperSingle_TVSeason = 63
+        DuringUpdateDB_TV = 64
+    End Enum
+
+    Public Enum MovieBannerSize As Integer
+        HD185 = 0       'Fanart.tv has only 1000x185
+        Any = 99
+    End Enum
+
+    Public Enum MovieFanartSize As Integer
+        UHD2160 = 0
+        QHD1440 = 1
+        HD1080 = 2
+        HD720 = 3
+        Thumb = 4
+        Any = 99
+    End Enum
+
+    Public Enum MoviePosterSize As Integer
+        HD3000 = 0
+        HD2100 = 1
+        HD1500 = 2
+        HD1426 = 3
+        Any = 99
+    End Enum
+
+    Public Enum ScannerEventType As Integer
+        None = 0
+        Added_Movie = 1
+        Added_TVEpisode = 2
+        Added_TVShow = 3
+        CleaningDatabase = 4
+        PreliminaryTasks = 5
+        Refresh_TVShow = 6
+        ScannerEnded = 7
+        ScannerStarted = 8
     End Enum
 
     Public Enum ScraperEventType As Integer
@@ -795,115 +862,105 @@ Public Class Enums
         TrailerItem = 12
     End Enum
     ''' <summary>
-    ''' Enum representing valid TV series ordering.
-    ''' </summary>
-    ''' <remarks></remarks>
-    Public Enum Ordering As Integer
-        Standard = 0
-        DVD = 1
-        Absolute = 2
-        DayOfYear = 3
-    End Enum
-    ''' <summary>
-    ''' Enum representing Order of displaying Episodes
-    ''' </summary>
-    ''' <remarks></remarks>
-    Public Enum EpisodeSorting As Integer
-        Episode = 0
-        Aired = 1
-    End Enum
-    ''' <summary>
     ''' Enum representing which Movies/TVShows should be scraped,
     ''' and whether results should be automatically chosen or asked of the user.
     ''' </summary>
     ''' <remarks></remarks>
     Public Enum ScrapeType As Integer
-        SingleScrape = 0
-        AllAuto = 1
-        AllAsk = 2
-        AllSkip = 3
-        MissingAuto = 4
-        MissingAsk = 5
-        MissingSkip = 6
-        CleanFolders = 7
-        NewAuto = 8
-        NewAsk = 9
-        NewSkip = 10
-        MarkedAuto = 11
-        MarkedAsk = 12
-        MarkedSkip = 13
-        FilterAuto = 14
-        FilterAsk = 15
-        FilterSkip = 16
-        CopyBackdrops = 17
-        SingleField = 18
-        SingleAuto = 19
-        SelectedAuto = 20
-        SelectedAsk = 21
-        SelectedSkip = 22
+        AllAuto = 0
+        AllAsk = 1
+        AllSkip = 2
+        MissingAuto = 3
+        MissingAsk = 4
+        MissingSkip = 5
+        NewAuto = 6
+        NewAsk = 7
+        NewSkip = 8
+        MarkedAuto = 9
+        MarkedAsk = 10
+        MarkedSkip = 11
+        FilterAuto = 12
+        FilterAsk = 13
+        FilterSkip = 14
+        SingleScrape = 15
+        SingleField = 16
+        SingleAuto = 17
+        SelectedAuto = 18
+        SelectedAsk = 19
+        SelectedSkip = 20
         None = 99
     End Enum
 
-    Public Enum MovieBannerSize As Integer
-        Any = 0
-        HD185 = 1       'Fanart.tv has only 1000x185
+    Public Enum SelectionType As Integer
+        All = 0
+        Selected = 1
     End Enum
 
-    Public Enum MovieFanartSize As Integer
-        Any = 0
-        UHD2160 = 1
-        HD1080 = 2
-        HD720 = 3
-        Thumb = 4
+    Public Enum SortMethod_MovieSet As Integer
+        Year = 0    'default in Kodi, so have to be on the first position of enumeration
+        Title = 1
     End Enum
 
-    Public Enum MoviePosterSize As Integer
-        Any = 0
-        HD2100 = 1
-        HD1500 = 2
-        HD1426 = 3
+    Public Enum TaskManagerEventType As Integer
+        RefreshRow = 0
+        SimpleMessage = 1
+        TaskManagerEnded = 2
+        TaskManagerStarted = 3
+    End Enum
+
+    Public Enum TaskManagerType As Integer
+        CopyBackdrops = 0
+        DoTitleCheck = 1
+        GetMissingEpisodes = 2
+        Reload = 3
+        SetLanguage = 4
+        SetLockedState = 5
+        SetMarkedState = 6
+        SetWatchedState = 7
     End Enum
 
     Public Enum TVBannerSize As Integer
-        Any = 0
-        HD185 = 1       'Fanart.tv only 1000x185 (season and tv show banner)
-        HD140 = 2       'TVDB has only 758x140 (season and tv show banner)
+        HD185 = 0       'Fanart.tv only 1000x185 (season and tv show banner)
+        HD140 = 1       'TVDB has only 758x140 (season and tv show banner)
+        Any = 99
     End Enum
 
     Public Enum TVBannerType As Integer
-        Any = 0
-        Blank = 1       'will leave the title and show logo off the banner
-        Graphical = 2   'will show the series name in the show's official font or will display the actual logo for the show
-        Text = 3        'will show the series name as plain text in an Arial font
-    End Enum
-
-    Public Enum TVFanartSize As Integer
-        Any = 0
-        UHD2160 = 1
-        HD1080 = 2      'Fanart.tv has only 1920x1080
-        HD720 = 3       'TVDB has 1280x720 and 1920x1080
-    End Enum
-
-    Public Enum TVPosterSize As Integer
-        Any = 0
-        HD1500 = 1
-        HD1426 = 2      'Fanart.tv has only 1000x1426
-        HD1000 = 3      'TVDB has only 680x1000
+        Blank = 0       'will leave the title and show logo off the banner
+        Graphical = 1   'will show the series name in the show's official font or will display the actual logo for the show
+        Text = 2        'will show the series name as plain text in an Arial font
+        Any = 99
     End Enum
 
     Public Enum TVEpisodePosterSize As Integer
-        Any = 0
-        UHD2160 = 1
-        HD1080 = 2
-        HD720 = 3
-        SD225 = 4      'TVDB has only 400 x 300 (400x225 for 16:9 images)
+        UHD2160 = 0
+        HD1080 = 1
+        HD720 = 2
+        SD225 = 3      'TVDB has only 400 x 300 (400x225 for 16:9 images)
+        Any = 99
+    End Enum
+
+    Public Enum TVFanartSize As Integer
+        UHD2160 = 0
+        QHD1440 = 1
+        HD1080 = 2      'Fanart.tv has only 1920x1080
+        HD720 = 3      'TVDB has 1280x720 and 1920x1080
+        Any = 99
+    End Enum
+
+    Public Enum TVPosterSize As Integer
+        HD3000 = 0
+        HD1500 = 1
+        HD1426 = 2      'Fanart.tv has only 1000x1426
+        HD1000 = 3      'TVDB has only 680x1000
+        Any = 99
     End Enum
 
     Public Enum TVSeasonPosterSize As Integer
-        Any = 0
-        HD1500 = 1
-        HD1426 = 2
-        HD578 = 3
+        HD1500 = 0
+        HD1426 = 1
+        HD578 = 2
+        Any = 99
     End Enum
     ''' <summary>
     ''' Enum representing the trailer codec options
@@ -912,31 +969,31 @@ Public Class Enums
     Public Enum TrailerAudioCodec As Integer
         MP4 = 0
         WebM = 1
-        UNKNOWN = 2
+        UNKNOWN = 99
     End Enum
     ''' <summary>
     ''' Enum representing the trailer quality options
     ''' </summary>
     ''' <remarks></remarks>
     Public Enum TrailerAudioQuality As Integer
-        Any = 0
-        AAC256kbps = 1
-        AAC128kbps = 2
-        AAC48kbps = 3
-        Vorbis192kbps = 4
-        Vorbis128kbps = 5
-        UNKNOWN = 6
+        AAC256kbps = 0
+        AAC128kbps = 1
+        AAC48kbps = 2
+        Vorbis192kbps = 3
+        Vorbis128kbps = 4
+        UNKNOWN = 5
+        Any = 99
     End Enum
     ''' <summary>
     ''' Enum representing the trailer type options
     ''' </summary>
     ''' <remarks></remarks>
     Public Enum TrailerType As Integer
-        Any = 0
-        Clip = 1
-        Featurette = 2
-        Teaser = 3
-        Trailer = 4
+        Clip = 0
+        Featurette = 1
+        Teaser = 2
+        Trailer = 3
+        Any = 99
     End Enum
     ''' <summary>
     ''' Enum representing the trailer codec options
@@ -954,20 +1011,20 @@ Public Class Enums
     ''' </summary>
     ''' <remarks></remarks>
     Public Enum TrailerVideoQuality As Integer
-        Any = 0
-        HD2160p = 1
-        HD2160p60fps = 2
-        HD1440p = 3
-        HD1080p = 4
-        HD1080p60fps = 5
-        HD720p = 6
-        HD720p60fps = 7
-        HQ480p = 8 'or 576 for 4:3 media
-        SQ360p = 9
-        SQ240p = 10 'or 270
-        SQ144p = 11
-        SQ144p15fps = 12
-        UNKNOWN = 13
+        HD2160p = 0
+        HD2160p60fps = 1
+        HD1440p = 2
+        HD1080p = 3
+        HD1080p60fps = 4
+        HD720p = 5
+        HD720p60fps = 6
+        HQ480p = 7 'or 576 for 4:3 media
+        SQ360p = 8
+        SQ240p = 9 'or 270
+        SQ144p = 10
+        SQ144p15fps = 11
+        UNKNOWN = 12
+        Any = 99
     End Enum
 
 #End Region 'Enumerations
@@ -1092,6 +1149,17 @@ Public Class Functions
         Dim origin As DateTime = New DateTime(1970, 1, 1, 0, 0, 0, 0)
         Dim diff As System.TimeSpan = data - origin
         Return Math.Floor(diff.TotalSeconds)
+    End Function
+
+    Public Shared Function ConvertToProperDateTime(ByVal strDateTime As String) As String
+        If String.IsNullOrEmpty(strDateTime) Then Return String.Empty
+
+        Dim parsedDateTime As DateTime
+        If DateTime.TryParse(strDateTime, parsedDateTime) Then
+            Return parsedDateTime.ToString("yyyy-MM-dd HH:mm:ss")
+        Else
+            Return String.Empty
+        End If
     End Function
     ''' <summary>
     ''' Create a collection of default Movie and TV scrape options
@@ -1228,7 +1296,7 @@ Public Class Functions
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Failed trying to identify last Extrafanart from path: " & sPath, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Failed trying to identify last Extrafanart from path: " & sPath)
         End Try
 
         Return iMod
@@ -1261,7 +1329,7 @@ Public Class Functions
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Failed trying to identify last Extrathumb from path: " & sPath, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Failed trying to identify last Extrathumb from path: " & sPath)
         End Try
 
         Return iMod
@@ -1331,7 +1399,7 @@ Public Class Functions
                                 Return sDir.FullName
                             End If
                         Catch ex As Exception
-                            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & " Failed to determine path for season " & iSeason & " in path: " & ShowPath, ex)
+                            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & " Failed to determine path for season " & iSeason & " in path: " & ShowPath)
                         End Try
                     Next
                 Next
@@ -1339,6 +1407,41 @@ Public Class Functions
         End If
         'no matches
         Return String.Empty
+    End Function
+
+    Public Shared Function GetWindowsClientVersion() As String
+        Dim major As Integer = System.Environment.OSVersion.Version.Major
+        Dim minor As Integer = System.Environment.OSVersion.Version.Minor
+        Dim build As Integer = System.Environment.OSVersion.Version.Build
+        If major = 4 AndAlso minor = 0 AndAlso build = 950 Then
+            Return "Win95 Release 1"
+        ElseIf major = 4 AndAlso minor = 0 AndAlso build = 1111 Then
+            Return "Win95 Release 2"
+        ElseIf major = 4 AndAlso minor = 3 AndAlso (build = 1212 OrElse build = 1213 OrElse build = 1214) Then
+            Return "Win95 Release 2.1"
+        ElseIf major = 4 AndAlso minor = 10 AndAlso build = 1998 Then
+            Return "Win98"
+        ElseIf major = 4 AndAlso minor = 10 AndAlso build = 2222 Then
+            Return "Win98 Second Edition"
+        ElseIf major = 4 AndAlso minor = 90 Then
+            Return "WinMe"
+        ElseIf major = 5 AndAlso minor = 0 Then
+            Return "Win2000"
+        ElseIf major = 5 AndAlso minor = 1 AndAlso build = 2600 Then
+            Return "WinXP"
+        ElseIf major = 6 AndAlso minor = 0 Then
+            Return "Vista"
+        ElseIf major = 6 AndAlso minor = 1 Then
+            Return "Win7"
+        ElseIf major = 6 AndAlso minor = 2 AndAlso build = 9200 Then
+            Return "Win8"
+        ElseIf major = 6 AndAlso minor = 2 AndAlso build = 9600 Then
+            Return "Win8"
+        ElseIf major = 10 AndAlso minor = 0 AndAlso build = 10240 Then
+            Return "Win10"
+        Else
+            Return "Can not find os version."
+        End If
     End Function
     ''' <summary>
     ''' Determine whether the supplied path is already defined as a TV Show season subdirectory
@@ -1495,6 +1598,7 @@ Public Class Functions
         FilteredModifiers.SeasonBanner = Options.SeasonBanner AndAlso Options2.SeasonBanner
         FilteredModifiers.SeasonFanart = Options.SeasonFanart AndAlso Options2.SeasonFanart
         FilteredModifiers.SeasonLandscape = Options.SeasonLandscape AndAlso Options2.SeasonLandscape
+        FilteredModifiers.SeasonNFO = Options.SeasonNFO AndAlso Options2.SeasonNFO
         FilteredModifiers.SeasonPoster = Options.SeasonPoster AndAlso Options2.SeasonPoster
         FilteredModifiers.withEpisodes = Options.withEpisodes AndAlso Options2.withEpisodes
         FilteredModifiers.withSeasons = Options.withSeasons AndAlso Options2.withSeasons
@@ -1670,7 +1774,7 @@ Public Class Functions
                 End Using
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Could not launch <" & Destination & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Could not launch <" & Destination & ">")
             Return False
         End Try
         'If you got here, everything went fine
@@ -1701,7 +1805,7 @@ Public Class Functions
             'End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Could not launch <" & dllPath & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Could not launch <" & dllPath & ">")
         End Try
     End Sub
 
@@ -1748,7 +1852,7 @@ Public Class Functions
                 My_Process.Close()
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Could not launch <" & Process_Name & ">", ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Could not launch <" & Process_Name & ">")
         End Try
 
         Return OutputString

@@ -34,7 +34,7 @@ Namespace GoEar
         Shared logger As Logger = NLog.LogManager.GetCurrentClassLogger()
         Private originaltitle As String
         Private listtitle As String
-        Private _themelist As New List(Of Themes)
+        Private _themelist As New List(Of MediaContainers.Theme)
 
 #End Region 'Fields
 
@@ -51,11 +51,11 @@ Namespace GoEar
 
 #Region "Properties"
 
-        Public Property ThemeList() As List(Of Themes)
+        Public Property ThemeList() As List(Of MediaContainers.Theme)
             Get
                 Return _themelist
             End Get
-            Set(ByVal value As List(Of Themes))
+            Set(ByVal value As List(Of MediaContainers.Theme))
                 _themelist = value
             End Set
         End Property
@@ -65,7 +65,7 @@ Namespace GoEar
 #Region "Methods"
 
         Private Sub Clear()
-            _themelist = New List(Of Themes)
+            _themelist = New List(Of MediaContainers.Theme)
         End Sub
 
         Private Sub GetMovieThemes()
@@ -75,10 +75,10 @@ Namespace GoEar
             Dim SearchURL As String
 
             If Not String.IsNullOrEmpty(originaltitle) Then
-                SearchTitle = Web.HttpUtility.UrlEncode(originaltitle)
+                SearchTitle = HttpUtility.UrlEncode(originaltitle)
                 SearchURL = String.Concat(BaseURL, SearchTitle)
             ElseIf Not String.IsNullOrEmpty(listtitle) Then
-                SearchTitle = Web.HttpUtility.UrlEncode(listtitle)
+                SearchTitle = HttpUtility.UrlEncode(listtitle)
                 SearchURL = String.Concat(BaseURL, SearchTitle)
             Else
                 SearchURL = String.Empty
@@ -91,42 +91,41 @@ Namespace GoEar
                     Dim tWebURL As String = String.Empty
                     Dim tURL As String = String.Empty
                     Dim tDescription As String = String.Empty
-                    Dim tLength As String = String.Empty
+                    Dim tDuration As String = String.Empty
                     Dim tBitrate As String = String.Empty
 
                     Dim sHTTP As New HTTP
                     Dim Html As String = sHTTP.DownloadData(SearchURL)
                     sHTTP = Nothing
 
-                    Dim rPattern As String = "<div class=""board search_board"">(?<RESULTS>.*?)</ol>"
-                    Dim sPattern As String = "<li class=""board_item sound_item group"">.*?redir=""(?<URL>.*?)"">.*?<a title=.*?>(?<TITLE>.*?)<\/a>.*?<li class=""band""><.*?>(?<DESCRIPTION>.*?)<\/a>.*?<li class=""stats length.*?>(?<LENGTH>.*?)<.*?title=""Kbps"">(?<BITRATE>.*?) <"
+                    Dim strPatternSearchResultsArea As String = "<div class=""board search_board"">(?<RESULTS>.*?)</ol>"
 
-                    Dim rResult As MatchCollection = Regex.Matches(Html, rPattern, RegexOptions.Singleline)
+                    Dim regResultResultsArea As MatchCollection = Regex.Matches(Html, strPatternSearchResultsArea, RegexOptions.Singleline)
 
-                    If rResult.Count > 0 Then
-                        Dim sHTML As String = rResult.Item(0).Groups(1).Value
+                    If regResultResultsArea.Count > 0 Then
+                        Dim strPatternSearchResults As String = "<li class=""board_item sound_item group"">(.*?)<\/div>.*?<\/li>"
 
-                        Dim sResult As MatchCollection = Regex.Matches(sHTML, sPattern, RegexOptions.Singleline Or RegexOptions.IgnoreCase)
+                        Dim regSearchResults As MatchCollection = Regex.Matches(regResultResultsArea.Item(0).Groups("RESULTS").Value, strPatternSearchResults, RegexOptions.Singleline Or RegexOptions.IgnoreCase)
+                        For ctr As Integer = 0 To regSearchResults.Count - 1
+                            Dim strPatternDetails As String = "redir=""(?<URL>.*?)"">.*?soundid=""(?<ID>.*?)"" title=""(?<TITLE>.*?)"" artist=""(?<DESCRIPTION>.*?)"".*?length"" title="".*?>(?<DURATION>.*?)<.*?kbps"" title=""Kbps"".*?>(?<BITRATE>.*?)<"
 
-                        For ctr As Integer = 0 To sResult.Count - 1
-                            tWebURL = Web.HttpUtility.HtmlDecode(sResult.Item(ctr).Groups(1).Value)
-                            tTitle = sResult.Item(ctr).Groups(2).Value
-                            tDescription = sResult.Item(ctr).Groups(3).Value
-                            tLength = sResult.Item(ctr).Groups(4).Value
-                            tBitrate = sResult.Item(ctr).Groups(5).Value
-                            tID = GetFileID(tWebURL)
-                            tURL = String.Concat(DownloadURL, tID)
+                            Dim regDetails As Match = Regex.Match(regSearchResults.Item(ctr).Value, strPatternDetails, RegexOptions.Singleline Or RegexOptions.IgnoreCase)
+                            tWebURL = HttpUtility.HtmlDecode(regDetails.Groups("URL").Value).Trim
+                            tTitle = regDetails.Groups("TITLE").Value.Trim
+                            tDescription = regDetails.Groups("DESCRIPTION").Value.Trim
+                            tDuration = regDetails.Groups("DURATION").Value.Trim
+                            tBitrate = regDetails.Groups("BITRATE").Value.Trim
+                            tID = regDetails.Groups("ID").Value.Trim
+                            tURL = String.Concat(DownloadURL, tID).Trim
 
                             If Not String.IsNullOrEmpty(tID) Then
-                                _themelist.Add(New Themes With {.Title = tTitle, .ID = tID, .URL = tURL, .Description = tDescription, .Duration = tLength, .Bitrate = tBitrate, .WebURL = tWebURL})
+                                _themelist.Add(New MediaContainers.Theme With {.URLAudioStream = tURL, .Description = tTitle, .Duration = tDuration, .Bitrate = tBitrate, .URLWebsite = tWebURL, .Scraper = "GoEar"})
                             End If
                         Next
                     End If
                 End If
-
-
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
         End Sub

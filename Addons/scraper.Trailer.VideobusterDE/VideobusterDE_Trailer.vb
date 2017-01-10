@@ -116,12 +116,12 @@ Public Class VideobusterDE_Trailer
 
     Sub LoadSettings()
 
-        ConfigScrapeModifiers.MainTrailer = clsAdvancedSettings.GetBooleanSetting("DoTrailer", True)
+        ConfigScrapeModifiers.MainTrailer = AdvancedSettings.GetBooleanSetting("DoTrailer", True)
 
     End Sub
 
-    Function Scraper(ByRef DBMovie As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef TrailerList As List(Of MediaContainers.Trailer)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Trailer_Movie.Scraper
-        logger.Trace("Started scrape", New StackTrace().ToString())
+    Function Scraper_Movie(ByRef DBMovie As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef TrailerList As List(Of MediaContainers.Trailer)) As Interfaces.ModuleResult Implements Interfaces.ScraperModule_Trailer_Movie.Scraper
+        logger.Trace("[VideobusterDE_Trailer] [Scraper_Movie] [Start]")
 
         LoadSettings()
 
@@ -137,12 +137,12 @@ Public Class VideobusterDE_Trailer
             TrailerList = _scraper.GetTrailers(strTitle)
         End If
 
-        logger.Trace("Finished scrape", New StackTrace().ToString())
+        logger.Trace("[VideobusterDE_Trailer] [Scraper_Movie] [Done]")
         Return New Interfaces.ModuleResult With {.breakChain = False}
     End Function
 
     Sub SaveSettings()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoTrailer", ConfigScrapeModifiers.MainTrailer)
         End Using
     End Sub

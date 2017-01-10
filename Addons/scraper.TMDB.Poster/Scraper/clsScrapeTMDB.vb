@@ -46,7 +46,7 @@ Namespace TMDB
                 _TMDBApi.GetConfig()
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
         End Sub
 
@@ -60,10 +60,10 @@ Namespace TMDB
                 Dim APIResult As Task(Of TMDbLib.Objects.General.ImagesWithId)
 
                 If ContentType = Enums.ContentType.Movie Then
-                    APIResult = Task.Run(Function() _TMDBApi.GetMovieImages(CInt(TMDBID)))
+                    APIResult = Task.Run(Function() _TMDBApi.GetMovieImagesAsync(CInt(TMDBID)))
                     Results = APIResult.Result
                 ElseIf ContentType = Enums.ContentType.MovieSet Then
-                    APIResult = Task.Run(Function() _TMDBApi.GetCollectionImages(CInt(TMDBID)))
+                    APIResult = Task.Run(Function() _TMDBApi.GetCollectionImagesAsync(CInt(TMDBID)))
                     Results = APIResult.Result
                 End If
 
@@ -110,7 +110,7 @@ Namespace TMDB
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return alImagesContainer
@@ -124,7 +124,7 @@ Namespace TMDB
             Try
 
                 Dim APIResult As Task(Of TMDbLib.Objects.TvShows.TvShow)
-                APIResult = Task.Run(Function() _TMDBApi.GetTvShow(CInt(tmdbID), TMDbLib.Objects.TvShows.TvShowMethods.Images))
+                APIResult = Task.Run(Function() _TMDBApi.GetTvShowAsync(CInt(tmdbID), TMDbLib.Objects.TvShows.TvShowMethods.Images))
 
                 If APIResult Is Nothing Then
                     Return Nothing
@@ -174,7 +174,7 @@ Namespace TMDB
                 If (FilteredModifiers.SeasonPoster OrElse FilteredModifiers.EpisodePoster) AndAlso Result.Seasons IsNot Nothing Then
                     For Each tSeason In Result.Seasons
                         Dim APIResult_Season As Task(Of TMDbLib.Objects.TvShows.TvSeason)
-                        APIResult_Season = Task.Run(Function() _TMDBApi.GetTvSeason(CInt(tmdbID), tSeason.SeasonNumber, TMDbLib.Objects.TvShows.TvSeasonMethods.Images))
+                        APIResult_Season = Task.Run(Function() _TMDBApi.GetTvSeasonAsync(CInt(tmdbID), tSeason.SeasonNumber, TMDbLib.Objects.TvShows.TvSeasonMethods.Images))
 
                         If APIResult_Season IsNot Nothing Then
                             Dim Result_Season As TMDbLib.Objects.TvShows.TvSeason = APIResult_Season.Result
@@ -238,92 +238,8 @@ Namespace TMDB
                     Next
                 End If
 
-
-                'Dim Results As TMDbLib.Objects.General.ImagesWithId = Nothing
-                'Dim APIResult As Task(Of TMDbLib.Objects.General.ImagesWithId)
-                'APIResult = Task.Run(Function() _TMDBApi.GetTvShowImages(CInt(tmdbID)))
-
-                'Results = APIResult.Result
-
-                'If Results Is Nothing Then
-                '    Return Nothing
-                'End If
-
-                ''MainFanart
-                'If FilteredModifier.MainFanart AndAlso Results.Backdrops IsNot Nothing Then
-                '    For Each image In Results.Backdrops
-                '        Dim tmpImage As New MediaContainers.Image With {
-                '            .Height = image.Height.ToString,
-                '            .Likes = 0,
-                '            .LongLang = If(String.IsNullOrEmpty(image.Iso_639_1), String.Empty, Localization.ISOGetLangByCode2(image.Iso_639_1)),
-                '            .Scraper = "TMDB",
-                '            .ShortLang = If(String.IsNullOrEmpty(image.Iso_639_1), String.Empty, image.Iso_639_1),
-                '            .URLOriginal = _TMDBApi.Config.Images.BaseUrl & "original" & image.FilePath,
-                '            .URLThumb = _TMDBApi.Config.Images.BaseUrl & "w300" & image.FilePath,
-                '            .VoteAverage = image.VoteAverage.ToString,
-                '            .VoteCount = image.VoteCount,
-                '            .Width = image.Width.ToString}
-
-                '        alContainer.MainFanarts.Add(tmpImage)
-                '    Next
-                'End If
-
-                ''MainPoster
-                'If FilteredModifier.MainPoster AndAlso Results.Posters IsNot Nothing Then
-                '    For Each image In Results.Posters
-                '        Dim tmpImage As New MediaContainers.Image With {
-                '                .Height = image.Height.ToString,
-                '                .Likes = 0,
-                '                .LongLang = If(String.IsNullOrEmpty(image.Iso_639_1), String.Empty, Localization.ISOGetLangByCode2(image.Iso_639_1)),
-                '                .Scraper = "TMDB",
-                '                .ShortLang = If(String.IsNullOrEmpty(image.Iso_639_1), String.Empty, image.Iso_639_1),
-                '                .URLOriginal = _TMDBApi.Config.Images.BaseUrl & "original" & image.FilePath,
-                '                .URLThumb = _TMDBApi.Config.Images.BaseUrl & "w185" & image.FilePath,
-                '                .VoteAverage = image.VoteAverage.ToString,
-                '                .VoteCount = image.VoteCount,
-                '                .Width = image.Width.ToString}
-
-                '        alContainer.MainPosters.Add(tmpImage)
-                '    Next
-                ''End If
-
-                'If FilteredModifier.EpisodePoster Then
-
-                '    Dim Results_Episode As TMDbLib.Objects.TvShows.TvShow = Nothing
-                '    Dim APIResult_Episode As Task(Of TMDbLib.Objects.TvShows.TvShow)
-                '    APIResult_Episode = Task.Run(Function() _TMDBApi.GetTvShow(CInt(tmdbID), TMDbLib.Objects.TvShows.TvShowMethods.Images))
-
-                '    Results_Episode = APIResult_Episode.Result
-
-                '    If Results_Episode Is Nothing Then
-                '        Return Nothing
-                '    End If
-
-                '    For Each tSeason In Results_Episode.Seasons
-                '        For Each tEpisode In tSeason.Episodes
-                '            For Each tImg In tEpisode.Images.Stills
-                '                Dim tmpImage As New MediaContainers.Image With {
-                '                    .Episode = tEpisode.EpisodeNumber,
-                '                    .Height = tImg.Height.ToString,
-                '                    .Likes = 0,
-                '                    .LongLang = If(String.IsNullOrEmpty(tImg.Iso_639_1), String.Empty, Localization.ISOGetLangByCode2(tImg.Iso_639_1)),
-                '                    .Scraper = "TMDB",
-                '                    .Season = CInt(tEpisode.SeasonNumber),
-                '                    .ShortLang = If(String.IsNullOrEmpty(tImg.Iso_639_1), String.Empty, tImg.Iso_639_1),
-                '                    .URLOriginal = _TMDBApi.Config.Images.BaseUrl & "original" & tImg.FilePath,
-                '                    .URLThumb = _TMDBApi.Config.Images.BaseUrl & "w185" & tImg.FilePath,
-                '                    .VoteAverage = tImg.VoteAverage.ToString,
-                '                    .VoteCount = tImg.VoteCount,
-                '                    .Width = tImg.Width.ToString}
-
-                '                alContainer.EpisodePosters.Add(tmpImage)
-                '            Next
-                '        Next
-                '    Next
-                'End If
-
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return alContainer
@@ -337,7 +253,7 @@ Namespace TMDB
             Try
                 Dim Results As TMDbLib.Objects.General.StillImages = Nothing
                 Dim APIResult As Task(Of TMDbLib.Objects.General.StillImages)
-                APIResult = Task.Run(Function() _TMDBApi.GetTvEpisodeImages(CInt(tmdbID), iSeason, iEpisode))
+                APIResult = Task.Run(Function() _TMDBApi.GetTvEpisodeImagesAsync(CInt(tmdbID), iSeason, iEpisode))
                 Results = APIResult.Result
 
                 If Results Is Nothing Then
@@ -366,7 +282,7 @@ Namespace TMDB
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return alContainer
@@ -377,7 +293,7 @@ Namespace TMDB
 
             Try
                 Dim APIResult As Task(Of TMDbLib.Objects.Find.FindContainer)
-                APIResult = Task.Run(Function() _TMDBApi.Find(TMDbLib.Objects.Find.FindExternalSource.Imdb, imdbID))
+                APIResult = Task.Run(Function() _TMDBApi.FindAsync(TMDbLib.Objects.Find.FindExternalSource.Imdb, imdbID))
 
                 If APIResult IsNot Nothing AndAlso APIResult.Result IsNot Nothing AndAlso
                     APIResult.Result.TvResults IsNot Nothing AndAlso APIResult.Result.TvResults.Count > 0 Then
@@ -385,7 +301,7 @@ Namespace TMDB
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return tmdbID
@@ -396,7 +312,7 @@ Namespace TMDB
 
             Try
                 Dim APIResult As Task(Of TMDbLib.Objects.Find.FindContainer)
-                APIResult = Task.Run(Function() _TMDBApi.Find(TMDbLib.Objects.Find.FindExternalSource.TvDb, tvdbID))
+                APIResult = Task.Run(Function() _TMDBApi.FindAsync(TMDbLib.Objects.Find.FindExternalSource.TvDb, tvdbID))
 
                 If APIResult IsNot Nothing AndAlso APIResult.Result IsNot Nothing AndAlso _
                     APIResult.Result.TvResults IsNot Nothing AndAlso APIResult.Result.TvResults.Count > 0 Then
@@ -404,7 +320,7 @@ Namespace TMDB
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
 
             Return tmdbID

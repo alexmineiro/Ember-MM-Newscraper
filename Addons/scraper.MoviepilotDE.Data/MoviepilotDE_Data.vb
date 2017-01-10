@@ -115,13 +115,13 @@ Public Class MoviepilotDE_Data
     End Function
 
     Sub LoadSettings()
-        ConfigScrapeOptions.bMainOutline = clsAdvancedSettings.GetBooleanSetting("DoOutline", True)
-        ConfigScrapeOptions.bMainPlot = clsAdvancedSettings.GetBooleanSetting("DoPlot", True)
-        ConfigScrapeOptions.bMainCertifications = clsAdvancedSettings.GetBooleanSetting("DoCert", True)
+        ConfigScrapeOptions.bMainOutline = AdvancedSettings.GetBooleanSetting("DoOutline", True)
+        ConfigScrapeOptions.bMainPlot = AdvancedSettings.GetBooleanSetting("DoPlot", True)
+        ConfigScrapeOptions.bMainCertifications = AdvancedSettings.GetBooleanSetting("DoCert", True)
     End Sub
 
     Sub SaveSettings()
-        Using settings = New clsAdvancedSettings()
+        Using settings = New AdvancedSettings()
             settings.SetBooleanSetting("DoOutline", ConfigScrapeOptions.bMainOutline)
             settings.SetBooleanSetting("DoPlot", ConfigScrapeOptions.bMainPlot)
             settings.SetBooleanSetting("DoCert", ConfigScrapeOptions.bMainCertifications)
@@ -151,7 +151,7 @@ Public Class MoviepilotDE_Data
     ''' <returns>Database.DBElement Object (nMovie) which contains the scraped data</returns>
     ''' <remarks></remarks>
     Function Scraper_Movie(ByRef oDBMovie As Database.DBElement, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef ScrapeType As Enums.ScrapeType, ByRef ScrapeOptions As Structures.ScrapeOptions) As Interfaces.ModuleResult_Data_Movie Implements Interfaces.ScraperModule_Data_Movie.Scraper_Movie
-        logger.Trace("Started MoviepilotDE Scraper")
+        logger.Trace("[MoviepilotDE_Data] [Scraper_Movie] [Start]")
 
         LoadSettings()
 
@@ -162,7 +162,7 @@ Public Class MoviepilotDE_Data
             nMovie = _scraper.GetMovieInfo(oDBMovie.Movie.OriginalTitle, oDBMovie.Movie.Title, oDBMovie.Movie.Year, FilteredOptions)
         End If
 
-        logger.Trace("Finished MoviepilotDE Scraper")
+        logger.Trace("[MoviepilotDE_Data] [Scraper_Movie] [Done]")
         Return New Interfaces.ModuleResult_Data_Movie With {.Result = nMovie}
     End Function
 

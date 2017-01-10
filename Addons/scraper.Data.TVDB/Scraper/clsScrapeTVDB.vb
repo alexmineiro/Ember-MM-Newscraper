@@ -97,7 +97,7 @@ Namespace TVDBs
                 _TVDBMirror = New TVDB.Model.Mirror With {.Address = "http://thetvdb.com", .ContainsBannerFile = True, .ContainsXmlFile = True, .ContainsZipFile = False}
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
         End Sub
 
@@ -111,7 +111,7 @@ Namespace TVDBs
         End Sub
 
         Public Function GetSearchTVShowInfo(ByVal sShowName As String, ByRef oDBTV As Database.DBElement, ByVal iType As Enums.ScrapeType, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.TVShow
-            Dim r As SearchResults = SearchTVShow(sShowName)
+            Dim r As SearchResults = SearchTVShowByName(sShowName)
 
             Select Case iType
                 Case Enums.ScrapeType.AllAsk, Enums.ScrapeType.FilterAsk, Enums.ScrapeType.MarkedAsk, Enums.ScrapeType.MissingAsk, Enums.ScrapeType.NewAsk, Enums.ScrapeType.SelectedAsk, Enums.ScrapeType.SingleField
@@ -141,7 +141,7 @@ Namespace TVDBs
             Return Nothing
         End Function
 
-        Private Function SearchTVShow(ByVal sShow As String) As SearchResults
+        Private Function SearchTVShowByName(ByVal sShow As String) As SearchResults
             If String.IsNullOrEmpty(sShow) Then Return New SearchResults
             Dim R As New SearchResults
             Dim Shows As List(Of TVDB.Model.Series)
@@ -179,20 +179,6 @@ Namespace TVDBs
             Dim Result As TVDB.Model.SeriesDetails = Await _TVDBApi.GetFullSeriesById(tvdbID, _SpecialSettings.Language, _TVDBMirror)
             Return Result
         End Function
-
-        Public Shared Function GetLanguages(ByVal sAPIKey As String) As clsXMLTVDBLanguages
-            Dim sHTTP As New HTTP
-            Dim aTVDBLang As New clsXMLTVDBLanguages
-
-            Dim apiXML As String = sHTTP.DownloadData(String.Format("http://thetvdb.com/api/{0}/languages.xml", sAPIKey))
-            sHTTP = Nothing
-            Using reader As StringReader = New StringReader(apiXML)
-                Dim xTVDBLang As New XmlSerializer(aTVDBLang.GetType)
-                aTVDBLang = CType(xTVDBLang.Deserialize(reader), clsXMLTVDBLanguages)
-            End Using
-
-            Return aTVDBLang
-        End Function
         ''' <summary>
         ''' 
         ''' </summary>
@@ -205,10 +191,19 @@ Namespace TVDBs
             If String.IsNullOrEmpty(strID) OrElse strID.Length < 2 Then Return Nothing
 
             Dim nTVShow As New MediaContainers.TVShow
+            Dim strTVDBID As String = String.Empty
 
             If bwTVDB.CancellationPending Then Return Nothing
 
-            Dim APIResult As Task(Of TVDB.Model.SeriesDetails) = Task.Run(Function() GetFullSeriesById(CInt(strID)))
+            If strID.StartsWith("tt") Then
+                strTVDBID = GetTVDBbyIMDB(strID)
+            Else
+                strTVDBID = strID
+            End If
+
+            If String.IsNullOrEmpty(strTVDBID) Then Return Nothing
+
+            Dim APIResult As Task(Of TVDB.Model.SeriesDetails) = Task.Run(Function() GetFullSeriesById(CInt(strTVDBID)))
             If APIResult Is Nothing OrElse APIResult.Result Is Nothing Then
                 Return Nothing
             End If
@@ -221,7 +216,7 @@ Namespace TVDBs
             'Actors
             If FilteredOptions.bMainActors Then
                 If TVShowInfo.Actors IsNot Nothing Then
-                    For Each aCast As TVDB.Model.Actor In TVShowInfo.Actors.OrderBy(Function(f) f.SortOrder)
+                    For Each aCast As TVDB.Model.Actor In TVShowInfo.Actors.Where(Function(f) f.Name IsNot Nothing AndAlso f.Role IsNot Nothing).OrderBy(Function(f) f.SortOrder)
                         nTVShow.Actors.Add(New MediaContainers.Person With {.Name = aCast.Name,
                                                                           .Order = aCast.SortOrder,
                                                                           .Role = aCast.Role,
@@ -229,6 +224,13 @@ Namespace TVDBs
                                                                           .TVDB = CStr(aCast.Id)})
                     Next
                 End If
+            End If
+
+            If bwTVDB.CancellationPending Then Return Nothing
+
+            'EpisodeGuideURL
+            If FilteredOptions.bMainEpisodeGuide Then
+                nTVShow.EpisodeGuide.URL = String.Concat(_TVDBMirror.Address, "/api/", _SpecialSettings.APIKey, "/series/", TVShowInfo.Series.Id, "/all/", TVShowInfo.Language, ".zip")
             End If
 
             If bwTVDB.CancellationPending Then Return Nothing
@@ -339,7 +341,7 @@ Namespace TVDBs
             Return nTVShow
         End Function
 
-        Public Function GetTVEpisodeInfo(ByVal tvdbID As Integer, ByVal SeasonNumber As Integer, ByVal EpisodeNumber As Integer, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.EpisodeDetails
+        Public Function GetTVEpisodeInfo(ByVal tvdbID As Integer, ByVal SeasonNumber As Integer, ByVal EpisodeNumber As Integer, ByVal tEpisodeOrdering As Enums.EpisodeOrdering, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.EpisodeDetails
             Try
                 Dim APIResult As Task(Of TVDB.Model.SeriesDetails) = Task.Run(Function() GetFullSeriesById(CInt(tvdbID)))
                 If APIResult Is Nothing OrElse APIResult.Result Is Nothing Then
@@ -347,7 +349,17 @@ Namespace TVDBs
                 End If
                 Dim TVShowInfo = APIResult.Result
 
-                Dim EpisodeInfo As TVDB.Model.Episode = TVShowInfo.Series.Episodes.FirstOrDefault(Function(f) f.Number = EpisodeNumber AndAlso f.SeasonNumber = SeasonNumber)
+                Dim EpisodeInfo As TVDB.Model.Episode = Nothing
+
+                Select Case tEpisodeOrdering
+                    Case Enums.EpisodeOrdering.Absolute
+                        EpisodeInfo = TVShowInfo.Series.Episodes.FirstOrDefault(Function(f) f.AbsoluteNumber = EpisodeNumber)
+                    Case Enums.EpisodeOrdering.DVD
+                        EpisodeInfo = TVShowInfo.Series.Episodes.FirstOrDefault(Function(f) f.DVDEpisodeNumber = EpisodeNumber AndAlso f.DVDSeason = SeasonNumber)
+                    Case Enums.EpisodeOrdering.Standard
+                        EpisodeInfo = TVShowInfo.Series.Episodes.FirstOrDefault(Function(f) f.Number = EpisodeNumber AndAlso f.SeasonNumber = SeasonNumber)
+                End Select
+
                 If Not EpisodeInfo Is Nothing Then
                     Dim nEpisode As MediaContainers.EpisodeDetails = GetTVEpisodeInfo(EpisodeInfo, TVShowInfo, FilteredOptions)
                     Return nEpisode
@@ -367,10 +379,14 @@ Namespace TVDBs
             End If
             Dim TVShowInfo = APIResult.Result
 
-            Dim EpisodeInfo As TVDB.Model.Episode = TVShowInfo.Series.Episodes.FirstOrDefault(Function(f) f.FirstAired = CDate(Aired))
-            Dim nEpisode As MediaContainers.EpisodeDetails = GetTVEpisodeInfo(EpisodeInfo, TVShowInfo, FilteredOptions)
+            Dim EpisodeList As IEnumerable(Of TVDB.Model.Episode) = TVShowInfo.Series.Episodes.Where(Function(f) f.FirstAired = CDate(Aired))
+            If EpisodeList IsNot Nothing AndAlso EpisodeList.Count = 1 Then
+                Dim nEpisode As MediaContainers.EpisodeDetails = GetTVEpisodeInfo(EpisodeList(0), TVShowInfo, FilteredOptions)
+                Return nEpisode
+            Else
+                Return Nothing
+            End If
 
-            Return nEpisode
         End Function
 
         Public Function GetTVEpisodeInfo(ByRef EpisodeInfo As TVDB.Model.Episode, ByRef TVShowInfo As TVDB.Model.SeriesDetails, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.EpisodeDetails
@@ -434,7 +450,7 @@ Namespace TVDBs
             'Actors
             If FilteredOptions.bEpisodeActors Then
                 If TVShowInfo.Actors IsNot Nothing Then
-                    For Each aCast As TVDB.Model.Actor In TVShowInfo.Actors.OrderBy(Function(f) f.SortOrder)
+                    For Each aCast As TVDB.Model.Actor In TVShowInfo.Actors.Where(Function(f) f.Name IsNot Nothing AndAlso f.Role IsNot Nothing).OrderBy(Function(f) f.SortOrder)
                         nEpisode.Actors.Add(New MediaContainers.Person With {.Name = aCast.Name,
                                                                           .Order = aCast.SortOrder,
                                                                           .Role = aCast.Role,
@@ -503,7 +519,7 @@ Namespace TVDBs
             End If
 
             'ThumbPoster
-            If EpisodeInfo.PictureFilename IsNot Nothing Then
+            If EpisodeInfo.PictureFilename IsNot Nothing AndAlso Not String.IsNullOrEmpty(EpisodeInfo.PictureFilename) Then
                 nEpisode.ThumbPoster.URLOriginal = String.Concat(_TVDBMirror.Address, "/banners/", EpisodeInfo.PictureFilename)
             End If
 
@@ -515,6 +531,21 @@ Namespace TVDBs
             End If
 
             Return nEpisode
+        End Function
+
+        Public Function GetTVDBbyIMDB(ByVal strIMDB As String) As String
+            Dim Shows As List(Of TVDB.Model.Series)
+
+            Shows = _TVDBApi.GetSeriesByRemoteId(strIMDB, String.Empty, _TVDBMirror).Result
+            If Shows Is Nothing Then
+                Return String.Empty
+            End If
+
+            If Shows.Count = 1 Then
+                Return Shows.Item(0).Id.ToString
+            End If
+
+            Return String.Empty
         End Function
 
         Private Function StringToListOfPerson(ByVal strActors As String) As List(Of MediaContainers.Person)
@@ -558,7 +589,7 @@ Namespace TVDBs
 
             Select Case Args.Search
                 Case SearchType.TVShows
-                    Dim r As SearchResults = SearchTVShow(Args.Parameter)
+                    Dim r As SearchResults = SearchTVShowByName(Args.Parameter)
                     e.Result = New Results With {.ResultType = SearchType.TVShows, .Result = r}
 
                 Case SearchType.SearchDetails_TVShow

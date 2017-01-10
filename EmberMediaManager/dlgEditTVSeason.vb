@@ -53,7 +53,7 @@ Public Class dlgEditTVSeason
 
     Public Overloads Function ShowDialog(ByVal DBTVSeason As Database.DBElement) As DialogResult
         tmpDBElement = DBTVSeason
-        Return MyBase.ShowDialog()
+        Return ShowDialog()
     End Function
 
     Private Sub btnRemoveBanner_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnRemoveBanner.Click
@@ -119,7 +119,7 @@ Public Class dlgEditTVSeason
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Banner = dlgImgS.Result.ImagesContainer.Banner
-                    If tmpDBElement.ImagesContainer.Banner.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Banner.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Banner.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Banner.ImageOriginal.LoadFromMemoryStream Then
                         pbBanner.Image = tmpDBElement.ImagesContainer.Banner.ImageOriginal.Image
                         lblBannerSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbBanner.Image.Width, pbBanner.Image.Height)
                         lblBannerSize.Visible = True
@@ -146,7 +146,7 @@ Public Class dlgEditTVSeason
 
         If ofdImage.ShowDialog() = DialogResult.OK Then
             Dim tImage As New MediaContainers.Image
-            tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+            tImage.ImageOriginal.LoadFromFile(ofdImage.FileName, True)
             If tImage.ImageOriginal.Image IsNot Nothing Then
                 tmpDBElement.ImagesContainer.Banner = tImage
                 pbBanner.Image = tImage.ImageOriginal.Image
@@ -189,7 +189,7 @@ Public Class dlgEditTVSeason
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Fanart = dlgImgS.Result.ImagesContainer.Fanart
-                    If tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Fanart.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Fanart.ImageOriginal.LoadFromMemoryStream Then
                         pbFanart.Image = tmpDBElement.ImagesContainer.Fanart.ImageOriginal.Image
                         lblFanartSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbFanart.Image.Width, pbFanart.Image.Height)
                         lblFanartSize.Visible = True
@@ -216,7 +216,7 @@ Public Class dlgEditTVSeason
 
         If ofdImage.ShowDialog() = DialogResult.OK Then
             Dim tImage As New MediaContainers.Image
-            tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+            tImage.ImageOriginal.LoadFromFile(ofdImage.FileName, True)
             If tImage.ImageOriginal.Image IsNot Nothing Then
                 tmpDBElement.ImagesContainer.Fanart = tImage
                 pbFanart.Image = tImage.ImageOriginal.Image
@@ -259,7 +259,7 @@ Public Class dlgEditTVSeason
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Landscape = dlgImgS.Result.ImagesContainer.Landscape
-                    If tmpDBElement.ImagesContainer.Landscape.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Landscape.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Landscape.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Landscape.ImageOriginal.LoadFromMemoryStream Then
                         pbLandscape.Image = tmpDBElement.ImagesContainer.Landscape.ImageOriginal.Image
                         lblLandscapeSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbLandscape.Image.Width, pbLandscape.Image.Height)
                         lblLandscapeSize.Visible = True
@@ -286,7 +286,7 @@ Public Class dlgEditTVSeason
 
         If ofdImage.ShowDialog() = DialogResult.OK Then
             Dim tImage As New MediaContainers.Image
-            tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+            tImage.ImageOriginal.LoadFromFile(ofdImage.FileName, True)
             If tImage.ImageOriginal.Image IsNot Nothing Then
                 tmpDBElement.ImagesContainer.Landscape = tImage
                 pbLandscape.Image = tImage.ImageOriginal.Image
@@ -329,7 +329,7 @@ Public Class dlgEditTVSeason
                 Dim dlgImgS = New dlgImgSelect()
                 If dlgImgS.ShowDialog(tmpDBElement, aContainer, ScrapeModifiers) = DialogResult.OK Then
                     tmpDBElement.ImagesContainer.Poster = dlgImgS.Result.ImagesContainer.Poster
-                    If tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Poster.ImageOriginal.FromMemoryStream Then
+                    If tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image IsNot Nothing OrElse tmpDBElement.ImagesContainer.Poster.ImageOriginal.LoadFromMemoryStream Then
                         pbPoster.Image = tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image
                         lblPosterSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbPoster.Image.Width, pbPoster.Image.Height)
                         lblPosterSize.Visible = True
@@ -356,7 +356,7 @@ Public Class dlgEditTVSeason
 
         If ofdImage.ShowDialog() = DialogResult.OK Then
             Dim tImage As New MediaContainers.Image
-            tImage.ImageOriginal.FromFile(ofdImage.FileName, True)
+            tImage.ImageOriginal.LoadFromFile(ofdImage.FileName, True)
             If tImage.ImageOriginal.Image IsNot Nothing Then
                 tmpDBElement.ImagesContainer.Poster = tImage
                 pbPoster.Image = tImage.ImageOriginal.Image
@@ -369,8 +369,7 @@ Public Class dlgEditTVSeason
     End Sub
 
     Private Sub Cancel_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Cancel_Button.Click
-        DialogResult = System.Windows.Forms.DialogResult.Cancel
-        Close()
+        DialogResult = DialogResult.Cancel
     End Sub
 
     Private Sub dlgEditSeason_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
@@ -395,8 +394,7 @@ Public Class dlgEditTVSeason
 
             FillInfo()
         Else
-            DialogResult = System.Windows.Forms.DialogResult.Cancel
-            Close()
+            DialogResult = DialogResult.Cancel
         End If
     End Sub
 
@@ -409,7 +407,7 @@ Public Class dlgEditTVSeason
         With tmpDBElement.ImagesContainer
 
             'Load all images to MemoryStream and Bitmap
-            tmpDBElement.LoadAllImages(True, False)
+            tmpDBElement.LoadAllImages(True, True)
 
             'Banner
             If (Not tmpDBElement.TVSeason.Season = 999 AndAlso Master.eSettings.TVSeasonBannerAnyEnabled) OrElse
@@ -493,8 +491,7 @@ Public Class dlgEditTVSeason
     Private Sub OK_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles OK_Button.Click
         SetInfo()
 
-        DialogResult = System.Windows.Forms.DialogResult.OK
-        Close()
+        DialogResult = DialogResult.OK
     End Sub
 
     Private Sub pbSeasonBanner_DragDrop(sender As Object, e As DragEventArgs) Handles pbBanner.DragDrop

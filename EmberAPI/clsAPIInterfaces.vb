@@ -37,6 +37,7 @@ Public Class Interfaces
 #Region "Properties"
 
         Property Enabled() As Boolean
+        ReadOnly Property IsBusy() As Boolean
         ReadOnly Property ModuleName() As String
         ReadOnly Property ModuleType() As List(Of Enums.ModuleEventType)
         ReadOnly Property ModuleVersion() As String
@@ -160,7 +161,6 @@ Public Class Interfaces
         Sub ScraperOrderChanged()
         Sub Init(ByVal sAssemblyName As String)
         Function InjectSetupScraper() As Containers.SettingsPanel
-        Function GetLanguages(ByRef Langs As clsXMLTVDBLanguages) As ModuleResult
         Sub SaveSetupScraper(ByVal DoDispose As Boolean)
         ''' <summary>
         ''' 
@@ -318,7 +318,7 @@ Public Class Interfaces
         Sub ScraperOrderChanged()
         Sub Init(ByVal sAssemblyName As String)
         Function InjectSetupScraper() As Containers.SettingsPanel
-        Function Scraper(ByVal DBMovie As Database.DBElement, ByRef URLList As List(Of Themes)) As ModuleResult
+        Function Scraper(ByRef DBMovie As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef ThemeList As List(Of MediaContainers.Theme)) As Interfaces.ModuleResult
         Sub SaveSetupScraper(ByVal DoDispose As Boolean)
 
 #End Region 'Methods
@@ -349,7 +349,7 @@ Public Class Interfaces
         Sub ScraperOrderChanged()
         Sub Init(ByVal sAssemblyName As String)
         Function InjectSetupScraper() As Containers.SettingsPanel
-        Function Scraper(ByVal DBTV As Database.DBElement, ByRef URLList As List(Of Themes)) As ModuleResult
+        Function Scraper(ByRef DBTV As Database.DBElement, ByVal Type As Enums.ModifierType, ByRef ThemeList As List(Of MediaContainers.Theme)) As Interfaces.ModuleResult
         Sub SaveSetupScraper(ByVal DoDispose As Boolean)
 
 #End Region 'Methods

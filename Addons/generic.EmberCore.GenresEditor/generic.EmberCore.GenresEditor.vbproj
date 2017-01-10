@@ -84,7 +84,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DefineDebug>true</DefineDebug>
     <DefineTrace>true</DefineTrace>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\EmberMM - Debug - AnyCPU\Modules\</OutputPath>
     <NoWarn>42353,42354,42355</NoWarn>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -93,7 +93,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <DefineTrace>true</DefineTrace>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\..\EmberMM - Release - AnyCPU\Modules\</OutputPath>
     <Optimize>true</Optimize>
     <NoWarn>42353,42354,42355</NoWarn>
     <DebugType>None</DebugType>
@@ -106,10 +106,6 @@
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\..\packages\NLog.4.2.3\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
-    </Reference>
-    <Reference Include="RestSharp, Version=104.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\RestSharp.104.1\lib\net35\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />

@@ -29,15 +29,16 @@ Public Class APIXML
 #Region "Fields"
     Shared logger As Logger = LogManager.GetCurrentClassLogger()
 
-    Public Shared lFlags As New List(Of Flag)
+    Public Shared CertLanguagesXML As New clsXMLCertLanguages
+    Public Shared FilterXML As New clsXMLFilter
+    Public Shared GenreXML As New clsXMLGenres
+    Public Shared RatingXML As New clsXMLRatings
+    Public Shared ScraperLanguagesXML As New clsXMLScraperLanguages
+    Public Shared SourceList As New List(Of String)(New String() {"bluray", "hddvd", "hdtv", "dvd", "sdtv", "vhs"})
     Public Shared alGenres As New List(Of String)
     Public Shared dLanguages As New Dictionary(Of String, String)
     Public Shared dStudios As New Dictionary(Of String, String)
-    Public Shared GenreXML As New clsXMLGenres
-    Public Shared CertLanguagesXML As New clsXMLCertLanguages
-    Public Shared RatingXML As New clsXMLRatings
-    Public Shared SourceList As New List(Of String)(New String() {"bluray", "hddvd", "hdtv", "dvd", "sdtv", "vhs"})
-    Public Shared FilterXML As New clsXMLFilter
+    Public Shared lFlags As New List(Of Flag)
 
 #End Region 'Fields
 
@@ -67,7 +68,7 @@ Public Class APIXML
                 End Try
             End If
 
-            Dim gPath As String = FileUtils.Common.ReturnSettingsFile("Settings", "Core.Genres.xml")
+            Dim gPath As String = Path.Combine(Master.SettingsPath, "Core.Genres.xml")
             If File.Exists(gPath) Then
                 objStreamReader = New StreamReader(gPath)
                 Dim xGenres As New XmlSerializer(GenreXML.GetType)
@@ -116,7 +117,7 @@ Public Class APIXML
                 End Try
             End If
 
-            Dim rPath As String = FileUtils.Common.ReturnSettingsFile("Settings", "Ratings.xml")
+            Dim rPath As String = Path.Combine(Master.SettingsPath, "Ratings.xml")
             If File.Exists(rPath) Then
                 objStreamReader = New StreamReader(rPath)
                 Dim xRatings As New XmlSerializer(RatingXML.GetType)
@@ -134,11 +135,11 @@ Public Class APIXML
                 Try
                     File.Copy(rPathD, rPath)
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                 End Try
             End If
 
-            Dim cPath As String = FileUtils.Common.ReturnSettingsFile("Settings", "CertLanguages.xml")
+            Dim cPath As String = Path.Combine(Master.SettingsPath, "CertLanguages.xml")
             If File.Exists(cPath) Then
                 objStreamReader = New StreamReader(cPath)
                 Dim xCert As New XmlSerializer(CertLanguagesXML.GetType)
@@ -156,11 +157,28 @@ Public Class APIXML
                 Try
                     File.Copy(cPathD, cPath)
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                 End Try
             End If
 
-            Dim filterPath As String = FileUtils.Common.ReturnSettingsFile("Settings", "Queries.xml")
+            Dim slPath As String = Path.Combine(Master.SettingsPath, "Core.ScraperLanguages.xml")
+            If File.Exists(slPath) Then
+                objStreamReader = New StreamReader(slPath)
+                Dim xLang As New XmlSerializer(ScraperLanguagesXML.GetType)
+
+                ScraperLanguagesXML = CType(xLang.Deserialize(objStreamReader), clsXMLScraperLanguages)
+                objStreamReader.Close()
+            Else
+                Dim slPathD As String = FileUtils.Common.ReturnSettingsFile("Defaults", "Core.ScraperLanguages.xml")
+                objStreamReader = New StreamReader(slPathD)
+                Dim xLang As New XmlSerializer(ScraperLanguagesXML.GetType)
+
+                ScraperLanguagesXML = CType(xLang.Deserialize(objStreamReader), clsXMLScraperLanguages)
+                objStreamReader.Close()
+                ScraperLanguagesXML.Save()
+            End If
+
+            Dim filterPath As String = Path.Combine(Master.SettingsPath, "Queries.xml")
             If File.Exists(filterPath) Then
                 objStreamReader = New StreamReader(filterPath)
                 Dim xFilter As New XmlSerializer(FilterXML.GetType)
@@ -177,19 +195,19 @@ Public Class APIXML
                 Try
                     File.Copy(filterPathD, filterPath)
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                 End Try
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
-    Public Shared Function GetAVImages(ByVal fiAV As MediaInfo.Fileinfo, ByVal fName As String, ByVal ForTV As Boolean, ByVal videoSource As String) As Image()
+    Public Shared Function GetAVImages(ByVal fiAV As MediaContainers.Fileinfo, ByVal fName As String, ByVal ForTV As Boolean, ByVal videoSource As String) As Image()
         Dim iReturn(18) As Image
-        Dim tVideo As MediaInfo.Video = NFO.GetBestVideo(fiAV)
-        Dim tAudio As MediaInfo.Audio = NFO.GetBestAudio(fiAV, ForTV)
+        Dim tVideo As MediaContainers.Video = NFO.GetBestVideo(fiAV)
+        Dim tAudio As MediaContainers.Audio = NFO.GetBestAudio(fiAV, ForTV)
 
         If lFlags.Count > 0 OrElse dLanguages.Count > 0 Then
             Try
@@ -345,7 +363,7 @@ Public Class APIXML
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
             End Try
         Else
             iReturn(0) = Image.FromFile(FileUtils.Common.ReturnSettingsFile("Images\Defaults", "DefaultScreen.png"))
@@ -414,7 +432,7 @@ Public Class APIXML
                     sourceCheck = If(Master.eSettings.GeneralSourceFromFolder, String.Concat(Directory.GetParent(sPath).Name.ToLower, Path.DirectorySeparatorChar, Path.GetFileName(sPath).ToLower), Path.GetFileName(sPath).ToLower)
                 End If
                 Dim mySources As New List(Of AdvancedSettingsComplexSettingsTableItem)
-                mySources = clsAdvancedSettings.GetComplexSetting("MovieSources")
+                mySources = AdvancedSettings.GetComplexSetting("MovieSources")
                 If Not mySources Is Nothing Then
                     For Each k In mySources
                         If Regex.IsMatch(sourceCheck, k.Name) Then
@@ -425,7 +443,7 @@ Public Class APIXML
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
         Return String.Empty
@@ -450,7 +468,7 @@ Public Class APIXML
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
         Return imgGenre
@@ -461,6 +479,7 @@ Public Class APIXML
         For Each mGenre In GenreXML.Genres
             retGenre.Add(mGenre.Name)
         Next
+        retGenre.Sort()
         Return retGenre.ToArray
     End Function
 
@@ -489,7 +508,7 @@ Public Class APIXML
                 End Using
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
         Return imgRating
@@ -497,37 +516,37 @@ Public Class APIXML
 
     Public Shared Function GetRatingList_Movie() As Object()
         Dim retRatings As New List(Of String)
-        Try
-            If Not Master.eSettings.MovieScraperCertForMPAA Then
-                For Each r In RatingXML.movies.FindAll(Function(f) f.country.ToLower = "usa")
-                    retRatings.Add(r.searchstring)
-                Next
-            Else
-                For Each r In RatingXML.movies.FindAll(Function(f) f.country.ToLower = APIXML.CertLanguagesXML.Language.FirstOrDefault(Function(l) l.abbreviation = Master.eSettings.MovieScraperCertLang).name.ToLower)
+        If Master.eSettings.MovieScraperCertForMPAA AndAlso Not Master.eSettings.MovieScraperCertLang = Master.eLang.All Then
+            Dim tCountry = CertLanguagesXML.Language.FirstOrDefault(Function(l) l.abbreviation = Master.eSettings.MovieScraperCertLang)
+            If tCountry IsNot Nothing AndAlso Not String.IsNullOrEmpty(tCountry.name) Then
+                For Each r In RatingXML.movies.FindAll(Function(f) f.country.ToLower = tCountry.name.ToLower)
                     retRatings.Add(r.searchstring)
                 Next
             End If
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
+        Else
+            For Each r In RatingXML.movies.FindAll(Function(f) f.country.ToLower = "usa")
+                retRatings.Add(r.searchstring)
+            Next
+        End If
+
         Return retRatings.ToArray
     End Function
 
     Public Shared Function GetRatingList_TV() As Object()
         Dim retRatings As New List(Of String)
-        Try
-            If Not Master.eSettings.TVScraperShowCertForMPAA Then
-                For Each r In RatingXML.tv.FindAll(Function(f) f.country.ToLower = "usa")
-                    retRatings.Add(r.searchstring)
-                Next
-            Else
-                For Each r In RatingXML.tv.FindAll(Function(f) f.country.ToLower = APIXML.CertLanguagesXML.Language.FirstOrDefault(Function(l) l.abbreviation = Master.eSettings.TVScraperShowCertLang).name.ToLower)
+        If Master.eSettings.TVScraperShowCertForMPAA AndAlso Not Master.eSettings.TVScraperShowCertLang = Master.eLang.All Then
+            Dim tCountry = CertLanguagesXML.Language.FirstOrDefault(Function(l) l.abbreviation = Master.eSettings.TVScraperShowCertLang)
+            If tCountry IsNot Nothing AndAlso Not String.IsNullOrEmpty(tCountry.name) Then
+                For Each r In RatingXML.tv.FindAll(Function(f) f.country.ToLower = tCountry.name.ToLower)
                     retRatings.Add(r.searchstring)
                 Next
             End If
-        Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
-        End Try
+        Else
+            For Each r In RatingXML.tv.FindAll(Function(f) f.country.ToLower = "usa")
+                retRatings.Add(r.searchstring)
+            Next
+        End If
+
         Return retRatings.ToArray
     End Function
 
@@ -570,7 +589,7 @@ Public Class APIXML
                 End Using
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
 
         Return imgRating

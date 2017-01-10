@@ -18,10 +18,8 @@
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
 
-Imports System.Windows.Forms
 Imports EmberAPI
 Imports NLog
-Imports System.IO
 
 Public Class dlgBulkRenamer_TV
 
@@ -75,11 +73,10 @@ Public Class dlgBulkRenamer_TV
     Private Sub bwDoRename_RunWorkerCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwDoRename.RunWorkerCompleted
         pnlCancel.Visible = False
         DialogResult = DialogResult.OK
-        Close()
     End Sub
 
     Private Sub bwDoRename_DoWork(ByVal sender As Object, ByVal e As System.ComponentModel.DoWorkEventArgs) Handles bwDoRename.DoWork
-        FFRenamer.DoRename_Episodes(AddressOf ShowProgressRename)
+        FFRenamer.DoRename_TVEpisodes(AddressOf ShowProgressRename)
     End Sub
 
     Private Sub bwDoRename_ProgressChanged(ByVal sender As Object, ByVal e As System.ComponentModel.ProgressChangedEventArgs) Handles bwDoRename.ProgressChanged
@@ -137,16 +134,16 @@ Public Class dlgBulkRenamer_TV
                                 If Not DBNull.Value.Equals(SQLreader("NfoPath")) AndAlso Not DBNull.Value.Equals(SQLreader("idEpisode")) Then
                                     _tmpPath = SQLreader("NfoPath").ToString
                                     If Not String.IsNullOrEmpty(_tmpPath) Then
-                                        Dim _currShow As Database.DBElement = Master.DB.LoadTVEpisodeFromDB(Convert.ToInt32(SQLreader("idEpisode")), True)
+                                        Dim _currShow As Database.DBElement = Master.DB.Load_TVEpisode(Convert.ToInt32(SQLreader("idEpisode")), True)
                                         If Not _currShow.ID = -1 AndAlso Not _currShow.ShowID = -1 AndAlso Not String.IsNullOrEmpty(_currShow.Filename) Then
                                             bwLoadInfo.ReportProgress(iProg, String.Concat(_currShow.TVShow.Title, ": ", _currShow.TVEpisode.Title))
-                                            Dim EpisodeFile As FileFolderRenamer.FileRename = FileFolderRenamer.GetInfo_Episode(_currShow)
-                                            FFRenamer.AddEpisode(EpisodeFile)
+                                            Dim EpisodeFile As FileFolderRenamer.FileRename = FileFolderRenamer.GetInfo_TVEpisode(_currShow)
+                                            FFRenamer.Add_TVEpisode(EpisodeFile)
                                         End If
                                     End If
                                 End If
                             Catch ex As Exception
-                                logger.Error(New StackFrame().GetMethod().Name, ex)
+                                logger.Error(ex, New StackFrame().GetMethod().Name)
                             End Try
                             iProg += 1
 
@@ -162,7 +159,7 @@ Public Class dlgBulkRenamer_TV
                 End Using
             End Using
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -185,7 +182,7 @@ Public Class dlgBulkRenamer_TV
             End If
             pnlCancel.Visible = False
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -203,13 +200,11 @@ Public Class dlgBulkRenamer_TV
         Else
             DialogResult = DialogResult.Cancel
         End If
-
-        Close()
     End Sub
 
     Private Sub cmsEpisodeList_Opening(ByVal sender As Object, ByVal e As System.ComponentModel.CancelEventArgs) Handles cmsEpisodeList.Opening
-        Dim count As Integer = FFRenamer.GetCount_Episodes
-        Dim lockcount As Integer = FFRenamer.GetCountLocked_Episodes
+        Dim count As Integer = FFRenamer.GetCountAll_TVEpisodes
+        Dim lockcount As Integer = FFRenamer.GetCountLocked_TVEpisodes
         If count > 0 Then
             If lockcount > 0 Then
                 tsmUnlockAll.Visible = True
@@ -259,7 +254,7 @@ Public Class dlgBulkRenamer_TV
             End If
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -321,7 +316,7 @@ Public Class dlgBulkRenamer_TV
             bwLoadInfo.RunWorkerAsync()
 
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -335,7 +330,7 @@ Public Class dlgBulkRenamer_TV
             lblCanceling.Visible = True
             lblFile.Visible = False
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -343,7 +338,7 @@ Public Class dlgBulkRenamer_TV
         Dim Sta As MyStart = New MyStart(AddressOf Start)
         Dim Fin As MyFinish = New MyFinish(AddressOf Finish)
         Invoke(Sta)
-        FFRenamer.ProccessFiles_Episodes(txtFolderPatternSeasons.Text, txtFilePatternEpisodes.Text)
+        FFRenamer.ProccessFiles_TVEpisodes(txtFolderPatternSeasons.Text, txtFilePatternEpisodes.Text)
         Invoke(Fin)
     End Sub
 
@@ -358,7 +353,7 @@ Public Class dlgBulkRenamer_TV
         lblCompiling.Text = Master.eLang.GetString(173, "Renaming...")
         lblFile.Visible = True
         pbCompile.Style = ProgressBarStyle.Continuous
-        pbCompile.Maximum = FFRenamer.GetEpisodesCount
+        pbCompile.Maximum = FFRenamer.GetCountMax_TVEpisodes
         pbCompile.Value = 0
         Application.DoEvents()
         'Start worker
@@ -370,7 +365,7 @@ Public Class dlgBulkRenamer_TV
 
     Sub setLock(ByVal lock As Boolean)
         For Each row As DataGridViewRow In dgvEpisodesList.SelectedRows
-            FFRenamer.SetIsLocked_Episodes(row.Cells(1).Value.ToString, row.Cells(2).Value.ToString, lock)
+            FFRenamer.SetIsLocked_TVEpisodes(row.Cells(1).Value.ToString, row.Cells(2).Value.ToString, lock)
             row.Cells(5).Value = lock
         Next
 
@@ -384,7 +379,7 @@ Public Class dlgBulkRenamer_TV
 
     Sub setLockAll(ByVal lock As Boolean)
         Try
-            FFRenamer.SetIsLocked_Episodes(String.Empty, String.Empty, False)
+            FFRenamer.SetIsLocked_TVEpisodes(String.Empty, String.Empty, False)
             For Each row As DataGridViewRow In dgvEpisodesList.Rows
                 row.Cells(5).Value = lock
             Next
@@ -396,7 +391,7 @@ Public Class dlgBulkRenamer_TV
 
             dgvEpisodesList.Refresh()
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -446,7 +441,7 @@ Public Class dlgBulkRenamer_TV
                     .Tag = False
                     .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
                 End If
-                bsEpisodes.DataSource = FFRenamer.GetEpisodes
+                bsEpisodes.DataSource = FFRenamer.GetTable_TVEpisodes
                 .DataSource = bsEpisodes
                 .Columns(5).Visible = False
                 .Columns(6).Visible = False
@@ -472,7 +467,7 @@ Public Class dlgBulkRenamer_TV
                 End If
             End With
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -492,7 +487,7 @@ Public Class dlgBulkRenamer_TV
                 tThread.Start()
             End If
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -517,7 +512,7 @@ Public Class dlgBulkRenamer_TV
             If String.IsNullOrEmpty(txtFilePatternEpisodes.Text) Then txtFilePatternEpisodes.Text = "$F"
             tmrSimul.Enabled = True
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -526,7 +521,7 @@ Public Class dlgBulkRenamer_TV
             If String.IsNullOrEmpty(txtFolderPatternSeasons.Text) Then txtFolderPatternSeasons.Text = "$D"
             tmrSimul.Enabled = True
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 
@@ -535,7 +530,7 @@ Public Class dlgBulkRenamer_TV
             If String.IsNullOrEmpty(txtFolderPatternShows.Text) Then txtFolderPatternShows.Text = "$Z"
             tmrSimul.Enabled = True
         Catch ex As Exception
-            logger.Error(New StackFrame().GetMethod().Name, ex)
+            logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
 

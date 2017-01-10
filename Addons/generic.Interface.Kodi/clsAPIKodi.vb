@@ -21,9 +21,10 @@
 Imports EmberAPI
 Imports generic.Interface.Kodi.KodiInterface
 Imports NLog
+Imports XBMCRPC
 Imports System.IO
 Imports System.Text.RegularExpressions
-Imports XBMCRPC
+Imports System.Web
 
 Namespace Kodi
 
@@ -92,7 +93,7 @@ Namespace Kodi
                 Dim response = Await _kodi.VideoLibrary.GetMovies(Video.Fields.Movie.AllFields).ConfigureAwait(False)
                 Return response
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -111,14 +112,14 @@ Namespace Kodi
                 Dim response = Await _kodi.VideoLibrary.GetMovieSets(Video.Fields.MovieSet.AllFields).ConfigureAwait(False)
                 Return response
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
 
         Private Async Function GetAllTVSeasons(ByVal ShowID As Integer) As Task(Of VideoLibrary.GetSeasonsResponse)
             If _kodi Is Nothing Then
-                logger.Warn("[APIKodi] GetAllMovieSets: No host initialized! Abort!")
+                logger.Warn("[APIKodi] GetAllTVSeasons: No host initialized! Abort!")
                 Return Nothing
             End If
 
@@ -126,7 +127,7 @@ Namespace Kodi
                 Dim response = Await _kodi.VideoLibrary.GetSeasons(ShowID, Video.Fields.Season.AllFields).ConfigureAwait(False)
                 Return response
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -148,7 +149,7 @@ Namespace Kodi
                 Dim response = Await _kodi.VideoLibrary.GetTVShows(Video.Fields.TVShow.AllFields).ConfigureAwait(False)
                 Return response
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -168,7 +169,7 @@ Namespace Kodi
                     Dim KodiElement As VideoLibrary.GetMovieDetailsResponse = Await _kodi.VideoLibrary.GetMovieDetails(iKodiID, Video.Fields.Movie.AllFields).ConfigureAwait(False)
                     If KodiElement IsNot Nothing AndAlso KodiElement.moviedetails IsNot Nothing Then Return KodiElement.moviedetails
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                     Return Nothing
                 End Try
             End If
@@ -190,7 +191,7 @@ Namespace Kodi
                     Dim KodiElement As VideoLibrary.GetMovieSetDetailsResponse = Await _kodi.VideoLibrary.GetMovieSetDetails(iKodiID, Video.Fields.MovieSet.AllFields).ConfigureAwait(False)
                     If KodiElement IsNot Nothing AndAlso KodiElement.setdetails IsNot Nothing Then Return KodiElement.setdetails
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                     Return Nothing
                 End Try
             End If
@@ -212,7 +213,7 @@ Namespace Kodi
                     Dim KodiElement As VideoLibrary.GetEpisodeDetailsResponse = Await _kodi.VideoLibrary.GetEpisodeDetails(iKodiID, Video.Fields.Episode.AllFields).ConfigureAwait(False)
                     If KodiElement IsNot Nothing AndAlso KodiElement.episodedetails IsNot Nothing Then Return KodiElement.episodedetails
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                     Return Nothing
                 End Try
             End If
@@ -234,7 +235,7 @@ Namespace Kodi
                     Dim KodiElement As VideoLibrary.GetSeasonDetailsResponse = Await _kodi.VideoLibrary.GetSeasonDetails(iKodiID, Video.Fields.Season.AllFields).ConfigureAwait(False)
                     If KodiElement IsNot Nothing AndAlso KodiElement.seasondetails IsNot Nothing Then Return KodiElement.seasondetails
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                     Return Nothing
                 End Try
             End If
@@ -256,7 +257,7 @@ Namespace Kodi
                     Dim KodiElement As VideoLibrary.GetTVShowDetailsResponse = Await _kodi.VideoLibrary.GetTVShowDetails(iKodiID, Video.Fields.TVShow.AllFields).ConfigureAwait(False)
                     If KodiElement IsNot Nothing AndAlso KodiElement.tvshowdetails IsNot Nothing Then Return KodiElement.tvshowdetails
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                     Return Nothing
                 End Try
             End If
@@ -274,7 +275,7 @@ Namespace Kodi
                 Dim _APIKodi As New Kodi.APIKodi(kHost)
                 Return _APIKodi.GetHostJSONVersion.Result
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return String.Empty
             End Try
         End Function
@@ -308,10 +309,12 @@ Namespace Kodi
                         codename = "Helix "
                     Case "625"
                         codename = "Isengard "
+                    Case "632"
+                        codename = "Jarvis "
                 End Select
                 Return codename & response.version.major.ToString & "." & response.version.minor
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return ""
             End Try
         End Function
@@ -343,9 +346,86 @@ Namespace Kodi
 
             Return -1
         End Function
+        ''' <summary>
+        ''' Get movie playcount from Host
+        ''' </summary>
+        ''' <param name="mDBElement">Movie as DBElement</param>
+        ''' <returns>true=Update successfull, false=error or movie not found in KodiDB</returns>
+        ''' <remarks>
+        ''' </remarks>
+        Public Async Function GetPlaycount_Movie(ByVal mDBElement As Database.DBElement, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of WatchedState)
+            If _kodi Is Nothing Then
+                logger.Error("[APIKodi] GetPlaycount_Movie: No host initialized! Abort!")
+                Return Nothing
+            End If
 
-        Private Function GetPlayCount() As Boolean
-            Return True
+            Try
+                logger.Trace(String.Format("[APIKodi] [{0}] GetPlaycount_Movie: ""{1}"" | Start process...", _currenthost.Label, mDBElement.Movie.Title))
+
+                'search Movie ID in Kodi DB
+                Dim KodiElement As Video.Details.Movie = Await GetFullDetailsByID_Movie(Await GetMediaID(mDBElement))
+
+                If KodiElement IsNot Nothing Then
+                    'check if we have to retrieve the PlayCount from Kodi
+                    If Not mDBElement.Movie.PlayCount = KodiElement.playcount OrElse Not mDBElement.Movie.LastPlayed = KodiElement.lastplayed Then
+                        Dim WatchedState As New WatchedState
+                        WatchedState.PlayCount = KodiElement.playcount
+                        WatchedState.LastPlayed = KodiElement.lastplayed
+                        logger.Trace(String.Format("[APIKodi] [{0}] GetPlaycount_Movie: ""{1}"" | Synced to Ember", _currenthost.Label, mDBElement.Movie.Title))
+                        Return WatchedState
+                    Else
+                        logger.Trace(String.Format("[APIKodi] [{0}] GetPlaycount_Movie: ""{1}"" | Nothing to sync", _currenthost.Label, mDBElement.Movie.Title))
+                        Return Nothing
+                    End If
+                Else
+                    logger.Error(String.Format("[APIKodi] [{0}] GetPlaycount_Movie: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.Movie.Title))
+                    Return Nothing
+                End If
+
+            Catch ex As Exception
+                logger.Error(ex, New StackFrame().GetMethod().Name)
+                Return Nothing
+            End Try
+        End Function
+        ''' <summary>
+        ''' Get episode playcount from Host
+        ''' </summary>
+        ''' <param name="mDBElement">TVEpisode as DBElement</param>
+        ''' <returns>true=Update successfull, false=error or episode not found in KodiDB</returns>
+        ''' <remarks>
+        ''' </remarks>
+        Public Async Function GetPlaycount_TVEpisode(ByVal mDBElement As Database.DBElement, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of WatchedState)
+            If _kodi Is Nothing Then
+                logger.Error("[APIKodi] GetPlaycount_TVEpisode: No host initialized! Abort!")
+                Return Nothing
+            End If
+
+            Try
+                logger.Trace(String.Format("[APIKodi] [{0}] GetPlaycount_TVEpisode: ""{1}"" | Start syncing process...", _currenthost.Label, mDBElement.TVEpisode.Title))
+
+                'search TV Episode ID in Kodi DB
+                Dim KodiElement As Video.Details.Episode = Await GetFullDetailsByID_TVEpisode(Await GetMediaID(mDBElement))
+
+                If KodiElement IsNot Nothing Then
+                    'check if we have to retrieve the PlayCount from Kodi
+                    If Not mDBElement.TVEpisode.Playcount = KodiElement.playcount OrElse Not mDBElement.TVEpisode.LastPlayed = KodiElement.lastplayed Then
+                        Dim WatchedState As New WatchedState
+                        WatchedState.PlayCount = KodiElement.playcount
+                        WatchedState.LastPlayed = KodiElement.lastplayed
+                        logger.Trace(String.Format("[APIKodi] [{0}] GetPlaycount_TVEpisode: ""{1}"" | Synced to Ember", _currenthost.Label, mDBElement.TVEpisode.Title))
+                        Return WatchedState
+                    Else
+                        logger.Trace(String.Format("[APIKodi] [{0}] GetPlaycount_TVEpisode: ""{1}"" | Nothing to sync", _currenthost.Label, mDBElement.TVEpisode.Title))
+                        Return Nothing
+                    End If
+                Else
+                    logger.Error(String.Format("[APIKodi] [{0}] GetPlaycount_TVEpisode: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.TVEpisode.Title))
+                    Return Nothing
+                End If
+            Catch ex As Exception
+                logger.Error(ex, New StackFrame().GetMethod().Name)
+                Return Nothing
+            End Try
         End Function
 
         Public Shared Function GetPathAndFilename(ByVal tDBElement As Database.DBElement, Optional ByVal tForcedContentType As Enums.ContentType = Enums.ContentType.None) As PathAndFilename
@@ -371,8 +451,14 @@ Namespace Kodi
                         Next
                         tPathAndFilename.strPath = Directory.GetParent(Directory.GetParent(tDBElement.Filename).FullName).FullName
                     Else
-                        tPathAndFilename.strFilename = Path.GetFileName(tDBElement.Filename)
-                        tPathAndFilename.strPath = Directory.GetParent(tDBElement.Filename).FullName
+                        If FileUtils.Common.isStacked(tDBElement.Filename) Then
+                            tPathAndFilename.bIsMultiPart = True
+                            tPathAndFilename.strFilename = tDBElement.Filename
+                            tPathAndFilename.strPath = Directory.GetParent(tDBElement.Filename).FullName
+                        Else
+                            tPathAndFilename.strFilename = Path.GetFileName(tDBElement.Filename)
+                            tPathAndFilename.strPath = Directory.GetParent(tDBElement.Filename).FullName
+                        End If
                     End If
                 Case Enums.ContentType.TVShow
                     tPathAndFilename.strPath = tDBElement.ShowPath
@@ -427,6 +513,11 @@ Namespace Kodi
 
             If String.IsNullOrEmpty(strRemotePath) Then logger.Error(String.Format("[APIKodi] [{0}] GetRemotePath: ""{1}"" | Source not mapped!", _currenthost.Label, strLocalPath))
 
+            'Path encoding if needed
+            If Regex.IsMatch(strRemotePath, "davs?:\/\/") Then
+                strRemotePath = HttpUtility.UrlEncode(strRemotePath)
+            End If
+
             Return strRemotePath
         End Function
         ''' <summary>
@@ -436,6 +527,11 @@ Namespace Kodi
         ''' <returns></returns>
         ''' <remarks>ATTENTION: It's not allowed to use "Remotepath.ToLower" (Kodi can't find UNC sources with wrong case)</remarks>
         Private Function GetRemotePath_MovieSet(ByVal strLocalPath As String) As String
+            If String.IsNullOrEmpty(_currenthost.MovieSetArtworksPath) Then
+                logger.Error(String.Format("[APIKodi] [{0}] [GetRemotePath_MovieSet]: No MovieSet Artwork path definied for this host!", _currenthost.Label))
+                Return Nothing
+            End If
+
             Dim HostPath As String = _currenthost.MovieSetArtworksPath
             Dim RemotePath As String = String.Empty
             Dim RemoteIsUNC As Boolean = False
@@ -480,15 +576,13 @@ Namespace Kodi
         ''' Called from dlgHost.vb when user hits "Populate" button to get host sources
         ''' </remarks>
         Public Shared Function GetSources(ByVal kHost As KodiInterface.Host) As List(Of List.Items.SourcesItem)
-            Dim listSources As New List(Of List.Items.SourcesItem)
             Try
                 Dim _APIKodi As New Kodi.APIKodi(kHost)
-                listSources = _APIKodi.GetSources(Files.Media.video).Result
-                Return listSources
+                Return _APIKodi.GetSources(Files.Media.video).Result
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
+                Return Nothing
             End Try
-            Return listSources
         End Function
         ''' <summary>
         ''' Get all sources configured in Kodi host
@@ -501,50 +595,56 @@ Namespace Kodi
         ''' </remarks>
         Private Async Function GetSources(mediaType As Files.Media) As Task(Of List(Of List.Items.SourcesItem))
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] GetSources: No host initialized! Abort!")
+                logger.Error("[APIKodi] [GetSources] No host initialized! Abort!")
                 Return Nothing
             End If
 
             Try
                 Dim response = Await _kodi.Files.GetSources(mediaType).ConfigureAwait(False)
-                Dim tmplist = response.sources.ToList
+                If response Is Nothing OrElse response.sources Is Nothing Then
+                    Return Nothing
+                Else
+                    Dim tmplist = response.sources.ToList
 
-                'type multipath sources contain multiple paths
-                Dim lstremotesources As New List(Of List.Items.SourcesItem)
-                Dim paths As New List(Of String)
-                Const MultiPath As String = "multipath://"
-                For Each remotesource In tmplist
-                    Dim newsource As New List.Items.SourcesItem
-                    If remotesource.file.StartsWith(MultiPath) Then
-                        logger.Warn("[APIKodi] GetSources: " & _currenthost.Label & ": " & remotesource.file & " - Multipath format, try to split...")
-                        'remove "multipath://" from path and split on "/"
-                        'i.e multipath://nfs%3a%2f%2f192.168.2.200%2fMedia_1%2fMovie%2f/nfs%3a%2f%2f192.168.2.200%2fMedia_2%2fMovie%2f/
-                        For Each path As String In remotesource.file.Remove(0, MultiPath.Length).Split("/"c)
-                            If Not String.IsNullOrEmpty(path) Then
-                                newsource = New List.Items.SourcesItem
-                                'URL decode each item
-                                newsource.file = Web.HttpUtility.UrlDecode(path)
-                                newsource.label = remotesource.label
-                                lstremotesources.Add(newsource)
-                            End If
-                        Next
-                    Else
-                        logger.Warn("[APIKodi] GetSources: " & _currenthost.Label & ": """ & remotesource.file, """")
-                        newsource.file = remotesource.file
-                        newsource.label = remotesource.label
-                        lstremotesources.Add(newsource)
-                    End If
-                Next
-                Return lstremotesources
+                    'type multipath sources contain multiple paths
+                    Dim lstremotesources As New List(Of List.Items.SourcesItem)
+                    Dim paths As New List(Of String)
+                    Const MultiPath As String = "multipath://"
+                    For Each remotesource In tmplist
+                        Dim newsource As New List.Items.SourcesItem
+                        If remotesource.file.StartsWith(MultiPath) Then
+                            logger.Trace(String.Format("[APIKodi] [{0}] [GetSources] Multipath format, try to split: {1}", _currenthost.Label, remotesource.file))
+                            'remove "multipath://" from path and split on "/"
+                            'i.e multipath://nfs%3a%2f%2f192.168.2.200%2fMedia_1%2fMovie%2f/nfs%3a%2f%2f192.168.2.200%2fMedia_2%2fMovie%2f/
+                            For Each path As String In remotesource.file.Remove(0, MultiPath.Length).Split("/"c)
+                                If Not String.IsNullOrEmpty(path) Then
+                                    newsource = New List.Items.SourcesItem
+                                    'URL decode each item
+                                    newsource.file = Web.HttpUtility.UrlDecode(path)
+                                    newsource.label = remotesource.label
+                                    lstremotesources.Add(newsource)
+                                    logger.Trace(String.Format("[APIKodi] [{0}] [GetSources] Added Source: {1}", _currenthost.Label, newsource.file))
+                                End If
+                            Next
+                        Else
+                            newsource.file = remotesource.file
+                            newsource.label = remotesource.label
+                            lstremotesources.Add(newsource)
+                            logger.Trace(String.Format("[APIKodi] [{0}] [GetSources] Added Source: {1}", _currenthost.Label, remotesource.file))
+                        End If
+                    Next
+
+                    Return lstremotesources
+                End If
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
 
         Private Async Function GetTextures(ByVal tDBElement As Database.DBElement) As Task(Of Textures.GetTexturesResponse)
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] GetTextures: No host initialized! Abort!")
+                logger.Error("[APIKodi] [GetTextures] No host initialized! Abort!")
                 Return Nothing
             End If
 
@@ -591,7 +691,7 @@ Namespace Kodi
                     Dim response As Textures.GetTexturesResponse = Await _kodi.Textures.GetTextures(filter, Textures.Fields.Texture.AllFields)
                     Return response
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                     Return Nothing
                 End Try
             End If
@@ -600,14 +700,14 @@ Namespace Kodi
 
         Private Async Function SearchMovie(ByVal tDBElement As Database.DBElement) As Task(Of Video.Details.Movie)
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] SearchMovie: No host initialized! Abort!")
+                logger.Error("[APIKodi] [SearchMovie] No host initialized! Abort!")
                 Return Nothing
             End If
 
             Dim kMovies As VideoLibrary.GetMoviesResponse
 
             Dim tPathAndFilename As PathAndFilename = GetPathAndFilename(tDBElement)
-            Dim strFilename As String = tPathAndFilename.strFilename
+            Dim strFilename As String = If(tPathAndFilename.bIsMultiPart, GetRemotePath(tPathAndFilename.strFilename), tPathAndFilename.strFilename)
             Dim strRemotePath As String = GetRemotePath(tPathAndFilename.strPath)
 
             If Not String.IsNullOrEmpty(strRemotePath) Then
@@ -620,43 +720,48 @@ Namespace Kodi
                     filter.and.Add(filterRule_Path)
                     Dim filterRule_Filename As New List.Filter.Rule.Movies
                     filterRule_Filename.field = List.Filter.Fields.Movies.filename
-                    filterRule_Filename.Operator = List.Filter.Operators.Is
+                    filterRule_Filename.Operator = If(tPathAndFilename.bIsMultiPart, List.Filter.Operators.contains, List.Filter.Operators.Is)
                     filterRule_Filename.value = strFilename
                     filter.and.Add(filterRule_Filename)
 
                     kMovies = Await _kodi.VideoLibrary.GetMovies(filter).ConfigureAwait(False)
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                     Return Nothing
                 End Try
             Else
-                logger.Error(String.Format("[APIKodi] [{0}] SearchMovie: ""{1}"" | Source not mapped!", _currenthost.Label, tDBElement.Source.Path))
+                logger.Error(String.Format("[APIKodi] [{0}] [SearchMovie] ""{1}"" | Source not mapped!", _currenthost.Label, tDBElement.Source.Path))
                 Return Nothing
             End If
 
             If kMovies IsNot Nothing Then
                 If kMovies.movies IsNot Nothing Then
                     If kMovies.movies.Count = 1 Then
-                        logger.Trace(String.Format("[APIKodi] [{0}] SearchMovie: ""{1}"" | OK, found in host database! [ID:{2}]", _currenthost.Label, tDBElement.Filename, kMovies.movies.Item(0).movieid))
+                        logger.Trace(String.Format("[APIKodi] [{0}] [SearchMovie] ""{1}"" | OK, found in host database! [ID:{2}]", _currenthost.Label, tDBElement.Filename, kMovies.movies.Item(0).movieid))
                         Return kMovies.movies.Item(0)
                     ElseIf kMovies.movies.Count > 1 Then
-                        logger.Warn(String.Format("[APIKodi] [{0}] SearchMovie: ""{1}"" | MORE THAN ONE movie found in host database!", _currenthost.Label, tDBElement.Filename))
+                        logger.Warn(String.Format("[APIKodi] [{0}] [SearchMovie] ""{1}"" | MORE THAN ONE movie found in host database!", _currenthost.Label, tDBElement.Filename))
                         Return Nothing
                     Else
-                        logger.Warn(String.Format("[APIKodi] [{0}] SearchMovie: ""{1}"" | NOT found in host database!", _currenthost.Label, tDBElement.Filename))
+                        logger.Warn(String.Format("[APIKodi] [{0}] [SearchMovie] ""{1}"" | NOT found in host database!", _currenthost.Label, tDBElement.Filename))
                         Return Nothing
                     End If
                 Else
-                    logger.Warn(String.Format("[APIKodi] [{0}] SearchMovie: ""{1}"" | NOT found in host database!", _currenthost.Label, tDBElement.Filename))
+                    logger.Warn(String.Format("[APIKodi] [{0}] [SearchMovie] ""{1}"" | NOT found in host database!", _currenthost.Label, tDBElement.Filename))
                     Return Nothing
                 End If
             Else
-                logger.Error(String.Format("[APIKodi] [{0}] SearchMovie: ""{1}"" | No connection to Host!", _currenthost.Label, tDBElement.Filename))
+                logger.Error(String.Format("[APIKodi] [{0}] [SearchMovie] ""{1}"" | No connection to Host!", _currenthost.Label, tDBElement.Filename))
                 Return Nothing
             End If
         End Function
 
         Private Async Function SearchMovieSet(ByVal tDBElement As Database.DBElement) As Task(Of Video.Details.MovieSet)
+            If _kodi Is Nothing Then
+                logger.Error("[APIKodi] SearchMovieSet: No host initialized! Abort!")
+                Return Nothing
+            End If
+
             'get a list of all moviesets saved in Kodi DB
             Dim kMovieSets As VideoLibrary.GetMovieSetsResponse = Await GetAllMovieSets().ConfigureAwait(False)
 
@@ -672,11 +777,11 @@ Namespace Kodi
                     Next
 
                     'compare by movies inside movieset
-                    For Each tMovie In tDBElement.MovieList
+                    For Each tMovie In tDBElement.MoviesInSet
                         logger.Trace(String.Format("[APIKodi] [{0}] SearchMovieSetByDetails: ""{1}"" | NOT found in database, trying to find the movieset by movies...", _currenthost.Label, tDBElement.MovieSet.Title))
                         'search movie ID in Kodi DB
                         Dim MovieID As Integer = -1
-                        Dim KodiMovie = Await SearchMovie(tMovie).ConfigureAwait(False)
+                        Dim KodiMovie = Await SearchMovie(tMovie.DBMovie).ConfigureAwait(False)
                         If KodiMovie IsNot Nothing Then
                             For Each tMovieSet In kMovieSets.sets
                                 If tMovieSet.setid = KodiMovie.setid Then
@@ -718,7 +823,7 @@ Namespace Kodi
             Dim kTVEpisodes As VideoLibrary.GetEpisodesResponse
 
             Dim tPathAndFilename As PathAndFilename = GetPathAndFilename(tDBElement)
-            Dim strFilename As String = tPathAndFilename.strFilename
+            Dim strFilename As String = If(tPathAndFilename.bIsMultiPart, GetRemotePath(tPathAndFilename.strFilename), tPathAndFilename.strFilename)
             Dim strRemotePath As String = GetRemotePath(tPathAndFilename.strPath)
 
             If Not String.IsNullOrEmpty(strRemotePath) Then
@@ -737,7 +842,7 @@ Namespace Kodi
 
                     kTVEpisodes = Await _kodi.VideoLibrary.GetEpisodes(filter, ShowID, tDBElement.TVEpisode.Season, Video.Fields.Episode.AllFields).ConfigureAwait(False)
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                     Return Nothing
                 End Try
             Else
@@ -838,7 +943,7 @@ Namespace Kodi
                     kTVShows = Await _kodi.VideoLibrary.GetTVShows(filter).ConfigureAwait(False)
 
                 Catch ex As Exception
-                    logger.Error(New StackFrame().GetMethod().Name, ex)
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
                     Return Nothing
                 End Try
             Else
@@ -873,7 +978,7 @@ Namespace Kodi
                 Dim Response = Await _kodi.JSONRPC.Ping
                 Return True
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 logger.Error(String.Format("[APIKodi] [{0}] TestConnectionToHost | No connection to Host!", _currenthost.Label))
                 Return False
             End Try
@@ -889,18 +994,16 @@ Namespace Kodi
         ''' updates all movie fields which are filled/set in Ember (also paths of images)
         ''' at the moment the movie to update on host is identified by searching and comparing filename of movie(special handling for DVDs/Blurays), meaning there might be problems when filename is appearing more than once in movie library
         ''' </remarks>
-        Public Async Function UpdateInfo_Movie(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal blnSyncPlayCount As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
+        Public Async Function UpdateInfo_Movie(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] UpdateMovieInfo: No host initialized! Abort!")
+                logger.Error("[APIKodi] UpdateInfo_Movie: No host initialized! Abort!")
                 Return False
             End If
 
-            Dim bNeedSave As Boolean = False
             Dim bIsNew As Boolean = False
-            'Dim uMovie As Database.DBElement = Master.DB.LoadMovieFromDB(lngMovieID)
 
             Try
-                logger.Trace(String.Format("[APIKodi] [{0}] UpdateMovieInfo: ""{1}"" | Start syncing process...", _currenthost.Label, mDBElement.Movie.Title))
+                logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_Movie: ""{1}"" | Start syncing process...", _currenthost.Label, mDBElement.Movie.Title))
 
                 'search Movie ID in Kodi DB
                 Dim KodiElement As Video.Details.Movie = Await GetFullDetailsByID_Movie(Await GetMediaID(mDBElement))
@@ -908,31 +1011,29 @@ Namespace Kodi
                 'scan movie path
                 If KodiElement Is Nothing Then
                     logger.Trace(String.Format("[APIKodi] [{0}] UpdateMovieInfo: ""{1}"" | NOT found in database, scan directory on host...", _currenthost.Label, mDBElement.Movie.Title))
-                    Await VideoLibrary_ScanPath(mDBElement).ConfigureAwait(False)
-                    While Await IsScanningVideo()
-                        Threading.Thread.Sleep(1000)
-                    End While
-                    KodiElement = Await GetFullDetailsByID_Movie(Await GetMediaID(mDBElement))
-                    If KodiElement IsNot Nothing Then bIsNew = True
+                    If Await VideoLibrary_ScanPath(mDBElement).ConfigureAwait(False) Then
+                        While Await IsScanningVideo()
+                            Threading.Thread.Sleep(1000)
+                        End While
+                        KodiElement = Await GetFullDetailsByID_Movie(Await GetMediaID(mDBElement))
+                        If KodiElement IsNot Nothing Then bIsNew = True
+                    Else
+                        logger.Error(String.Format("[APIKodi] [{0}] UpdateMovieInfo: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.Movie.Title))
+                        Return False
+                    End If
                 End If
 
                 If KodiElement IsNot Nothing Then
-                    'check if we have to retrieve the PlayCount from Kodi
-                    If blnSyncPlayCount AndAlso Not mDBElement.Movie.PlayCount = KodiElement.playcount Then
-                        mDBElement.Movie.PlayCount = KodiElement.playcount
-                        mDBElement.Movie.LastPlayed = KodiElement.lastplayed
-                        bNeedSave = True
-                    End If
 
                     'string or string.empty
                     Dim mDateAdded As String = If(mDBElement.Movie.DateAddedSpecified, mDBElement.Movie.DateAdded, Nothing)
-                    Dim mImdbnumber As String = mDBElement.Movie.ID
-                    Dim mLastPlayed As String = If(mDBElement.Movie.LastPlayedSpecified, mDBElement.Movie.LastPlayed, Nothing)
+                    Dim mImdbnumber As String = mDBElement.Movie.IMDB
+                    Dim mLastPlayed As String = mDBElement.Movie.LastPlayed
                     Dim mMPAA As String = mDBElement.Movie.MPAA
                     Dim mOriginalTitle As String = mDBElement.Movie.OriginalTitle
                     Dim mOutline As String = mDBElement.Movie.Outline
                     Dim mPlot As String = mDBElement.Movie.Plot
-                    Dim mSet As String = If(mDBElement.Movie.Sets.Count > 0, mDBElement.Movie.Sets.Item(0).Title, String.Empty)
+                    Dim mSet As String = If(mDBElement.Movie.SetsSpecified, mDBElement.Movie.Sets.Item(0).Title, String.Empty)
                     Dim mSortTitle As String = mDBElement.Movie.SortTitle
                     Dim mTagline As String = mDBElement.Movie.Tagline
                     Dim mTitle As String = mDBElement.Movie.Title
@@ -957,7 +1058,7 @@ Namespace Kodi
                     If mDBElement.Movie.RuntimeSpecified AndAlso Integer.TryParse(mDBElement.Movie.Runtime, 0) Then
                         mRuntime = CType(mDBElement.Movie.Runtime, Integer) * 60 'API requires runtime in seconds
                     End If
-                    Dim mTop250 As Integer = If(mDBElement.Movie.Top250Specified, CType(mDBElement.Movie.Top250, Integer), 0)
+                    Dim mTop250 As Integer = mDBElement.Movie.Top250
                     Dim mYear As Integer = If(mDBElement.Movie.YearSpecified, CType(mDBElement.Movie.Year, Integer), 0)
 
                     'arrays
@@ -1040,7 +1141,7 @@ Namespace Kodi
                     ' dateadded:=mdateAdded, _
 
                     If response.Contains("error") Then
-                        logger.Error(String.Format("[APIKodi] [{0}] UpdateMovieInfo: {1}", _currenthost.Label, response))
+                        logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_Movie: {1}", _currenthost.Label, response))
                         Return False
                     Else
                         'Remove old textures (cache)
@@ -1050,24 +1151,17 @@ Namespace Kodi
                         If blnSendHostNotification = True Then
                             Await SendMessage("Ember Media Manager", If(bIsNew, Master.eLang.GetString(881, "Added"), Master.eLang.GetString(1408, "Updated")) & ": " & mDBElement.Movie.Title).ConfigureAwait(False)
                         End If
-                        If bNeedSave Then
-                            logger.Trace(String.Format("[APIKodi] [{0}] UpdateMovieInfo: ""{1}"" | Save Playcount from host", _currenthost.Label, mDBElement.Movie.Title))
-                            Master.DB.SaveMovieToDB(mDBElement, False, False, True, False)
-                            GenericSubEvent.Report(New GenericSubEventCallBackAsync With {
-                                                   .tGenericEventCallBackAsync = New GenericEventCallBackAsync With
-                                                   {.tEventType = Enums.ModuleEventType.AfterEdit_Movie, .tParams = New List(Of Object)(New Object() {mDBElement.ID})},
-                                                   .tProgress = GenericMainEvent})
-                        End If
-                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateMovieInfo: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.Movie.Title, If(bIsNew, "Added", "Updated")))
+
+                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_Movie: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.Movie.Title, If(bIsNew, "Added", "Updated")))
                         Return True
                     End If
                 Else
-                    logger.Error(String.Format("[APIKodi] [{0}] UpdateMovieInfo: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.Movie.Title))
+                    logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_Movie: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.Movie.Title))
                     Return False
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return False
             End Try
         End Function
@@ -1083,21 +1177,20 @@ Namespace Kodi
         ''' </remarks>
         Public Async Function UpdateInfo_MovieSet(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean) As Task(Of Boolean)
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] UpdateMovieSetInfo: No host initialized! Abort!")
+                logger.Error("[APIKodi] UpdateInfo_MovieSet: No host initialized! Abort!")
                 Return False
             End If
 
             Dim bIsNew As Boolean = False
-            'Dim uMovieset As Database.DBElement = Master.DB.LoadMovieSetFromDB(lngMovieSetID)
 
             Try
-                logger.Trace(String.Format("[APIKodi] [{0}] UpdateMovieSetInfo: ""{1}"" | Start syncing process...", _currenthost.Label, mDBElement.MovieSet.Title))
+                logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_MovieSet: ""{1}"" | Start syncing process...", _currenthost.Label, mDBElement.MovieSet.Title))
 
                 'search MovieSet ID in Kodi DB
                 Dim KodiElement As Video.Details.MovieSet = Await GetFullDetailsByID_MovieSet(Await GetMediaID(mDBElement))
 
                 If KodiElement Is Nothing Then
-                    logger.Error(String.Format("[APIKodi] [{0}] UpdateMovieSetInfo: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.MovieSet.Title))
+                    logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_MovieSet: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.MovieSet.Title))
                     Return False
                     'what to do in this case?
                     'Await VideoLibrary_ScanPath(uMovieset).ConfigureAwait(False)
@@ -1142,7 +1235,7 @@ Namespace Kodi
 
 
                     If response.Contains("error") Then
-                        logger.Error(String.Format("[APIKodi] [{0}] UpdateMovieSetInfo: {1}", _currenthost.Label, response))
+                        logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_MovieSet: {1}", _currenthost.Label, response))
                         Return False
                     Else
                         'Remove old textures (cache)
@@ -1152,16 +1245,16 @@ Namespace Kodi
                         If blnSendHostNotification = True Then
                             Await SendMessage("Ember Media Manager", If(bIsNew, Master.eLang.GetString(881, "Added"), Master.eLang.GetString(1408, "Updated")) & ": " & mDBElement.MovieSet.Title).ConfigureAwait(False)
                         End If
-                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateMovieSetInfo: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.MovieSet.Title, If(bIsNew, "Added", "Updated")))
+                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_MovieSet: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.MovieSet.Title, If(bIsNew, "Added", "Updated")))
                         Return True
                     End If
                 Else
-                    logger.Error(String.Format("[APIKodi] [{0}] UpdateMovieSetInfo: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.MovieSet.Title))
+                    logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_MovieSet: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.MovieSet.Title))
                     Return False
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return False
             End Try
         End Function
@@ -1176,18 +1269,16 @@ Namespace Kodi
         ''' updates all episode fields (also pathes of images)
         ''' at the moment episode on host is identified by searching and comparing filename of episode
         ''' </remarks>
-        Public Async Function UpdateInfo_TVEpisode(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal blnSyncPlayCount As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
+        Public Async Function UpdateInfo_TVEpisode(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] UpdateTVEpisodeInfo: No host initialized! Abort!")
+                logger.Error("[APIKodi] UpdateInfo_TVEpisode: No host initialized! Abort!")
                 Return False
             End If
 
-            Dim bNeedSave As Boolean = False
             Dim bIsNew As Boolean = False
-            'Dim uEpisode As Database.DBElement = Master.DB.LoadTVEpisodeFromDB(lngTVEpisodeID, True)
 
             Try
-                logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVEpisodeInfo: ""{1}"" | Start syncing process...", _currenthost.Label, mDBElement.TVEpisode.Title))
+                logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_TVEpisode: ""{1}"" | Start syncing process...", _currenthost.Label, mDBElement.TVEpisode.Title))
 
                 'search TV Episode ID in Kodi DB
                 Dim KodiElement As Video.Details.Episode = Await GetFullDetailsByID_TVEpisode(Await GetMediaID(mDBElement))
@@ -1195,21 +1286,19 @@ Namespace Kodi
                 'scan tv show path
                 If KodiElement Is Nothing Then
                     logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVEpisodeInfo: ""{1}"" | NOT found in database, scan directory on host...", _currenthost.Label, mDBElement.TVEpisode.Title))
-                    Await VideoLibrary_ScanPath(mDBElement).ConfigureAwait(False)
-                    While Await IsScanningVideo()
-                        Threading.Thread.Sleep(1000)
-                    End While
-                    KodiElement = Await GetFullDetailsByID_TVEpisode(Await GetMediaID(mDBElement))
-                    If KodiElement IsNot Nothing Then bIsNew = True
+                    If Await VideoLibrary_ScanPath(mDBElement).ConfigureAwait(False) Then
+                        While Await IsScanningVideo()
+                            Threading.Thread.Sleep(1000)
+                        End While
+                        KodiElement = Await GetFullDetailsByID_TVEpisode(Await GetMediaID(mDBElement))
+                        If KodiElement IsNot Nothing Then bIsNew = True
+                    Else
+                        logger.Error(String.Format("[APIKodi] [{0}] UpdateTVEpisodeInfo: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.TVEpisode.Title))
+                        Return False
+                    End If
                 End If
 
                 If KodiElement IsNot Nothing Then
-                    'check if we have to retrieve the PlayCount from Kodi
-                    If blnSyncPlayCount AndAlso Not mDBElement.TVEpisode.Playcount = KodiElement.playcount Then
-                        mDBElement.TVEpisode.Playcount = KodiElement.playcount
-                        mDBElement.TVEpisode.LastPlayed = KodiElement.lastplayed
-                        bNeedSave = True
-                    End If
 
                     'string or string.empty
                     Dim mDateAdded As String = mDBElement.TVEpisode.DateAdded
@@ -1275,7 +1364,7 @@ Namespace Kodi
 
 
                     If response.Contains("error") Then
-                        logger.Error(String.Format("[APIKodi] [{0}] UpdateTVEpisodeInfo: {1}", _currenthost.Label, response))
+                        logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_TVEpisode: {1}", _currenthost.Label, response))
                         Return False
                     Else
                         'Remove old textures (cache)
@@ -1285,23 +1374,16 @@ Namespace Kodi
                         If blnSendHostNotification = True Then
                             Await SendMessage("Ember Media Manager", If(bIsNew, Master.eLang.GetString(881, "Added"), Master.eLang.GetString(1408, "Updated")) & ": " & mDBElement.TVShow.Title & ": " & mDBElement.TVEpisode.Title).ConfigureAwait(False)
                         End If
-                        If bNeedSave Then
-                            logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVEpisodeInfo: ""{1}"" | Save Playcount from host", _currenthost.Label, mDBElement.TVEpisode.Title))
-                            Master.DB.SaveTVEpisodeToDB(mDBElement, False, False, True, False, False)
-                            GenericSubEvent.Report(New GenericSubEventCallBackAsync With {
-                                                   .tGenericEventCallBackAsync = New GenericEventCallBackAsync With
-                                                   {.tEventType = Enums.ModuleEventType.AfterEdit_TVEpisode, .tParams = New List(Of Object)(New Object() {mDBElement.ID})},
-                                                   .tProgress = GenericMainEvent})
-                        End If
-                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVEpisodeInfo: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.TVEpisode.Title, If(bIsNew, "Added", "Updated")))
+
+                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_TVEpisode: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.TVEpisode.Title, If(bIsNew, "Added", "Updated")))
                         Return True
                     End If
                 Else
-                    logger.Error(String.Format("[APIKodi] [{0}] UpdateTVEpisodeInfo: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.TVEpisode.Title))
+                    logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_TVEpisode: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.TVEpisode.Title))
                     Return False
                 End If
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return False
             End Try
         End Function
@@ -1310,35 +1392,38 @@ Namespace Kodi
         ''' </summary>
         ''' <param name="mDBElement">TVSeason as DBElement</param>
         ''' <param name="SendHostNotification">Send notification to host</param>
-        ''' <returns>true=Update successfull, false=error or movieset not found in KodiDB</returns>
+        ''' <returns>true=Update successfull, false=error or season not found in KodiDB</returns>
         ''' <remarks>
         ''' 2015/06/27 Cocotus - First implementation, main code by DanCooper
         ''' updates all movieset fields which are filled/set in Ember (also paths of images)
         ''' </remarks>
-        Public Async Function UpdateInfo_TVSeason(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal blnSyncPlayCount As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
+        Public Async Function UpdateInfo_TVSeason(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
             If _kodi Is Nothing Then
-                logger.Warn("[APIKodi] UpdateTVSeasonInfo: No host initialized! Abort!")
+                logger.Warn("[APIKodi] UpdateInfo_TVSeason: No host initialized! Abort!")
                 Return False
             End If
 
             Dim bIsNew As Boolean = False
-            'Dim uSeason As Database.DBElement = Master.DB.LoadTVSeasonFromDB(lngTVSeasonID, True)
 
             Try
-                logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVSeasonInfo: ""{1}: Season {2}"" | Start syncing process...", _currenthost.Label, mDBElement.ShowPath, mDBElement.TVSeason.Season))
+                logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_TVSeason: ""{1}: Season {2}"" | Start syncing process...", _currenthost.Label, mDBElement.ShowPath, mDBElement.TVSeason.Season))
 
-                'search Movie ID in Kodi DB
+                'search TVSeason ID in Kodi DB
                 Dim KodiElement As Video.Details.Season = Await GetFullDetailsByID_TVSeason(Await GetMediaID(mDBElement))
 
                 'scan tv show path
                 If KodiElement Is Nothing Then
                     logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVSeasonInfo: ""{1}: Season {2}"" | NOT found in database, scan directory on host...", _currenthost.Label, mDBElement.ShowPath, mDBElement.TVSeason.Season))
-                    Await VideoLibrary_ScanPath(mDBElement).ConfigureAwait(False)
-                    While Await IsScanningVideo()
-                        Threading.Thread.Sleep(1000)
-                    End While
-                    KodiElement = Await GetFullDetailsByID_TVSeason(Await GetMediaID(mDBElement))
-                    If KodiElement IsNot Nothing Then bIsNew = True
+                    If Await VideoLibrary_ScanPath(mDBElement).ConfigureAwait(False) Then
+                        While Await IsScanningVideo()
+                            Threading.Thread.Sleep(1000)
+                        End While
+                        KodiElement = Await GetFullDetailsByID_TVSeason(Await GetMediaID(mDBElement))
+                        If KodiElement IsNot Nothing Then bIsNew = True
+                    Else
+                        logger.Error(String.Format("[APIKodi] [{0}] UpdateTVSeasonInfo: ""{1}: Season {2}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.ShowPath, mDBElement.TVSeason.Season))
+                        Return False
+                    End If
                 End If
 
                 If KodiElement IsNot Nothing Then
@@ -1363,7 +1448,7 @@ Namespace Kodi
                                                                              art:=artwork).ConfigureAwait(False)
 
                     If response.Contains("error") Then
-                        logger.Error(String.Format("[APIKodi] [{0}] UpdateTVSeasonInfo: {1}", _currenthost.Label, response))
+                        logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_TVSeason: {1}", _currenthost.Label, response))
                         Return False
                     Else
                         'Remove old textures (cache)
@@ -1378,20 +1463,20 @@ Namespace Kodi
                         If mDBElement.EpisodesSpecified Then
                             For Each tEpisode As Database.DBElement In mDBElement.Episodes
                                 If tEpisode.TVShow Is Nothing Then Master.DB.AddTVShowInfoToDBElement(tEpisode, mDBElement)
-                                Await Task.Run(Function() UpdateInfo_TVEpisode(tEpisode, blnSendHostNotification, blnSyncPlayCount, GenericSubEvent, GenericMainEvent))
+                                Await Task.Run(Function() UpdateInfo_TVEpisode(tEpisode, blnSendHostNotification, GenericSubEvent, GenericMainEvent))
                             Next
                         End If
 
-                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVSeasonInfo: ""{1}: Season {2}"" | {3} on host", _currenthost.Label, mDBElement.ShowPath, mDBElement.TVSeason.Season, If(bIsNew, "Added", "Updated")))
+                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_TVSeason: ""{1}: Season {2}"" | {3} on host", _currenthost.Label, mDBElement.ShowPath, mDBElement.TVSeason.Season, If(bIsNew, "Added", "Updated")))
                         Return True
                     End If
                 Else
-                    logger.Error(String.Format("[APIKodi] [{0}] UpdateTVSeasonInfo: ""{1}: Season {2}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.ShowPath, mDBElement.TVSeason.Season))
+                    logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_TVSeason: ""{1}: Season {2}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.ShowPath, mDBElement.TVSeason.Season))
                     Return False
                 End If
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return False
             End Try
         End Function
@@ -1406,30 +1491,33 @@ Namespace Kodi
         ''' updates all TVShow fields (also paths of images)
         ''' at the moment TVShow on host is identified by searching and comparing path of TVShow
         ''' </remarks>
-        Public Async Function UpdateInfo_TVShow(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal blnSyncPlayCount As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
+        Public Async Function UpdateInfo_TVShow(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] UpdateTVShowInfo: No host initialized! Abort!")
+                logger.Error("[APIKodi] UpdateInfo_TVShow: No host initialized! Abort!")
                 Return False
             End If
 
             Dim bIsNew As Boolean = False
-            'Dim uTVShow As Database.DBElement = Master.DB.LoadTVShowFromDB(lngTVShowID, False, False)
 
             Try
-                logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVShowInfo: ""{1}"" | Start syncing process...", _currenthost.Label, mDBElement.TVShow.Title))
+                logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_TVShow: ""{1}"" | Start syncing process...", _currenthost.Label, mDBElement.TVShow.Title))
 
-                'search Movie ID in Kodi DB
+                'search TVShow ID in Kodi DB
                 Dim KodiElement As Video.Details.TVShow = Await GetFullDetailsByID_TVShow(Await GetMediaID(mDBElement))
 
                 'scan tv show path
                 If KodiElement Is Nothing Then
                     logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVShowInfo: ""{1}"" | NOT found in database, scan directory on host...", _currenthost.Label, mDBElement.TVShow.Title))
-                    Await VideoLibrary_ScanPath(mDBElement).ConfigureAwait(False)
-                    While Await IsScanningVideo()
-                        Threading.Thread.Sleep(1000)
-                    End While
-                    KodiElement = Await GetFullDetailsByID_TVShow(Await GetMediaID(mDBElement))
-                    If KodiElement IsNot Nothing Then bIsNew = True
+                    If Await VideoLibrary_ScanPath(mDBElement).ConfigureAwait(False) Then
+                        While Await IsScanningVideo()
+                            Threading.Thread.Sleep(1000)
+                        End While
+                        KodiElement = Await GetFullDetailsByID_TVShow(Await GetMediaID(mDBElement))
+                        If KodiElement IsNot Nothing Then bIsNew = True
+                    Else
+                        logger.Error(String.Format("[APIKodi] [{0}] UpdateTVShowInfo: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.TVShow.Title))
+                        Return False
+                    End If
                 End If
 
                 If KodiElement IsNot Nothing Then
@@ -1522,7 +1610,7 @@ Namespace Kodi
                     'lastplayed:=mlastplayed, _
 
                     If response.Contains("error") Then
-                        logger.Error(String.Format("[APIKodi] [{0}] UpdateTVShowInfo: {1}", _currenthost.Label, response))
+                        logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_TVShow: {1}", _currenthost.Label, response))
                         Return False
                     Else
                         'Remove old textures (cache)
@@ -1535,9 +1623,9 @@ Namespace Kodi
 
                         'Sync Episodes
                         If mDBElement.EpisodesSpecified Then
-                            For Each tEpisode As Database.DBElement In mDBElement.Episodes
+                            For Each tEpisode As Database.DBElement In mDBElement.Episodes.Where(Function(f) f.FilenameSpecified)
                                 If tEpisode.TVShow Is Nothing Then Master.DB.AddTVShowInfoToDBElement(tEpisode, mDBElement)
-                                Await Task.Run(Function() UpdateInfo_TVEpisode(tEpisode, blnSendHostNotification, blnSyncPlayCount, GenericSubEvent, GenericMainEvent))
+                                Await Task.Run(Function() UpdateInfo_TVEpisode(tEpisode, blnSendHostNotification, GenericSubEvent, GenericMainEvent))
                             Next
                         End If
 
@@ -1545,19 +1633,19 @@ Namespace Kodi
                         If mDBElement.SeasonsSpecified Then
                             For Each tSeason As Database.DBElement In mDBElement.Seasons
                                 If tSeason.TVShow Is Nothing Then Master.DB.AddTVShowInfoToDBElement(tSeason, mDBElement)
-                                Await Task.Run(Function() UpdateInfo_TVSeason(tSeason, blnSendHostNotification, blnSyncPlayCount, GenericSubEvent, GenericMainEvent))
+                                Await Task.Run(Function() UpdateInfo_TVSeason(tSeason, blnSendHostNotification, GenericSubEvent, GenericMainEvent))
                             Next
                         End If
 
-                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateTVShowInfo: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.TVShow.Title, If(bIsNew, "Added", "Updated")))
+                        logger.Trace(String.Format("[APIKodi] [{0}] UpdateInfo_TVShow: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.TVShow.Title, If(bIsNew, "Added", "Updated")))
                         Return True
                     End If
                 Else
-                    logger.Error(String.Format("[APIKodi] [{0}] UpdateTVShowInfo: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.TVShow.Title))
+                    logger.Error(String.Format("[APIKodi] [{0}] UpdateInfo_TVShow: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.TVShow.Title))
                     Return False
                 End If
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return False
             End Try
         End Function
@@ -1570,17 +1658,17 @@ Namespace Kodi
         ''' </remarks>
         Public Async Function VideoLibrary_Clean() As Task(Of String)
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] CleanVideoLibrary: No host initialized! Abort!")
+                logger.Error("[APIKodi] VideoLibrary_Clean: No host initialized! Abort!")
                 Return Nothing
             End If
 
             Try
                 Dim response As String = String.Empty
                 response = Await _kodi.VideoLibrary.Clean.ConfigureAwait(False)
-                logger.Trace("[APIKodi] CleanVideoLibrary: " & _currenthost.Label)
+                logger.Trace("[APIKodi] VideoLibrary_Clean: " & _currenthost.Label)
                 Return response
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -1612,17 +1700,17 @@ Namespace Kodi
         ''' </remarks>
         Public Async Function VideoLibrary_Scan() As Task(Of String)
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] CleanVideoLibrary: No host initialized! Abort!")
+                logger.Error("[APIKodi] VideoLibrary_Scan: No host initialized! Abort!")
                 Return Nothing
             End If
 
             Try
                 Dim response As String = String.Empty
                 response = Await _kodi.VideoLibrary.Scan.ConfigureAwait(False)
-                logger.Trace("[APIKodi] ScanVideoLibrary: " & _currenthost.Label)
+                logger.Trace("[APIKodi] VideoLibrary_Scan: " & _currenthost.Label)
                 Return response
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -1633,7 +1721,7 @@ Namespace Kodi
         ''' <returns></returns>
         Public Async Function VideoLibrary_ScanPath(ByVal tDBElement As Database.DBElement) As Task(Of Boolean)
             If _kodi Is Nothing Then
-                logger.Error("[APIKodi] ScanVideoPath: No host initialized! Abort!")
+                logger.Error("[APIKodi] VideoLibrary_ScanPath: No host initialized! Abort!")
                 Return Nothing
             End If
 
@@ -1641,21 +1729,13 @@ Namespace Kodi
 
             Select Case tDBElement.ContentType
                 Case Enums.ContentType.Movie
-                    If FileUtils.Common.isBDRip(tDBElement.Filename) Then
-                        'filename must point to m2ts file! 
-                        'Ember-Filepath i.e.  E:\Media_1\Movie\Horror\Europa Report\BDMV\STREAM\00000.m2ts
-                        'for adding new Bluray rips scan the root folder of movie, i.e: E:\Media_1\Movie\Horror\Europa Report\
-                        strLocalPath = Directory.GetParent(Directory.GetParent(Directory.GetParent(tDBElement.Filename).FullName).FullName).FullName
-                    ElseIf FileUtils.Common.isVideoTS(tDBElement.Filename) Then
-                        'filename must point to IFO file!
-                        'Ember-Filepath i.e.  E:\Media_1\Movie\Action\Crow\VIDEO_TS\VIDEO_TS.IFO
-                        'for adding new DVDs scan the root folder of movie, i.e:  E:\Media_1\Movie\Action\Crow\
-                        strLocalPath = Directory.GetParent(Directory.GetParent(tDBElement.Filename).FullName).FullName
+                    If FileUtils.Common.isBDRip(tDBElement.Filename) OrElse FileUtils.Common.isVideoTS(tDBElement.Filename) Then
+                        strLocalPath = FileUtils.Common.GetMainPath(tDBElement.Filename).FullName
                     Else
                         If Path.GetFileNameWithoutExtension(tDBElement.Filename).ToLower = "video_ts" Then
                             strLocalPath = Directory.GetParent(Directory.GetParent(tDBElement.Filename).FullName).FullName
                         Else
-                            strLocalPath = Directory.GetParent(tDBElement.Filename).FullName
+                            strLocalPath = FileUtils.Common.GetMainPath(tDBElement.Filename).FullName
                         End If
                     End If
                 Case Enums.ContentType.TVEpisode, Enums.ContentType.TVSeason, Enums.ContentType.TVShow
@@ -1666,18 +1746,18 @@ Namespace Kodi
                         strLocalPath = String.Concat(tDBElement.ShowPath, Path.AltDirectorySeparatorChar)
                     End If
                 Case Else
-                    logger.Warn(String.Format("[APIKodi] [{0}] ScanVideoPath: No videotype specified! Abort!", _currenthost.Label))
+                    logger.Warn(String.Format("[APIKodi] [{0}] VideoLibrary_ScanPath: No videotype specified! Abort!", _currenthost.Label))
                     Return False
             End Select
 
             Dim strRemotePath As String = GetRemotePath(strLocalPath)
-            If strRemotePath Is Nothing Then
+            If String.IsNullOrEmpty(strRemotePath) Then
                 Return False
             End If
-            logger.Trace(String.Format("[APIKodi] [{0}] ScanVideoPath: ""{1}"" | Start scanning process...", _currenthost.Label, strRemotePath))
+            logger.Trace(String.Format("[APIKodi] [{0}] VideoLibrary_ScanPaths: ""{1}"" | Start scanning process...", _currenthost.Label, strRemotePath))
             Dim strResponse = Await _kodi.VideoLibrary.Scan(strRemotePath).ConfigureAwait(False)
             If strResponse.ToLower.Contains("error") Then
-                logger.Trace(String.Format("[APIKodi] [{0}] ScanVideoPath: ""{1}"" | {2}", _currenthost.Label, strRemotePath, strResponse))
+                logger.Trace(String.Format("[APIKodi] [{0}] VideoLibrary_ScanPath: ""{1}"" | {2}", _currenthost.Label, strRemotePath, strResponse))
                 Return False
             Else
                 Return True
@@ -1702,8 +1782,143 @@ Namespace Kodi
                 Dim response = Await _kodi.GUI.ShowNotification(strTitle, strMessage, 2500).ConfigureAwait(False)
                 Return response
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
+            End Try
+        End Function
+        ''' <summary>
+        ''' Remove Movie details at Kodi
+        ''' </summary>
+        ''' <param name="mDBElement">Movie as DBElement</param>
+        ''' <param name="SendHostNotification">Send notification to host</param>
+        ''' <returns>true=Remove successfull, false=error or movie not found in KodiDB</returns>
+        ''' <remarks>
+        ''' </remarks>
+        Public Async Function Remove_Movie(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
+            If _kodi Is Nothing Then
+                logger.Error("[APIKodi] [Remove_Movie]: No host initialized! Abort!")
+                Return False
+            End If
+
+            Try
+                logger.Trace(String.Format("[APIKodi] [{0}] [Remove_Movie]: ""{1}"" | Start removing process...", _currenthost.Label, mDBElement.Movie.Title))
+
+                'search Movie ID in Kodi DB
+                Dim KodiElement As Video.Details.Movie = Await GetFullDetailsByID_Movie(Await GetMediaID(mDBElement))
+
+                If KodiElement IsNot Nothing Then
+                    Dim response = Await _kodi.VideoLibrary.RemoveMovie(KodiElement.movieid).ConfigureAwait(False)
+
+                    If response.Contains("error") Then
+                        logger.Error(String.Format("[APIKodi] [{0}] [Remove_Movie]: {1}", _currenthost.Label, response))
+                        Return False
+                    Else
+                        'Send message to Kodi?
+                        If blnSendHostNotification = True Then
+                            Await SendMessage("Ember Media Manager", String.Format("{0}: {1}", Master.eLang.GetString(1024, "Removed"), mDBElement.Movie.Title)).ConfigureAwait(False)
+                        End If
+                        logger.Trace(String.Format("[APIKodi] [{0}] [Remove_Movie]: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.Movie.Title, "Removed"))
+                        Return True
+                    End If
+                Else
+                    logger.Error(String.Format("[APIKodi] [{0}] [Remove_Movie]: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.Movie.Title))
+                    Return False
+                End If
+
+            Catch ex As Exception
+                logger.Error(ex, New StackFrame().GetMethod().Name)
+                Return False
+            End Try
+        End Function
+        ''' <summary>
+        ''' Remove TVEpisode details at Kodi
+        ''' </summary>
+        ''' <param name="mDBElement">TVEpisode as DBElement</param>
+        ''' <param name="SendHostNotification">Send notification to host</param>
+        ''' <returns>true=Remove successfull, false=error or episode not found in KodiDB</returns>
+        ''' <remarks>
+        ''' </remarks>
+        Public Async Function Remove_TVEpisode(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
+            If _kodi Is Nothing Then
+                logger.Error("[APIKodi] [Remove_TVEpisode]: No host initialized! Abort!")
+                Return False
+            End If
+
+            Try
+                logger.Trace(String.Format("[APIKodi] [{0}] [Remove_TVEpisode]: ""{1}"" | Start removing process...", _currenthost.Label, mDBElement.TVEpisode.Title))
+
+                'search TV Episode ID in Kodi DB
+                Dim KodiElement As Video.Details.Episode = Await GetFullDetailsByID_TVEpisode(Await GetMediaID(mDBElement))
+
+                If KodiElement IsNot Nothing Then
+                    Dim response = Await _kodi.VideoLibrary.RemoveEpisode(KodiElement.episodeid).ConfigureAwait(False)
+
+                    If response.Contains("error") Then
+                        logger.Error(String.Format("[APIKodi] [{0}] [Remove_TVEpisode]: {1}", _currenthost.Label, response))
+                        Return False
+                    Else
+                        'Send message to Kodi?
+                        If blnSendHostNotification = True Then
+                            Await SendMessage("Ember Media Manager", String.Format("{0}: {1}: {2}", Master.eLang.GetString(1024, "Removed"), mDBElement.TVShow.Title, mDBElement.TVEpisode.Title)).ConfigureAwait(False)
+                        End If
+                        logger.Trace(String.Format("[APIKodi] [{0}] [Remove_TVEpisode]: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.TVEpisode.Title, "Removed"))
+                        Return True
+                    End If
+                Else
+                    logger.Error(String.Format("[APIKodi] [{0}] [Remove_TVEpisode]: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.TVEpisode.Title))
+                    Return False
+                End If
+
+            Catch ex As Exception
+                logger.Error(ex, New StackFrame().GetMethod().Name)
+                Return False
+            End Try
+        End Function
+        ''' <summary>
+        ''' Remove TVShow details at Kodi
+        ''' </summary>
+        ''' <param name="mDBElement">TVShow as DBElement</param>
+        ''' <param name="SendHostNotification">Send notification to host</param>
+        ''' <returns>true=Remove successfull, false=error or tv show not found in KodiDB</returns>
+        ''' <remarks>
+        ''' </remarks>
+        Public Async Function Remove_TVShow(ByVal mDBElement As Database.DBElement, ByVal blnSendHostNotification As Boolean, ByVal GenericSubEvent As IProgress(Of GenericSubEventCallBackAsync), ByVal GenericMainEvent As IProgress(Of GenericEventCallBackAsync)) As Task(Of Boolean)
+            If _kodi Is Nothing Then
+                logger.Error("[APIKodi] [Remove_TVShow]: No host initialized! Abort!")
+                Return False
+            End If
+
+            Try
+                logger.Trace(String.Format("[APIKodi] [{0}] [Remove_TVShow]: ""{1}"" | Start removing process...", _currenthost.Label, mDBElement.TVShow.Title))
+
+                'search TVShow ID in Kodi DB
+                Dim KodiElement As Video.Details.TVShow = Await GetFullDetailsByID_TVShow(Await GetMediaID(mDBElement))
+
+                If KodiElement IsNot Nothing Then
+                    Dim response = Await _kodi.VideoLibrary.RemoveTVShow(KodiElement.tvshowid).ConfigureAwait(False)
+
+                    If response.Contains("error") Then
+                        logger.Error(String.Format("[APIKodi] [{0}] [Remove_TVShow]: {1}", _currenthost.Label, response))
+                        Return False
+                    Else
+                        'Remove old textures (cache)
+                        Await RemoveTextures(mDBElement)
+
+                        'Send message to Kodi?
+                        If blnSendHostNotification = True Then
+                            Await SendMessage("Ember Media Manager", String.Format("{0}: {1}", Master.eLang.GetString(1024, "Removed"), mDBElement.TVShow.Title)).ConfigureAwait(False)
+                        End If
+
+                        logger.Trace(String.Format("[APIKodi] [{0}] [Remove_TVShow]: ""{1}"" | {2} on host", _currenthost.Label, mDBElement.TVShow.Title, "Removed"))
+                        Return True
+                    End If
+                Else
+                    logger.Error(String.Format("[APIKodi] [{0}] [Remove_TVShow]: ""{1}"" | NOT found on host! Abort!", _currenthost.Label, mDBElement.TVShow.Title))
+                    Return False
+                End If
+            Catch ex As Exception
+                logger.Error(ex, New StackFrame().GetMethod().Name)
+                Return False
             End Try
         End Function
         ''' <summary>
@@ -1722,7 +1937,7 @@ Namespace Kodi
                 Dim response = Await _kodi.Textures.RemoveTexture(intID)
                 Return response
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -1748,7 +1963,7 @@ Namespace Kodi
                     Return False
                 End If
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return False
             End Try
             Return True
@@ -1768,17 +1983,18 @@ Namespace Kodi
 
             Try
                 Dim response As XBMC.GetInfoBooleansResponse = Await _kodi.XBMC.GetInfoBooleans(New List(Of String)(New String() {"Library.IsScanningVideo"}))
-                logger.Trace(String.Format("[APIKodi] [{0}] IsScanningVideo: {1}", _currenthost.Label, response.IsScanningVideo.ToString))
-                Return response.IsScanningVideo
+                If response IsNot Nothing Then
+                    logger.Trace(String.Format("[APIKodi] [{0}] IsScanningVideo: {1}", _currenthost.Label, response.IsScanningVideo.ToString))
+                    Return response.IsScanningVideo
+                Else
+                    logger.Error(String.Format("[APIKodi] [{0}] IsScanningVideo: No answer from Host", _currenthost.Label))
+                    Return False
+                End If
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return False
             End Try
         End Function
-
-#Region "Helper functions/methods"
-
-#End Region 'Helper functions/methods
 
 #Region "Unused code"
 
@@ -1850,7 +2066,7 @@ Namespace Kodi
                 Return -1
 
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return -1
             End Try
         End Function
@@ -1878,7 +2094,7 @@ Namespace Kodi
                     Return True
                 End If
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return False
             End Try
         End Function
@@ -1894,7 +2110,7 @@ Namespace Kodi
                 Return Await _kodi.Application.SetMute(False).ConfigureAwait(False)
                 'Await Refresh()
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -1910,7 +2126,7 @@ Namespace Kodi
                 Return Await _kodi.Application.SetMute(True).ConfigureAwait(False)
                 'Await Refresh()
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -1925,7 +2141,7 @@ Namespace Kodi
             Try
                 Return Await _kodi.Application.SetVolume(volume).ConfigureAwait(False)
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -1941,7 +2157,7 @@ Namespace Kodi
                 Dim response = Await _kodi.JSONRPC.Introspect().ConfigureAwait(False)
                 Return response.ToString
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -1957,7 +2173,7 @@ Namespace Kodi
                 Dim response = Await _kodi.Application.GetProperties(Application.GetProperties_properties.AllFields()).ConfigureAwait(False)
                 Return response
             Catch ex As Exception
-                logger.Error(New StackFrame().GetMethod().Name, ex)
+                logger.Error(ex, New StackFrame().GetMethod().Name)
                 Return Nothing
             End Try
         End Function
@@ -1990,44 +2206,60 @@ Namespace Kodi
 #Region "Nested Types"
 
         Structure PathAndFilename
+            Dim bIsMultiPart As Boolean
             Dim strPath As String
             Dim strFilename As String
         End Structure
 
-        Structure MySettings
-            ''' <summary>
-            ''' Username for Kodi webservice. Optional. Default is kodi for Kodi hosts ( xbmc for XBMC hosts )
-            ''' </summary>
-            ''' <returns>Username for Kodi webservice</returns>
-            ''' <history>
-            ''' 9/13/2015 Cocotus created
-            ''' </history>
-            Dim Username As String
-            ''' <summary>
-            ''' Password for Kodi webservice. Optional. As configured in Kodi / XBMC Setup
-            ''' </summary>
-            ''' <returns>Password for Kodi webservice</returns>
-            ''' <history>
-            ''' 9/13/2015 Cocotus created
-            ''' </history>
-            Dim Password As String
-            ''' <summary>
-            ''' IP address or DNS host name of Kodi / XBMC media player
-            ''' </summary>
-            ''' <returns>Address of Kodi webservice</returns>
-            ''' <history>
-            ''' 9/13/2015 Cocotus created
-            ''' </history>
-            Dim HostIP As String
-            ''' <summary>
-            ''' Kodi webport.Typically 80 or 8080. As configured in Kodi / XBMC Setup
-            ''' </summary>
-            ''' <returns>Kodi webport</returns>
-            ''' <history>
-            ''' 9/13/2015 Cocotus created
-            ''' </history>
-            Dim WebPort As Integer
-        End Structure
+        Public Class WatchedState
+
+#Region "Fields"
+
+            Private _lastplayed As String
+            Private _playcount As Integer
+
+#End Region 'Fields
+
+#Region "Properties"
+            Public Property LastPlayed() As String
+                Get
+                    Return _lastplayed
+                End Get
+                Set(ByVal value As String)
+                    _lastplayed = value
+                End Set
+            End Property
+
+            Public Property PlayCount() As Integer
+                Get
+                    Return _playcount
+                End Get
+                Set(ByVal value As Integer)
+                    _playcount = value
+                End Set
+            End Property
+
+#End Region 'Properties
+
+#Region "Constructors"
+
+            Public Sub New()
+                Clear()
+            End Sub
+
+#End Region 'Constructors
+
+#Region "Methods"
+
+            Public Sub Clear()
+                _lastplayed = String.Empty
+                _playcount = 0
+            End Sub
+
+#End Region 'Methods
+
+
+        End Class
 
 #End Region 'Nested Types
 
